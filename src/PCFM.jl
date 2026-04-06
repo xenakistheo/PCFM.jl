@@ -6,6 +6,9 @@ using Random
 using Optimisers
 using Reactant
 
+# Make training API origin explicit for downstream includes.
+const Training = Lux.Training
+
 # Include submodules
 include("./data.jl")
 include("./model.jl")
