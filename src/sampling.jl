@@ -160,7 +160,16 @@ function sample_pcfm(ffm::FFM, tstate, n_samples, n_steps;
         x_1 = x .+ v .* (1.0f0 - τ)
 
         # Step 2: Apply constraint - fix initial condition
-        @. x_1[:, 1:1, :, :] = u_0_ic
+        # @. x_1[:, 1:1, :, :] = u_0_ic
+        ##############
+        model = Model(MadNLP.Optimizer)
+        @variable(model, u[1:Nx, 1:Nt])
+        @objective(model, Min, sum((u[i, j] - x_1[i, j])^2 for i in 1:Nx, j in 1:Nt))
+        @constraint(model, [j in 1:Nt], dx * sum(u[i, j] for i in 1:Nx) == 0.0)
+        optimize!(model)
+        x_0 = value.(u)
+
+        ##############
 
         # Step 3: Interpolate between x_0 and x_1 (corrected) at time t+dt
         x = x_0 .+ (x_1 .- x_0) .* τ_next

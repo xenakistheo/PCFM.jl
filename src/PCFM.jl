@@ -5,6 +5,7 @@ using Lux
 using Random
 using Optimisers
 using Reactant
+using MadNLP
 
 # Include submodules
 include("./data.jl")
