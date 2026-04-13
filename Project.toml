@@ -1,19 +1,23 @@
 name = "PCFM"
 uuid = "b98adb87-64f5-4b9d-af11-955a214774b3"
-authors = ["Utkarsh <rajpututkarsh530@gmail.com>"]
 version = "0.1.0"
+authors = ["Utkarsh <rajpututkarsh530@gmail.com>"]
 
 [deps]
+JuMP = "4076af6c-e467-56ae-b986-b466b2749572"
 Lux = "b2108857-7c20-44ae-9111-449ecde12c47"
 MLUtils = "f1d291b0-491e-4a28-83b9-f70985020b54"
+MadNLP = "2621e9c9-9eb4-46b1-8089-e8c72242dfb6"
 NeuralOperators = "ea5c82af-86e5-48da-8ee1-382d6ad7af4b"
 Optimisers = "3bd65402-5787-11e9-1adc-39752487f4e2"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 Reactant = "3c362404-f566-11ee-1572-e11a4b42c853"
 
 [compat]
+JuMP = "1.30.0"
 Lux = "1.24.0"
 MLUtils = "0.4.8"
+MadNLP = "0.9.1"
 NeuralOperators = "0.6.2"
 Optimisers = "0.4.6"
 Random = "1.11.0"
