@@ -1,11 +1,13 @@
-using MadNLP, CairoMakie
+using MadNLP, MadNLPGPU
+using CairoMakie
 using BenchmarkTools
 using ExaModels
 using KernelAbstractions
+using CUDA
 
 
-backend = CPU()
-# backend = CUDABackend()
+# backend = CPU()
+backend = CUDABackend()
 
 
 CairoMakie.activate!()
@@ -29,25 +31,42 @@ T = collect(range(0, 1; length=Nt))
 
 
 
-core = ExaCore(Float64; backend=nothing)#CPU
+core = ExaCore(Float64; backend=backend)#CPU
 #ExaModels operates on flat vectors 
 idx(i,j) = i + (j-1)*Nx
 
-N = Nx * Nt # Define total number of variables to solve for. 
+N = Nx * Nt # Define total number of variables to solve for.
 u = variable(core, 1:N, start = vec(u1))
-objective(core, 
-    sum((u[idx(i,j)] - u1[i,j])^2 for i in 1:Nx, j in 1:Nt)
-    )
+
+# Embed (flat_index, data_value) pairs in the iteration set so ExaModels can
+# access u1 values as constants without Julia array indexing on symbolic indices.
+u1_data = [(k, vec(u1)[k]) for k in 1:N]
+objective(core,
+    (u[d[1]] - d[2])^2 for d in u1_data)
 
 constraint(core, 
     ((dx/dt) * sum(u[idx(i,j+1)]^2 - u[idx(i,j)]^2 for i in 1:(Nx-1))
         for j in 1:(Nt-1)
     );
-    lcon = zeros(Nt-1),
-    ucon = zeros(Nt - 1)
+    lcon = KernelAbstractions.adapt(backend,zeros(Nt-1)), #lower constraints, on GPU
+    ucon = KernelAbstractions.adapt(backend,zeros(Nt - 1))
 )
 
 
-nlp = mean_zero_examodeL(u1, dx) # Defines optimisation problem
-result = madnlp(nlp) # Solve optimisation
+# nlp = mean_zero_examodeL(u1, dx) # Defines optimisation problem
 
+#Define optimisation problem 
+nlp = ExaModel(core)
+
+
+# Solve and benchmark on CPU
+@belapsed result = madnlp($nlp) # Solve optimisation using MadNLP
+
+
+# Solve and benchmark on GPU
+@CUDA.time result = madnlp(nlp, linear_solver=MadNLPGPU.LapackCUDASolver)
+
+
+
+aa = zeros(5)
+bb = KernelAbstractions.adapt(backend, aa)
