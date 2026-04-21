@@ -4,49 +4,54 @@ using ExaModels
 function heat_constraints!(core, u_flat, params)
     (; Nx, Nt, dx, u0, backend) = params
 
-    # helper indexing (i = space, t = time)
     idx(i, t) = (t-1)*Nx + i
 
     # --------------------------------------------------
     # 1. Initial condition: u(x,0) = u0(x)
     # --------------------------------------------------
-    for i in 1:Nx
-        constraint(core, u_flat[idx(i, 1)] == u0[i]) #Is this needed 
-    end
+    u0_data = [(i, u0[i]) for i in 1:Nx]
+    constraint(core,
+        (u_flat[d[1]] - d[2] for d in u0_data);
+        lcon = KernelAbstractions.adapt(backend, zeros(Nx)),
+        ucon = KernelAbstractions.adapt(backend, zeros(Nx))
+    )
 
     # --------------------------------------------------
     # 2. Mass conservation: ∑ u(x,t) dx = 0 for all t
     # --------------------------------------------------
-    for t in 1:Nt
-        mass = sum(u_flat[idx(i, t)] for i in 1:Nx) * dx
-        constraint(core, mass == 0.0)
-    end
-    return nothing 
-end 
+    constraint(core,
+        (sum(u_flat[idx(i,t)] for i in 1:Nx) * dx for t in 1:Nt);
+        lcon = KernelAbstractions.adapt(backend, zeros(Nt)),
+        ucon = KernelAbstractions.adapt(backend, zeros(Nt))
+    )
+
+    return nothing
+end
 
 function ns_constraints!(core, u_flat, params)
     (; Nx, Ny, Nt, dx, dy, u0, backend) = params
 
-    # helper index
     idx(i,j,t) = (t-1)*Nx*Ny + (j-1)*Nx + i
 
     # --------------------------------------------------
     # 1. Initial condition
     # --------------------------------------------------
-    for i in 1:Nx, j in 1:Ny
-        constraint(core, u_flat[idx(i,j,1)] == u0[i,j])
-    end
+    u0_data = [(idx(i,j,1), u0[i,j]) for i in 1:Nx for j in 1:Ny]
+    constraint(core,
+        (u_flat[d[1]] - d[2] for d in u0_data);
+        lcon = KernelAbstractions.adapt(backend, zeros(Nx*Ny)),
+        ucon = KernelAbstractions.adapt(backend, zeros(Nx*Ny))
+    )
 
     # --------------------------------------------------
-    # 2. Global mass (vorticity) conservation
+    # 2. Global mass conservation: ∑_{i,j} u(i,j,t)*dx*dy = M0 for t >= 2
     # --------------------------------------------------
-    # reference mass at t=1
-    M0 = sum(u0[i,j] for i in 1:Nx, j in 1:Ny) * dx * dy
-
-    for t in 2:Nt
-        Mt = sum(u_flat[idx(i,j,t)] for i in 1:Nx, j in 1:Ny) * dx * dy
-        constraint(core, Mt == M0)
-    end
+    M0 = sum(u0[i,j] for i in 1:Nx for j in 1:Ny) * dx * dy
+    constraint(core,
+        (sum(u_flat[idx(i,j,t)] for i in 1:Nx for j in 1:Ny) * dx * dy - M0 for t in 2:Nt);
+        lcon = KernelAbstractions.adapt(backend, zeros(Nt-1)),
+        ucon = KernelAbstractions.adapt(backend, zeros(Nt-1))
+    )
 
     return nothing
 end
@@ -54,49 +59,50 @@ end
 function rd_constraints!(core, u_flat, params)
     (; Nx, Nt, dx, dt, rho, nu, u0, backend) = params
 
-    # index helper
     idx(i,t) = (t-1)*Nx + i
 
     # --------------------------------------------------
     # 1. Initial condition
     # --------------------------------------------------
-    for i in 1:Nx
-        constraint(core, u_flat[idx(i,1)] == u0[i])
-    end
+    u0_data = [(i, u0[i]) for i in 1:Nx]
+    constraint(core,
+        (u_flat[d[1]] - d[2] for d in u0_data);
+        lcon = KernelAbstractions.adapt(backend, zeros(Nx)),
+        ucon = KernelAbstractions.adapt(backend, zeros(Nx))
+    )
 
     # --------------------------------------------------
-    # Precompute mass and source expressions
+    # 2. Mass evolution (telescoping trapezoidal rule between adjacent steps):
+    #    M[t] - M[t-1] = 0.5*dt*(S[t] + S[t-1]) + 0.5*dt*(F[t] + F[t-1])
+    # where M[t] = ∑_i u[i,t]*dx
+    #       S[t] = rho * ∑_i u[i,t]*(1-u[i,t])*dx
+    #       F[t] = gL[t] - gR[t]  (4th-order FD boundary fluxes)
     # --------------------------------------------------
-    M = Vector{Any}(undef, Nt)
-    S = Vector{Any}(undef, Nt)
-    F = Vector{Any}(undef, Nt)
-
-    for t in 1:Nt
-        # mass
-        M[t] = sum(u_flat[idx(i,t)] for i in 1:Nx) * dx
-
-        # reaction term
-        S[t] = rho * sum(u_flat[idx(i,t)] * (1 - u_flat[idx(i,t)]) for i in 1:Nx) * dx
-
-        # boundary flux (4th order FD like your code)
-        u = i -> u_flat[idx(i,t)]
-
-        gL = -nu * (-25*u(1) + 48*u(2) - 36*u(3) + 16*u(4) - 3*u(5)) / (12*dx)
-        gR = -nu * (25*u(Nx) - 48*u(Nx-1) + 36*u(Nx-2) - 16*u(Nx-3) + 3*u(Nx-4)) / (12*dx)
-
-        F[t] = gL - gR
-    end
-
-    # --------------------------------------------------
-    # 2. Enforce mass evolution constraint
-    # --------------------------------------------------
-    for t in 2:Nt
-        # trapezoidal cumulative integrals
-        S_cum = sum(0.5*(S[j] + S[j+1]) * dt for j in 1:t-1)
-        F_cum = sum(0.5*(F[j] + F[j+1]) * dt for j in 1:t-1)
-
-        constraint(core, M[t] == M[1] + S_cum + F_cum)
-    end
+    constraint(core,
+        (
+            sum(u_flat[idx(i,t)]   for i in 1:Nx) * dx
+            - sum(u_flat[idx(i,t-1)] for i in 1:Nx) * dx
+            - 0.5*dt*rho*(
+                sum(u_flat[idx(i,t)]   * (1 - u_flat[idx(i,t)])   for i in 1:Nx) * dx
+                + sum(u_flat[idx(i,t-1)] * (1 - u_flat[idx(i,t-1)]) for i in 1:Nx) * dx
+            )
+            - 0.5*dt*(
+                # F[t]: gL - gR at time t
+                (
+                    -nu*(-25*u_flat[idx(1,t)]  + 48*u_flat[idx(2,t)]  - 36*u_flat[idx(3,t)]  + 16*u_flat[idx(4,t)]  - 3*u_flat[idx(5,t)])  / (12*dx)
+                  - -nu*( 25*u_flat[idx(Nx,t)] - 48*u_flat[idx(Nx-1,t)] + 36*u_flat[idx(Nx-2,t)] - 16*u_flat[idx(Nx-3,t)] + 3*u_flat[idx(Nx-4,t)]) / (12*dx)
+                )
+                # F[t-1]: gL - gR at time t-1
+                + (
+                    -nu*(-25*u_flat[idx(1,t-1)]  + 48*u_flat[idx(2,t-1)]  - 36*u_flat[idx(3,t-1)]  + 16*u_flat[idx(4,t-1)]  - 3*u_flat[idx(5,t-1)])  / (12*dx)
+                  - -nu*( 25*u_flat[idx(Nx,t-1)] - 48*u_flat[idx(Nx-1,t-1)] + 36*u_flat[idx(Nx-2,t-1)] - 16*u_flat[idx(Nx-3,t-1)] + 3*u_flat[idx(Nx-4,t-1)]) / (12*dx)
+                )
+            )
+            for t in 2:Nt
+        );
+        lcon = KernelAbstractions.adapt(backend, zeros(Nt-1)),
+        ucon = KernelAbstractions.adapt(backend, zeros(Nt-1))
+    )
 
     return nothing
 end
@@ -104,45 +110,44 @@ end
 function burgers_constraints!(core, u_flat, params)
     (; Nx, Nt, dx, dt, left_bc, backend) = params
 
-    # index helper
     idx(i,t) = (t-1)*Nx + i
 
     # --------------------------------------------------
-    # 1. Boundary conditions
+    # 1. Dirichlet BC at left boundary: u(1,t) = left_bc
     # --------------------------------------------------
-    for t in 1:Nt
-        # Dirichlet at left boundary
-        constraint(core, u_flat[idx(1,t)] == left_bc)
-
-        # Neumann at right boundary (zero gradient)
-        constraint(core, u_flat[idx(Nx,t)] == u_flat[idx(Nx-1,t)])
-    end
+    constraint(core,
+        (u_flat[idx(1,t)] - left_bc for t in 1:Nt);
+        lcon = KernelAbstractions.adapt(backend, zeros(Nt)),
+        ucon = KernelAbstractions.adapt(backend, zeros(Nt))
+    )
 
     # --------------------------------------------------
-    # 2. Mass evolution constraint
+    # 2. Neumann BC at right boundary: u(Nx,t) = u(Nx-1,t)
     # --------------------------------------------------
-    # Precompute symbolic expressions
-    M = Vector{Any}(undef, Nt)
-    F = Vector{Any}(undef, Nt)
+    constraint(core,
+        (u_flat[idx(Nx,t)] - u_flat[idx(Nx-1,t)] for t in 1:Nt);
+        lcon = KernelAbstractions.adapt(backend, zeros(Nt)),
+        ucon = KernelAbstractions.adapt(backend, zeros(Nt))
+    )
 
-    for t in 1:Nt
-        # Mass at time t
-        M[t] = sum(u_flat[idx(i,t)] for i in 1:Nx) * dx
-
-        # Flux term f(u) = 0.5*u^2
-        uL = u_flat[idx(1,t)]
-        uR = u_flat[idx(Nx,t)]
-
-        # Matches PyTorch: flux = f[:, -1] - f[:, 0]
-        F[t] = 0.5*uR^2 - 0.5*uL^2
-    end
-
-    # Enforce integral constraint over time
-    for t in 2:Nt
-        flux_cum = sum(0.5*(F[j] + F[j+1]) * dt for j in 1:t-1)
-
-        constraint(core, M[t] == M[1] - flux_cum)
-    end
+    # --------------------------------------------------
+    # 3. Mass evolution (telescoping trapezoidal rule):
+    #    M[t] - M[t-1] = -0.5*dt*(F[t] + F[t-1])
+    # where M[t] = ∑_i u[i,t]*dx,  F[t] = 0.5*u[Nx,t]^2 - 0.5*u[1,t]^2
+    # --------------------------------------------------
+    constraint(core,
+        (
+            sum(u_flat[idx(i,t)]   for i in 1:Nx) * dx
+            - sum(u_flat[idx(i,t-1)] for i in 1:Nx) * dx
+            + 0.5*dt*(
+                (0.5*u_flat[idx(Nx,t)]^2   - 0.5*u_flat[idx(1,t)]^2)
+                + (0.5*u_flat[idx(Nx,t-1)]^2 - 0.5*u_flat[idx(1,t-1)]^2)
+            )
+            for t in 2:Nt
+        );
+        lcon = KernelAbstractions.adapt(backend, zeros(Nt-1)),
+        ucon = KernelAbstractions.adapt(backend, zeros(Nt-1))
+    )
 
     return nothing
 end
