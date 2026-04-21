@@ -1,4 +1,5 @@
 using ExaModels
+using KernelAbstractions
 
 
 function heat_constraints!(core, u_flat, params)
@@ -20,7 +21,7 @@ function heat_constraints!(core, u_flat, params)
     # 2. Mass conservation: ∑ u(x,t) dx = 0 for all t
     # --------------------------------------------------
     constraint(core,
-        (sum(u_flat[idx(i,t)] for i in 1:Nx) * dx for t in 1:Nt);
+        (sum(u_flat[idx(i,t)] for i in 1:Nx-1) * dx for t in 1:Nt);
         lcon = KernelAbstractions.adapt(backend, zeros(Nt)),
         ucon = KernelAbstractions.adapt(backend, zeros(Nt))
     )
