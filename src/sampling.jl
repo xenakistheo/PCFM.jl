@@ -240,6 +240,7 @@ function sample_pcfm(ffm::FFM, tstate, n_samples, n_steps, H!, params;
     x = copy(x_0)
 
     dt = 1.0f0 / n_steps
+    dx = x_grid[2] - x_grid[1]
 
     # Euler integration from t=0 to t=1
     for step in 0:(n_steps - 1)
@@ -271,21 +272,26 @@ function sample_pcfm(ffm::FFM, tstate, n_samples, n_steps, H!, params;
             @constraint(model, [j in 1:nt], dx * sum(u[i, j] for i in 1:nx) == 0.0)
             optimize!(model)
             x_0 = value.(u)
-        else 
-            #ExaModel version 
+        else
+            # ExaModel version — solve projection for all samples at once
+            # x_1 is (nx, nt, 1, n_samples) on device; bring to CPU for MadNLP
+            x_1_cpu = Array(x_1)                    # (nx, nt, 1, n_samples)
+            x_1_flat = x_1_cpu[:, :, 1, :]          # (nx, nt, n_samples)
+            u0_batch = x_1_flat[:, 1, :]             # (nx, n_samples) initial condition per sample
+
+            N = nx * nt * n_samples
             core = ExaCore(backend=backend)
-            idx(i,j) = i + (j-1)*nx
-            N = nx*nt 
-            u = variable(core, 1:N, start = vec(x1))
-            x1_data = [(k, vec(x1)[k]) for k in 1:N]
+            u = variable(core, 1:N, start = vec(x_1_flat))
+            x1_data = [(k, vec(x_1_flat)[k]) for k in 1:N]
             objective(core, (u[d[1]] - d[2])^2 for d in x1_data)
-            H!(u_flat, params)
-            # heat_constraints!(core, u, (Nx=Nx, Nt=Nt, dx=dx, u0=vec(x_1[:,1]), backend=backend))
+            p = (Nx=nx, Nt=nt, dx=dx, u0=u0_batch, n_samples=n_samples, backend=backend)
+            H!(core, u, p)
             nlp = ExaModel(core)
             result = madnlp(nlp)
-            x_exa_vec = solution(result, u) # Extract shape. 
-            x_0 = Array(reshape(u_exa_vec, nx, nt))
-        end 
+            x_exa_vec = solution(result, u)
+            # MadNLP returns Float64; cast back to Float32 before moving to device
+            x_0 = reshape(Float32.(Array(x_exa_vec)), nx, nt, 1, n_samples) |> device
+        end
         ##############
 
         # Step 3: Interpolate between x_0 and x_1 (corrected) at time t+dt

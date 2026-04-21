@@ -3,151 +3,159 @@ using KernelAbstractions
 
 
 function heat_constraints!(core, u_flat, params)
-    (; Nx, Nt, dx, u0, backend) = params
+    (; Nx, Nt, dx, u0, n_samples, backend) = params
 
-    idx(i, t) = (t-1)*Nx + i
+    # u0 is (Nx, n_samples)
+    # flat index: i + (t-1)*Nx + (s-1)*Nx*Nt
+    idx(i, t, s) = i + (t-1)*Nx + (s-1)*Nx*Nt
 
     # --------------------------------------------------
-    # 1. Initial condition: u(x,0) = u0(x)
+    # 1. Initial condition: u(x,0) = u0(x) for each sample
     # --------------------------------------------------
-    u0_data = [(i, u0[i]) for i in 1:Nx]
+    u0_data = [(idx(i, 1, s), u0[i, s]) for i in 1:Nx for s in 1:n_samples]
     constraint(core,
         (u_flat[d[1]] - d[2] for d in u0_data);
-        lcon = KernelAbstractions.adapt(backend, zeros(Nx)),
-        ucon = KernelAbstractions.adapt(backend, zeros(Nx))
+        lcon = KernelAbstractions.adapt(backend, zeros(Nx * n_samples)),
+        ucon = KernelAbstractions.adapt(backend, zeros(Nx * n_samples))
     )
 
     # --------------------------------------------------
-    # 2. Mass conservation: ∑ u(x,t) dx = 0 for all t
+    # 2. Mass conservation: ∑ u(x,t) dx = 0 for all t and all samples
     # --------------------------------------------------
+    ts_pairs = [(t, s) for t in 1:Nt for s in 1:n_samples]
     constraint(core,
-        (sum(u_flat[idx(i,t)] for i in 1:Nx-1) * dx for t in 1:Nt);
-        lcon = KernelAbstractions.adapt(backend, zeros(Nt)),
-        ucon = KernelAbstractions.adapt(backend, zeros(Nt))
+        (sum(u_flat[idx(i, d[1], d[2])] for i in 1:Nx-1) * dx for d in ts_pairs);
+        lcon = KernelAbstractions.adapt(backend, zeros(Nt * n_samples)),
+        ucon = KernelAbstractions.adapt(backend, zeros(Nt * n_samples))
     )
 
     return nothing
 end
 
 function ns_constraints!(core, u_flat, params)
-    (; Nx, Ny, Nt, dx, dy, u0, backend) = params
+    (; Nx, Ny, Nt, dx, dy, u0, n_samples, backend) = params
 
-    idx(i,j,t) = (t-1)*Nx*Ny + (j-1)*Nx + i
+    # u0 is (Nx, Ny, n_samples)
+    # flat index: i + (j-1)*Nx + (t-1)*Nx*Ny + (s-1)*Nx*Ny*Nt
+    idx(i, j, t, s) = i + (j-1)*Nx + (t-1)*Nx*Ny + (s-1)*Nx*Ny*Nt
 
     # --------------------------------------------------
-    # 1. Initial condition
+    # 1. Initial condition for each sample
     # --------------------------------------------------
-    u0_data = [(idx(i,j,1), u0[i,j]) for i in 1:Nx for j in 1:Ny]
+    u0_data = [(idx(i, j, 1, s), u0[i, j, s]) for i in 1:Nx for j in 1:Ny for s in 1:n_samples]
     constraint(core,
         (u_flat[d[1]] - d[2] for d in u0_data);
-        lcon = KernelAbstractions.adapt(backend, zeros(Nx*Ny)),
-        ucon = KernelAbstractions.adapt(backend, zeros(Nx*Ny))
+        lcon = KernelAbstractions.adapt(backend, zeros(Nx * Ny * n_samples)),
+        ucon = KernelAbstractions.adapt(backend, zeros(Nx * Ny * n_samples))
     )
 
     # --------------------------------------------------
-    # 2. Global mass conservation: ∑_{i,j} u(i,j,t)*dx*dy = M0 for t >= 2
+    # 2. Global mass conservation per sample: ∑_{i,j} u*dx*dy = M0[s] for t >= 2
+    # Embed (t, s, M0[s]) as data so ExaModels can access M0 as a constant
     # --------------------------------------------------
-    M0 = sum(u0[i,j] for i in 1:Nx for j in 1:Ny) * dx * dy
+    M0 = [sum(u0[i, j, s] for i in 1:Nx for j in 1:Ny) * dx * dy for s in 1:n_samples]
+    ts_M0 = [(t, s, M0[s]) for t in 2:Nt for s in 1:n_samples]
     constraint(core,
-        (sum(u_flat[idx(i,j,t)] for i in 1:Nx for j in 1:Ny) * dx * dy - M0 for t in 2:Nt);
-        lcon = KernelAbstractions.adapt(backend, zeros(Nt-1)),
-        ucon = KernelAbstractions.adapt(backend, zeros(Nt-1))
+        (sum(u_flat[idx(i, j, d[1], d[2])] for i in 1:Nx for j in 1:Ny) * dx * dy - d[3]
+            for d in ts_M0);
+        lcon = KernelAbstractions.adapt(backend, zeros((Nt-1) * n_samples)),
+        ucon = KernelAbstractions.adapt(backend, zeros((Nt-1) * n_samples))
     )
 
     return nothing
 end
 
 function rd_constraints!(core, u_flat, params)
-    (; Nx, Nt, dx, dt, rho, nu, u0, backend) = params
+    (; Nx, Nt, dx, dt, rho, nu, u0, n_samples, backend) = params
 
-    idx(i,t) = (t-1)*Nx + i
+    # u0 is (Nx, n_samples)
+    # flat index: i + (t-1)*Nx + (s-1)*Nx*Nt
+    idx(i, t, s) = i + (t-1)*Nx + (s-1)*Nx*Nt
 
     # --------------------------------------------------
-    # 1. Initial condition
+    # 1. Initial condition for each sample
     # --------------------------------------------------
-    u0_data = [(i, u0[i]) for i in 1:Nx]
+    u0_data = [(idx(i, 1, s), u0[i, s]) for i in 1:Nx for s in 1:n_samples]
     constraint(core,
         (u_flat[d[1]] - d[2] for d in u0_data);
-        lcon = KernelAbstractions.adapt(backend, zeros(Nx)),
-        ucon = KernelAbstractions.adapt(backend, zeros(Nx))
+        lcon = KernelAbstractions.adapt(backend, zeros(Nx * n_samples)),
+        ucon = KernelAbstractions.adapt(backend, zeros(Nx * n_samples))
     )
 
     # --------------------------------------------------
-    # 2. Mass evolution (telescoping trapezoidal rule between adjacent steps):
-    #    M[t] - M[t-1] = 0.5*dt*(S[t] + S[t-1]) + 0.5*dt*(F[t] + F[t-1])
-    # where M[t] = ∑_i u[i,t]*dx
-    #       S[t] = rho * ∑_i u[i,t]*(1-u[i,t])*dx
-    #       F[t] = gL[t] - gR[t]  (4th-order FD boundary fluxes)
+    # 2. Mass evolution (telescoping trapezoidal rule) for all samples:
+    #    M[t,s] - M[t-1,s] = 0.5*dt*(S[t,s] + S[t-1,s]) + 0.5*dt*(F[t,s] + F[t-1,s])
     # --------------------------------------------------
+    ts_pairs = [(t, s) for t in 2:Nt for s in 1:n_samples]
     constraint(core,
         (
-            sum(u_flat[idx(i,t)]   for i in 1:Nx) * dx
-            - sum(u_flat[idx(i,t-1)] for i in 1:Nx) * dx
+            sum(u_flat[idx(i, d[1],   d[2])] for i in 1:Nx) * dx
+            - sum(u_flat[idx(i, d[1]-1, d[2])] for i in 1:Nx) * dx
             - 0.5*dt*rho*(
-                sum(u_flat[idx(i,t)]   * (1 - u_flat[idx(i,t)])   for i in 1:Nx) * dx
-                + sum(u_flat[idx(i,t-1)] * (1 - u_flat[idx(i,t-1)]) for i in 1:Nx) * dx
+                sum(u_flat[idx(i, d[1],   d[2])] * (1 - u_flat[idx(i, d[1],   d[2])]) for i in 1:Nx) * dx
+                + sum(u_flat[idx(i, d[1]-1, d[2])] * (1 - u_flat[idx(i, d[1]-1, d[2])]) for i in 1:Nx) * dx
             )
             - 0.5*dt*(
-                # F[t]: gL - gR at time t
                 (
-                    -nu*(-25*u_flat[idx(1,t)]  + 48*u_flat[idx(2,t)]  - 36*u_flat[idx(3,t)]  + 16*u_flat[idx(4,t)]  - 3*u_flat[idx(5,t)])  / (12*dx)
-                  - -nu*( 25*u_flat[idx(Nx,t)] - 48*u_flat[idx(Nx-1,t)] + 36*u_flat[idx(Nx-2,t)] - 16*u_flat[idx(Nx-3,t)] + 3*u_flat[idx(Nx-4,t)]) / (12*dx)
+                    -nu*(-25*u_flat[idx(1,    d[1],   d[2])] + 48*u_flat[idx(2,    d[1],   d[2])] - 36*u_flat[idx(3,    d[1],   d[2])] + 16*u_flat[idx(4,    d[1],   d[2])] - 3*u_flat[idx(5,    d[1],   d[2])]) / (12*dx)
+                  - -nu*( 25*u_flat[idx(Nx,   d[1],   d[2])] - 48*u_flat[idx(Nx-1, d[1],   d[2])] + 36*u_flat[idx(Nx-2, d[1],   d[2])] - 16*u_flat[idx(Nx-3, d[1],   d[2])] + 3*u_flat[idx(Nx-4, d[1],   d[2])]) / (12*dx)
                 )
-                # F[t-1]: gL - gR at time t-1
                 + (
-                    -nu*(-25*u_flat[idx(1,t-1)]  + 48*u_flat[idx(2,t-1)]  - 36*u_flat[idx(3,t-1)]  + 16*u_flat[idx(4,t-1)]  - 3*u_flat[idx(5,t-1)])  / (12*dx)
-                  - -nu*( 25*u_flat[idx(Nx,t-1)] - 48*u_flat[idx(Nx-1,t-1)] + 36*u_flat[idx(Nx-2,t-1)] - 16*u_flat[idx(Nx-3,t-1)] + 3*u_flat[idx(Nx-4,t-1)]) / (12*dx)
+                    -nu*(-25*u_flat[idx(1,    d[1]-1, d[2])] + 48*u_flat[idx(2,    d[1]-1, d[2])] - 36*u_flat[idx(3,    d[1]-1, d[2])] + 16*u_flat[idx(4,    d[1]-1, d[2])] - 3*u_flat[idx(5,    d[1]-1, d[2])]) / (12*dx)
+                  - -nu*( 25*u_flat[idx(Nx,   d[1]-1, d[2])] - 48*u_flat[idx(Nx-1, d[1]-1, d[2])] + 36*u_flat[idx(Nx-2, d[1]-1, d[2])] - 16*u_flat[idx(Nx-3, d[1]-1, d[2])] + 3*u_flat[idx(Nx-4, d[1]-1, d[2])]) / (12*dx)
                 )
             )
-            for t in 2:Nt
+            for d in ts_pairs
         );
-        lcon = KernelAbstractions.adapt(backend, zeros(Nt-1)),
-        ucon = KernelAbstractions.adapt(backend, zeros(Nt-1))
+        lcon = KernelAbstractions.adapt(backend, zeros((Nt-1) * n_samples)),
+        ucon = KernelAbstractions.adapt(backend, zeros((Nt-1) * n_samples))
     )
 
     return nothing
 end
 
 function burgers_constraints!(core, u_flat, params)
-    (; Nx, Nt, dx, dt, left_bc, backend) = params
+    (; Nx, Nt, dx, dt, left_bc, n_samples, backend) = params
 
-    idx(i,t) = (t-1)*Nx + i
+    # flat index: i + (t-1)*Nx + (s-1)*Nx*Nt
+    idx(i, t, s) = i + (t-1)*Nx + (s-1)*Nx*Nt
 
     # --------------------------------------------------
-    # 1. Dirichlet BC at left boundary: u(1,t) = left_bc
+    # 1. Dirichlet BC at left boundary: u(1,t,s) = left_bc
     # --------------------------------------------------
+    ts_pairs_all = [(t, s) for t in 1:Nt for s in 1:n_samples]
     constraint(core,
-        (u_flat[idx(1,t)] - left_bc for t in 1:Nt);
-        lcon = KernelAbstractions.adapt(backend, zeros(Nt)),
-        ucon = KernelAbstractions.adapt(backend, zeros(Nt))
+        (u_flat[idx(1, d[1], d[2])] - left_bc for d in ts_pairs_all);
+        lcon = KernelAbstractions.adapt(backend, zeros(Nt * n_samples)),
+        ucon = KernelAbstractions.adapt(backend, zeros(Nt * n_samples))
     )
 
     # --------------------------------------------------
-    # 2. Neumann BC at right boundary: u(Nx,t) = u(Nx-1,t)
+    # 2. Neumann BC at right boundary: u(Nx,t,s) = u(Nx-1,t,s)
     # --------------------------------------------------
     constraint(core,
-        (u_flat[idx(Nx,t)] - u_flat[idx(Nx-1,t)] for t in 1:Nt);
-        lcon = KernelAbstractions.adapt(backend, zeros(Nt)),
-        ucon = KernelAbstractions.adapt(backend, zeros(Nt))
+        (u_flat[idx(Nx, d[1], d[2])] - u_flat[idx(Nx-1, d[1], d[2])] for d in ts_pairs_all);
+        lcon = KernelAbstractions.adapt(backend, zeros(Nt * n_samples)),
+        ucon = KernelAbstractions.adapt(backend, zeros(Nt * n_samples))
     )
 
     # --------------------------------------------------
-    # 3. Mass evolution (telescoping trapezoidal rule):
-    #    M[t] - M[t-1] = -0.5*dt*(F[t] + F[t-1])
-    # where M[t] = ∑_i u[i,t]*dx,  F[t] = 0.5*u[Nx,t]^2 - 0.5*u[1,t]^2
+    # 3. Mass evolution (telescoping trapezoidal rule) for all samples:
+    #    M[t,s] - M[t-1,s] = -0.5*dt*(F[t,s] + F[t-1,s])
     # --------------------------------------------------
+    ts_pairs_inner = [(t, s) for t in 2:Nt for s in 1:n_samples]
     constraint(core,
         (
-            sum(u_flat[idx(i,t)]   for i in 1:Nx) * dx
-            - sum(u_flat[idx(i,t-1)] for i in 1:Nx) * dx
+            sum(u_flat[idx(i, d[1],   d[2])] for i in 1:Nx) * dx
+            - sum(u_flat[idx(i, d[1]-1, d[2])] for i in 1:Nx) * dx
             + 0.5*dt*(
-                (0.5*u_flat[idx(Nx,t)]^2   - 0.5*u_flat[idx(1,t)]^2)
-                + (0.5*u_flat[idx(Nx,t-1)]^2 - 0.5*u_flat[idx(1,t-1)]^2)
+                (0.5*u_flat[idx(Nx, d[1],   d[2])]^2 - 0.5*u_flat[idx(1, d[1],   d[2])]^2)
+                + (0.5*u_flat[idx(Nx, d[1]-1, d[2])]^2 - 0.5*u_flat[idx(1, d[1]-1, d[2])]^2)
             )
-            for t in 2:Nt
+            for d in ts_pairs_inner
         );
-        lcon = KernelAbstractions.adapt(backend, zeros(Nt-1)),
-        ucon = KernelAbstractions.adapt(backend, zeros(Nt-1))
+        lcon = KernelAbstractions.adapt(backend, zeros((Nt-1) * n_samples)),
+        ucon = KernelAbstractions.adapt(backend, zeros((Nt-1) * n_samples))
     )
 
     return nothing

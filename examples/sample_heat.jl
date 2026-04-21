@@ -95,9 +95,12 @@ println("\n[5/5] Generating samples...")
 n_samples = 32
 # Reuse compiled_funcs if n_samples == batch_size, otherwise compile for n_samples
 sample_compiled_funcs = (n_samples == batch_size) ? compiled_funcs : PCFM.compile_functions(ffm, n_samples)
-samples = sample_pcfm(ffm, (parameters = ps, states = st), n_samples, 100;
-    compiled_funcs = sample_compiled_funcs, verbose = true)
-# samples_exa = 
+
+# samples = sample_pcfm(ffm, (parameters = ps, states = st), n_samples, 100;
+    # compiled_funcs = sample_compiled_funcs, verbose = true)
+
+# p = (nx=Nx, nt=nt, dx=dx, u0=vec(u1[:,1]), backend=backend)
+samples_exa = sample_pcfm(ffm, (parameters = ps, states = st), n_samples, 100, heat_constraints!, nothing; compiled_funcs = sample_compiled_funcs, verbose = true)
 
 
 println("\n" * "=" ^ 60)
@@ -123,14 +126,14 @@ end
 arr_data = Array(u_data)
 arr_samples = Array(samples)
 
-p_data = [heatmap(arr_data[:, :, 1, i],
+p_data = [Plots.heatmap(arr_data[:, :, 1, i],
               title = "Training Data $i",
               xlabel = "Time",
               ylabel = "Space",
               c = :viridis)
           for i in 1:min(2, batch_size)]
 
-p_samples = [heatmap(arr_samples[:, :, 1, i],
+p_samples = [Plots.heatmap(arr_samples[:, :, 1, i],
                  title = "Generated Sample $i",
                  xlabel = "Time",
                  ylabel = "Space",
@@ -138,8 +141,8 @@ p_samples = [heatmap(arr_samples[:, :, 1, i],
              for i in 1:2]
 
 # Combine plots
-p2 = plot(p_data..., layout = (1, length(p_data)), size = (800, 300))
-p3 = plot(p_samples..., layout = (1, length(p_samples)), size = (800, 300))
+p2 = Plots.plot(p_data..., layout = (1, length(p_data)), size = (800, 300))
+p3 = Plots.plot(p_samples..., layout = (1, length(p_samples)), size = (800, 300))
 
 display(p2)
 display(p3)
