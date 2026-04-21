@@ -276,23 +276,40 @@ function sample_pcfm(ffm::FFM, tstate, n_samples, n_steps, H!, params;
             x_0 = reshape(Float32.(value.(u)), nx, nt, 1, n_samples) |> device
         else
             # ExaModel version — solve projection for all samples at once
-            # x_1 is (nx, nt, 1, n_samples) on device; bring to CPU for MadNLP
-            x_1_cpu = Array(x_1)                    # (nx, nt, 1, n_samples)
-            x_1_flat = x_1_cpu[:, :, 1, :]          # (nx, nt, n_samples)
-            u0_batch = x_1_flat[:, 1, :]             # (nx, n_samples) initial condition per sample
-
             N = nx * nt * n_samples
-            core = ExaCore(backend=backend)
-            u = variable(core, 1:N, start = vec(x_1_flat))
-            x1_data = [(k, vec(x_1_flat)[k]) for k in 1:N]
-            objective(core, (u[d[1]] - d[2])^2 for d in x1_data)
-            p = (Nx=nx, Nt=nt, dx=dx, u0=u0_batch, n_samples=n_samples, backend=backend)
-            H!(core, u, p)
-            nlp = ExaModel(core)
-            result = madnlp(nlp, print_level=MadNLP.ERROR) # solve sys. Only inform on error
-            x_exa_vec = solution(result, u)
-            # MadNLP returns Float64; cast back to Float32 before moving to device
-            x_0 = reshape(Float32.(Array(x_exa_vec)), nx, nt, 1, n_samples) |> device
+
+            if backend isa GPU
+                # GPU path: keep data on device, use array iteration (no scalar indexing)
+                x_1_flat = x_1[:, :, 1, :]                              # (nx, nt, n_samples) on device
+                u0_batch = x_1_flat[:, 1, :]                            # (nx, n_samples) on device
+                indices = KernelAbstractions.adapt(backend, collect(1:N))
+                values  = KernelAbstractions.adapt(backend, vec(x_1_flat))
+                core = ExaCore(backend=backend)
+                u = variable(core, 1:N, start = values)
+                objective(core, (u[i] - values[i])^2 for i in indices)
+                p = (Nx=nx, Nt=nt, dx=dx, u0=u0_batch, n_samples=n_samples, backend=backend)
+                H!(core, u, p)
+                nlp = ExaModel(core)
+                result = madnlp(nlp, linear_solver=MadNLPGPU.LapackCUDASolver, print_level=MadNLP.ERROR)
+                x_exa_vec = solution(result, u)
+                x_0 = reshape(Float32.(x_exa_vec), nx, nt, 1, n_samples)
+            else
+                # CPU path: pull to CPU, use tuple embedding
+                x_1_cpu = Array(x_1)                                     # (nx, nt, 1, n_samples)
+                x_1_flat = x_1_cpu[:, :, 1, :]                          # (nx, nt, n_samples)
+                u0_batch = x_1_flat[:, 1, :]                            # (nx, n_samples)
+                x1_data = [(k, vec(x_1_flat)[k]) for k in 1:N]
+                core = ExaCore(backend=backend)
+                u = variable(core, 1:N, start = vec(x_1_flat))
+                objective(core, (u[d[1]] - d[2])^2 for d in x1_data)
+                p = (Nx=nx, Nt=nt, dx=dx, u0=u0_batch, n_samples=n_samples, backend=backend)
+                H!(core, u, p)
+                nlp = ExaModel(core)
+                result = madnlp(nlp, print_level=MadNLP.ERROR)
+                x_exa_vec = solution(result, u)
+                # MadNLP returns Float64; cast back to Float32 before moving to device
+                x_0 = reshape(Float32.(Array(x_exa_vec)), nx, nt, 1, n_samples) |> device
+            end
         end
         ##############
 
