@@ -96,12 +96,14 @@ n_samples = 32
 # Reuse compiled_funcs if n_samples == batch_size, otherwise compile for n_samples
 sample_compiled_funcs = (n_samples == batch_size) ? compiled_funcs : PCFM.compile_functions(ffm, n_samples)
 
-# samples = sample_pcfm(ffm, (parameters = ps, states = st), n_samples, 100;
-    # compiled_funcs = sample_compiled_funcs, verbose = true)
+@time samples = sample_pcfm(ffm, (parameters = ps, states = st), n_samples, 100;
+    compiled_funcs = sample_compiled_funcs, verbose = true);
 
-# p = (nx=Nx, nt=nt, dx=dx, u0=vec(u1[:,1]), backend=backend)
-samples_exa = sample_pcfm(ffm, (parameters = ps, states = st), n_samples, 100, heat_constraints!, nothing; compiled_funcs = sample_compiled_funcs, verbose = true)
+@time samples_exa = sample_pcfm(ffm, (parameters = ps, states = st), n_samples, 100, heat_constraints!, nothing; 
+    compiled_funcs = sample_compiled_funcs, verbose = true)
 
+@time samples_jump = sample_pcfm(ffm, (parameters = ps, states = st), n_samples, 100, heat_constraints!, nothing; 
+    compiled_funcs = sample_compiled_funcs, verbose = true, mode="jump")
 
 println("\n" * "=" ^ 60)
 println("Training Complete!")
