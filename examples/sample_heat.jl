@@ -11,8 +11,8 @@ This script demonstrates:
 
 using PCFM
 using Reactant, Lux
+using JLD2, Functors
 using Plots
-using Serialization
 
 # Set random seed
 using Random
@@ -27,8 +27,7 @@ n_epochs = 1000
 force_retrain = false
 
 # Checkpoint path
-checkpoint_dir = joinpath(@__DIR__, "checkpoints")
-checkpoint_path = joinpath(checkpoint_dir, "ffm_diffusion_checkpoint.jls")
+weight_file = joinpath(@__DIR__, "checkpoints", "ffm_diffusion_checkpoint.jld2")
 
 # Data generation parameters
 visc_range = (1.0f0, 5.0f0)
@@ -58,38 +57,39 @@ ffm = FFM(
 );
 println("  Model created successfully")
 
-# 3. Compile functions (optional but recommended for speed)
-println("\n[3/5] Compiling functions with Reactant...")
-compiled_funcs = PCFM.compile_functions(ffm, batch_size)
-
-# 4. Load checkpoint (if available) or train model
-if isfile(checkpoint_path) && !force_retrain
-    println("\n[4/5] Loading checkpoint from: $checkpoint_path")
-    ckpt = deserialize(checkpoint_path)
-    ffm = FFM(ffm.model, ckpt.ps, ckpt.st, ffm.config)
-    losses = hasproperty(ckpt, :losses) ? ckpt.losses : Float32[]
-    tstate = (ckpt.ps, ckpt.st)
+# 3. Load checkpoint (if available) or train model
+if isfile(weight_file) && !force_retrain
+    println("\n[3/5] Loading checkpoint from: $weight_file")
+    saved = JLD2.load(weight_file)
+    device = ffm.config[:device]
+    ps = saved["parameters"] |> device
+    st = saved["states"] |> device
+    losses = Float32[]
+    compiled_funcs = PCFM.compile_functions(ffm, batch_size)
     println("  Loaded trained parameters and states")
 else
+    println("\n[3/5] Compiling functions with Reactant...")
+    compiled_funcs = PCFM.compile_functions(ffm, batch_size)
+
     println("\n[4/5] Training model for $n_epochs epochs...")
     losses, tstate = train_ffm!(ffm, u_data; compiled_funcs, epochs = n_epochs, verbose = true)
     println("\nFinal loss: $(losses[end])")
 
-    println("Saving checkpoint to: $checkpoint_path")
-    mkpath(checkpoint_dir)
-    serialize(checkpoint_path, (
-        ps = tstate.parameters,
-        st = tstate.states,
-        losses = losses
-    ))
+    ps = fmap(x -> x isa AbstractArray ? Array(x) : x, tstate.parameters)
+    st = fmap(x -> x isa AbstractArray ? Array(x) : x, tstate.states)
+
+    println("Saving checkpoint to: $weight_file")
+    mkpath(dirname(weight_file))
+    JLD2.save(weight_file, "parameters", ps, "states", st, "config", ffm.config)
 end
+
+# Re-init Lux states for inference
+_, st = Lux.setup(Random.default_rng(), ffm.model)
 
 # 5. Generate samples
 println("\n[5/5] Generating samples...")
 n_samples = 32
-# samples = sample_ffm(ffm, tstate, n_samples, 100; compiled_funcs, verbose = true)
-
-samples = sample_pcfm(ffm, tstate, n_samples, 100; compiled_funcs, verbose = true)
+samples = sample_pcfm(ffm, (parameters = ps, states = st), n_samples, 100; verbose = true)
 
 
 println("\n" * "=" ^ 60)
@@ -100,13 +100,16 @@ println("=" ^ 60)
 println("\nPlotting results...")
 
 # Plot training curve
-p1 = plot(1:length(losses), losses,
-    yscale = :log10,
-    xlabel = "Epoch",
-    ylabel = "Loss (log scale)",
-    title = "Training Loss",
-    legend = false,
-    linewidth = 2)
+if !isempty(losses)
+    p1 = plot(1:length(losses), losses,
+        yscale = :log10,
+        xlabel = "Epoch",
+        ylabel = "Loss (log scale)",
+        title = "Training Loss",
+        legend = false,
+        linewidth = 2)
+    display(p1)
+end
 
 # Plot samples
 arr_data = Array(u_data)
@@ -130,7 +133,6 @@ p_samples = [heatmap(arr_samples[:, :, 1, i],
 p2 = plot(p_data..., layout = (1, length(p_data)), size = (800, 300))
 p3 = plot(p_samples..., layout = (1, length(p_samples)), size = (800, 300))
 
-display(p1)
 display(p2)
 display(p3)
 
