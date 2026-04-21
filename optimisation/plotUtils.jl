@@ -39,7 +39,7 @@ function plot_evolution(u_ref, u_proj, Nt, title_text="")
 end
 
 
-function plot_heatmap_evolution(X, T, u_ref, u_sol, title_text="Evolution Heatmap")
+function plot_heatmap_evolution(X, T, u_ref, u_sol; title_text="Evolution Heatmap")
     f = Figure(size = (1200, 600))
 
     ax1 = Axis(f[1, 1], 
@@ -70,8 +70,8 @@ function constraint_deviation_plot(u_ref, u_proj, T, H, params=nothing; title=""
         xlabel = "Time",
     )
     h_ref, h_sol = H(u_ref), H(u_proj)
-    lines!(ax, T[1:length(h_ref)], h_ref, label="Reference")
-    lines!(ax, T[1:length(h_sol)], h_sol, label="Solution")
+    lines!(ax, T[1:length(h_ref)], h_ref, label="Reference", )
+    lines!(ax, T[1:length(h_sol)], h_sol, label="Solution", linestyle=:dash)
     axislegend(position = :rb)
     
     return f
