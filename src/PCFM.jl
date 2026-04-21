@@ -8,6 +8,9 @@ using Reactant
 using MadNLP
 using JuMP
 
+# Make training API origin explicit for downstream includes.
+const Training = Lux.Training
+
 # Include submodules
 include("./data.jl")
 include("./model.jl")
