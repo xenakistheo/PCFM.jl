@@ -287,7 +287,7 @@ function sample_pcfm(ffm::FFM, tstate, n_samples, n_steps, H!, params;
             p = (Nx=nx, Nt=nt, dx=dx, u0=u0_batch, n_samples=n_samples, backend=backend)
             H!(core, u, p)
             nlp = ExaModel(core)
-            result = madnlp(nlp)
+            result = madnlp(nlp, print_level=MadNLP.ERROR) # solve sys. Only inform on error
             x_exa_vec = solution(result, u)
             # MadNLP returns Float64; cast back to Float32 before moving to device
             x_0 = reshape(Float32.(Array(x_exa_vec)), nx, nt, 1, n_samples) |> device
