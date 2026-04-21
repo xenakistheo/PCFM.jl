@@ -200,6 +200,7 @@ Fixed initial condition: u(x,0) = sin(x + π/4)
 """
 function sample_pcfm(ffm::FFM, tstate, n_samples, n_steps, H!, params;
         backend = CPU(),
+        mode = "exa",
         use_compiled = true,
         compiled_funcs = nothing,
         verbose = true)
@@ -262,26 +263,29 @@ function sample_pcfm(ffm::FFM, tstate, n_samples, n_steps, H!, params;
         # Step 2: Apply constraint - fix initial condition
         @. x_1[:, 1:1, :, :] = u_0_ic
         ##############
+        if mode == "jump"
         #Jump Version 
-        # model = Model(MadNLP.Optimizer)
-        # @variable(model, u[1:nx, 1:nt])
-        # @objective(model, Min, sum((u[i, j] - x_1[i, j])^2 for i in 1:nx, j in 1:nt))
-        # @constraint(model, [j in 1:nt], dx * sum(u[i, j] for i in 1:nx) == 0.0)
-        # optimize!(model)
-        # x_0 = value.(u)
-
-        #ExaModel version 
-        core = ExaCore(backend=backend)
-        idx(i,j) = i + (j-1)*nx
-        N = nx*nt 
-        u = variable(core, 1:N, start = vec(x1))
-        x1_data = [(k, vec(x1)[k]) for k in 1:N]
-        objective(core, (u[d[1]] - d[2])^2 for d in x1_data)
-        
-
-
-
-        H!(u_flat, params)
+            model = Model(MadNLP.Optimizer)
+            @variable(model, u[1:nx, 1:nt])
+            @objective(model, Min, sum((u[i, j] - x_1[i, j])^2 for i in 1:nx, j in 1:nt))
+            @constraint(model, [j in 1:nt], dx * sum(u[i, j] for i in 1:nx) == 0.0)
+            optimize!(model)
+            x_0 = value.(u)
+        else 
+            #ExaModel version 
+            core = ExaCore(backend=backend)
+            idx(i,j) = i + (j-1)*nx
+            N = nx*nt 
+            u = variable(core, 1:N, start = vec(x1))
+            x1_data = [(k, vec(x1)[k]) for k in 1:N]
+            objective(core, (u[d[1]] - d[2])^2 for d in x1_data)
+            H!(u_flat, params)
+            # heat_constraints!(core, u, (Nx=Nx, Nt=Nt, dx=dx, u0=vec(x_1[:,1]), backend=backend))
+            nlp = ExaModel(core)
+            result = madnlp(nlp)
+            x_exa_vec = solution(result, u) # Extract shape. 
+            x_0 = Array(reshape(u_exa_vec, nx, nt))
+        end 
         ##############
 
         # Step 3: Interpolate between x_0 and x_1 (corrected) at time t+dt

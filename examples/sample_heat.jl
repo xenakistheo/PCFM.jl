@@ -20,6 +20,7 @@ Random.seed!(1234)
 
 # Configuration
 batch_size = 32
+
 nx = 100          # Spatial resolution
 nt = 100          # Temporal resolution
 emb_channels = 32
@@ -83,13 +84,20 @@ else
     JLD2.save(weight_file, "parameters", ps, "states", st, "config", ffm.config)
 end
 
-# Re-init Lux states for inference
+# Re-init Lux states for inference and move ps/st to device
+device = ffm.config[:device]
 _, st = Lux.setup(Random.default_rng(), ffm.model)
+ps = ps |> device
+st = st |> device
 
 # 5. Generate samples
 println("\n[5/5] Generating samples...")
 n_samples = 32
-samples = sample_pcfm(ffm, (parameters = ps, states = st), n_samples, 100; verbose = true)
+# Reuse compiled_funcs if n_samples == batch_size, otherwise compile for n_samples
+sample_compiled_funcs = (n_samples == batch_size) ? compiled_funcs : PCFM.compile_functions(ffm, n_samples)
+samples = sample_pcfm(ffm, (parameters = ps, states = st), n_samples, 100;
+    compiled_funcs = sample_compiled_funcs, verbose = true)
+# samples_exa = 
 
 
 println("\n" * "=" ^ 60)
