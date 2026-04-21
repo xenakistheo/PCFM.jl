@@ -265,13 +265,15 @@ function sample_pcfm(ffm::FFM, tstate, n_samples, n_steps, H!, params;
         @. x_1[:, 1:1, :, :] = u_0_ic
         ##############
         if mode == "jump"
-        #Jump Version 
+            # JuMP version — batched over all samples at once
+            x_1_cpu = Array(x_1)  # (nx, nt, 1, n_samples)
             model = Model(MadNLP.Optimizer)
-            @variable(model, u[1:nx, 1:nt])
-            @objective(model, Min, sum((u[i, j] - x_1[i, j])^2 for i in 1:nx, j in 1:nt))
-            @constraint(model, [j in 1:nt], dx * sum(u[i, j] for i in 1:nx) == 0.0)
+            set_silent(model)
+            @variable(model, u[1:nx, 1:nt, 1:n_samples])
+            @objective(model, Min, sum((u[i,j,s] - x_1_cpu[i,j,1,s])^2 for i in 1:nx, j in 1:nt, s in 1:n_samples))
+            @constraint(model, [j in 1:nt, s in 1:n_samples], dx * sum(u[i,j,s] for i in 1:(nx-1)) == 0.0)
             optimize!(model)
-            x_0 = value.(u)
+            x_0 = reshape(Float32.(value.(u)), nx, nt, 1, n_samples) |> device
         else
             # ExaModel version — solve projection for all samples at once
             # x_1 is (nx, nt, 1, n_samples) on device; bring to CPU for MadNLP
