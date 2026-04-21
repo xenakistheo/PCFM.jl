@@ -2,7 +2,7 @@ using ExaModels
 
 
 function heat_constraints!(core, u_flat, params)
-    (; Nx, Nt, dx, backend) = params
+    (; Nx, Nt, dx, u0, backend) = params
 
     # helper indexing (i = space, t = time)
     idx(i, t) = (t-1)*Nx + i
