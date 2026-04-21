@@ -4,10 +4,11 @@ using BenchmarkTools
 using ExaModels
 using KernelAbstractions
 using CUDA
+using PCFM
 
 
-# backend = CPU()
-backend = CUDABackend()
+backend = CPU()
+# backend = CUDABackend()
 
 
 CairoMakie.activate!()
@@ -41,16 +42,18 @@ u = variable(core, 1:N, start = vec(u1))
 # Embed (flat_index, data_value) pairs in the iteration set so ExaModels can
 # access u1 values as constants without Julia array indexing on symbolic indices.
 u1_data = [(k, vec(u1)[k]) for k in 1:N]
-objective(core,
-    (u[d[1]] - d[2])^2 for d in u1_data)
 
-constraint(core, 
-    ((dx/dt) * sum(u[idx(i,j+1)]^2 - u[idx(i,j)]^2 for i in 1:(Nx-1))
-        for j in 1:(Nt-1)
-    );
-    lcon = KernelAbstractions.adapt(backend,zeros(Nt-1)), #lower constraints, on GPU
-    ucon = KernelAbstractions.adapt(backend,zeros(Nt - 1))
-)
+objective(core, (u[d[1]] - d[2])^2 for d in u1_data)
+
+heat_constraints!(core, u, (Nx=Nx, Nt=Nt, dx=dx, u0=vec(u1[:,1]), backend=backend))
+
+# constraint(core, 
+#     ((dx/dt) * sum(u[idx(i,j+1)]^2 - u[idx(i,j)]^2 for i in 1:(Nx-1))
+#         for j in 1:(Nt-1)
+#     );
+#     lcon = KernelAbstractions.adapt(backend,zeros(Nt-1)), #lower constraints, on GPU
+#     ucon = KernelAbstractions.adapt(backend,zeros(Nt - 1))
+# )
 
 
 # nlp = mean_zero_examodeL(u1, dx) # Defines optimisation problem
@@ -60,13 +63,45 @@ nlp = ExaModel(core)
 
 
 # Solve and benchmark on CPU
-@belapsed result = madnlp($nlp) # Solve optimisation using MadNLP
-
+result = madnlp(nlp)
+# @belapsed result = madnlp($nlp) # Solve optimisation using MadNLP
+# typeof(result)
+# fieldnames(result)
+u_exa_vec = solution(result, u) # Extract shape. 
+u_exa = Array(reshape(u_exa_vec, Nx, Nt))
 
 # Solve and benchmark on GPU
 @CUDA.time result = madnlp(nlp, linear_solver=MadNLPGPU.LapackCUDASolver)
 
 
+##############
+# Verify that result is same as that of JuMP
+using JuMP
 
-aa = zeros(5)
-bb = KernelAbstractions.adapt(backend, aa)
+model = Model(MadNLP.Optimizer)
+
+# Decision variables
+@variable(model, u[1:Nx, 1:Nt])
+
+for i in 1:Nx, j in 1:Nt
+    set_start_value(u[i, j], u1[i, j])
+end
+
+@objective(model, Min, sum((u[i, j] - u1[i, j])^2 for i in 1:Nx, j in 1:Nt))
+@constraint(model, [j in 1:Nt], dx * sum(u[i, j] for i in 1:(Nx-1)) == 0.0)
+
+optimize!(model)
+
+u_jump = value.(u)
+
+
+
+# Compare the two solutions
+u_jump == u_exa
+isapprox(u_jump, u_exa)
+
+plot_heatmap_evolution(X, T, u_jump, u_exa)
+
+H1(u) = [dx*sum(u[i, j] for i in 1:(Nx-1)) for j in 1:Nt]
+constraint_deviation_plot(u1, u_exa, T, H1; title="Exa")
+constraint_deviation_plot(u1, u_jump, T, H1; title="Jump")
