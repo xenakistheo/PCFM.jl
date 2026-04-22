@@ -13,6 +13,9 @@ using PCFM
 using Reactant, Lux
 using JLD2, Functors
 using Plots
+using CUDA
+
+backend = CUDABackend()
 
 # Set random seed
 using Random
@@ -96,57 +99,57 @@ n_samples = 32
 # Reuse compiled_funcs if n_samples == batch_size, otherwise compile for n_samples
 sample_compiled_funcs = (n_samples == batch_size) ? compiled_funcs : PCFM.compile_functions(ffm, n_samples)
 
-@time samples = sample_pcfm(ffm, (parameters = ps, states = st), n_samples, 100;
-    compiled_funcs = sample_compiled_funcs, verbose = true);
+# @time samples = sample_pcfm(ffm, (parameters = ps, states = st), n_samples, 100;
+#     compiled_funcs = sample_compiled_funcs, verbose = true);
 
-@time samples_exa = sample_pcfm(ffm, (parameters = ps, states = st), n_samples, 100, heat_constraints!, nothing; 
-    compiled_funcs = sample_compiled_funcs, verbose = true)
+# @time samples_exa = sample_pcfm(ffm, (parameters = ps, states = st), n_samples, 100, heat_constraints!, nothing; 
+#     compiled_funcs = sample_compiled_funcs, verbose = true)
 
 @time samples_jump = sample_pcfm(ffm, (parameters = ps, states = st), n_samples, 100, heat_constraints!, nothing; 
     compiled_funcs = sample_compiled_funcs, verbose = true, mode="jump")
 
-println("\n" * "=" ^ 60)
-println("Training Complete!")
-println("=" ^ 60)
+# println("\n" * "=" ^ 60)
+# println("Training Complete!")
+# println("=" ^ 60)
 
-# Visualize results
-println("\nPlotting results...")
+# # Visualize results
+# println("\nPlotting results...")
 
-# Plot training curve
-if !isempty(losses)
-    p1 = plot(1:length(losses), losses,
-        yscale = :log10,
-        xlabel = "Epoch",
-        ylabel = "Loss (log scale)",
-        title = "Training Loss",
-        legend = false,
-        linewidth = 2)
-    display(p1)
-end
+# # Plot training curve
+# if !isempty(losses)
+#     p1 = plot(1:length(losses), losses,
+#         yscale = :log10,
+#         xlabel = "Epoch",
+#         ylabel = "Loss (log scale)",
+#         title = "Training Loss",
+#         legend = false,
+#         linewidth = 2)
+#     display(p1)
+# end
 
-# Plot samples
-arr_data = Array(u_data)
-arr_samples = Array(samples)
+# # Plot samples
+# arr_data = Array(u_data)
+# arr_samples = Array(samples)
 
-p_data = [Plots.heatmap(arr_data[:, :, 1, i],
-              title = "Training Data $i",
-              xlabel = "Time",
-              ylabel = "Space",
-              c = :viridis)
-          for i in 1:min(2, batch_size)]
+# p_data = [Plots.heatmap(arr_data[:, :, 1, i],
+#               title = "Training Data $i",
+#               xlabel = "Time",
+#               ylabel = "Space",
+#               c = :viridis)
+#           for i in 1:min(2, batch_size)]
 
-p_samples = [Plots.heatmap(arr_samples[:, :, 1, i],
-                 title = "Generated Sample $i",
-                 xlabel = "Time",
-                 ylabel = "Space",
-                 c = :viridis)
-             for i in 1:2]
+# p_samples = [Plots.heatmap(arr_samples[:, :, 1, i],
+#                  title = "Generated Sample $i",
+#                  xlabel = "Time",
+#                  ylabel = "Space",
+#                  c = :viridis)
+#              for i in 1:2]
 
-# Combine plots
-p2 = Plots.plot(p_data..., layout = (1, length(p_data)), size = (800, 300))
-p3 = Plots.plot(p_samples..., layout = (1, length(p_samples)), size = (800, 300))
+# # Combine plots
+# p2 = Plots.plot(p_data..., layout = (1, length(p_data)), size = (800, 300))
+# p3 = Plots.plot(p_samples..., layout = (1, length(p_samples)), size = (800, 300))
 
-display(p2)
-display(p3)
+# display(p2)
+# display(p3)
 
-println("\nDone! Check the plots above.")
+# println("\nDone! Check the plots above.")
