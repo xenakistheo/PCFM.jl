@@ -5,7 +5,7 @@ using Lux
 using Random
 using Optimisers
 using Reactant
-using MadNLP
+using MadNLP, MadNLPGPU
 using JuMP
 
 # Make training API origin explicit for downstream includes.
