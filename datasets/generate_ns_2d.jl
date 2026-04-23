@@ -119,8 +119,7 @@ function solve_navier_stokes_2d(w0, f; visc=1e-3, T=49, delta_t=1e-3, record_ste
 
         if verbose && j % max(1, steps ÷ 10) == 0
             pct = round(Int, 100 * j / steps)
-            println("    step $j / $steps  ($pct%)")
-            flush(stdout)
+            println(stderr, "    step $j / $steps  ($pct%)")
         end
 
         if j % record_time == 0 && c <= record_steps
@@ -207,8 +206,7 @@ function navier_stokes(root; nw=100, nf=100, s=64, T=49, steps=50, mu=1e-3,
             idx_start = (b - 1) * batch_size + 1
             idx_end   = min(b * batch_size, n_total)
             batch_len = idx_end - idx_start + 1
-            println("Batch $b / $n_batch  (samples $(idx_start)-$(idx_end), size=$(batch_len))")
-            flush(stdout)
+            println(stderr, "Batch $b / $n_batch  (samples $(idx_start)-$(idx_end), size=$(batch_len))")
 
             w_batch = Float64.(w0_exp[:, :, idx_start:idx_end])
             f_batch = Float64.(fs_exp[:, :, idx_start:idx_end])
@@ -222,8 +220,7 @@ function navier_stokes(root; nw=100, nf=100, s=64, T=49, steps=50, mu=1e-3,
             t_batch = @elapsed sol = solve_navier_stokes_2d(w_batch, f_batch;
                                          visc=mu, T=T, delta_t=delta,
                                          record_steps=steps, verbose=true)
-            println("  Batch $b done in $(round(t_batch/60, digits=1)) min")
-            flush(stdout)
+            println(stderr, "  Batch $b done in $(round(t_batch/60, digits=1)) min")
             # sol is always on CPU (Array); write directly to HDF5
             for (local_idx, global_idx) in enumerate(idx_start:idx_end)
                 i_w = (global_idx - 1) ÷ nf + 1
