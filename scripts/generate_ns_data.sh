@@ -11,8 +11,9 @@
 set -euo pipefail
 
 # ── project root ──────────────────────────────────────────────────────────────
-PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-cd "$PROJECT_DIR"
+# SLURM_SUBMIT_DIR is set to the directory where sbatch was called from.
+# Always run sbatch from the project root.
+cd "$SLURM_SUBMIT_DIR"
 
 mkdir -p logs datasets/data
 
