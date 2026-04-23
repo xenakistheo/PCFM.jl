@@ -1,12 +1,10 @@
 """
-Training script for Functional Flow Matching on the 1D Burgers equation.
+Train an FFM model on the 1D Burgers equation and save a checkpoint.
 
-Data is generated once with a Godunov finite-volume scheme and saved to HDF5.
-The FFM model is then trained on random batches drawn from that file.
+Assumes the training dataset already exists. Run generate_burgers_data.jl first if needed.
 
-Grid: Nx=100, Nt=100 → (Nx+1, Nt+1) = (101, 101) points per sample.
-Parameters vary across samples: sigmoid IC location p_loc ∈ [0.2, 0.8],
-left BC u_bc ∈ [0, 1].
+Saves checkpoint to: examples/checkpoints/ffm_burgers_checkpoint.jld2
+  Keys: "parameters", "states", "losses", "config"
 """
 
 using PCFM
@@ -20,44 +18,34 @@ Random.seed!(1234)
 # ---------------------------------------------------------------------------
 # Paths
 # ---------------------------------------------------------------------------
-datasets_dir  = joinpath(@__DIR__, "..", "datasets")
-data_dir      = joinpath(datasets_dir, "data")
-train_file    = joinpath(data_dir, "burgers_train_nIC80_nBC80.h5")
-weight_file   = joinpath(@__DIR__, "checkpoints", "ffm_burgers_checkpoint.jld2")
+data_dir    = joinpath(@__DIR__, "..", "datasets", "data")
+train_file  = joinpath(data_dir, "burgers_train_nIC80_nBC80.h5")
+weight_file = joinpath(@__DIR__, "checkpoints", "ffm_burgers_checkpoint.jld2")
 
 # ---------------------------------------------------------------------------
 # Configuration
 # ---------------------------------------------------------------------------
-batch_size    = 32
-nx            = 101      # Nx+1 spatial points
-nt            = 101      # Nt+1 temporal points
-emb_channels  = 32
-n_epochs      = 1000
-force_retrain = false
+batch_size   = 32
+nx           = 101      # Nx+1 spatial points
+nt           = 101      # Nt+1 temporal points
+emb_channels = 32
+n_epochs     = 1000
 
 # ---------------------------------------------------------------------------
 println("=" ^ 60)
-println("Burgers Equation — Functional Flow Matching")
+println("Burgers Equation — Train FFM")
 println("=" ^ 60)
 
-# 1. Generate dataset if not present
+# 1. Load training batch
 if !isfile(train_file)
-    println("\n[1/4] Generating Burgers dataset (saved to $data_dir)...")
-    include(joinpath(datasets_dir, "generate_burgers1d_data.jl"))
-    generate_burgers_dataset(data_dir, 80, 80; seed=42, filename="burgers_train")
-    generate_burgers_dataset(data_dir, 30, 30; seed=0,  filename="burgers_test")
-    println("  Done.")
-else
-    println("\n[1/4] Dataset found: $train_file")
+    error("Training data not found at $train_file.\nRun examples/generate_burgers_data.jl first.")
 end
-
-# 2. Load training batch
-println("\n[2/4] Loading training batch...")
+println("\n[1/3] Loading training batch from $train_file ...")
 u_data = load_burgers_batch(train_file, batch_size)
-println("  Data shape: $(size(u_data))")
+println("  Data shape: $(size(u_data))  — (nx, nt, 1, batch_size)")
 
-# 3. Create model
-println("\n[3/4] Creating FFM model...")
+# 2. Create model
+println("\n[2/3] Creating FFM model...")
 ffm = FFM(
     nx = nx,
     nt = nt,
@@ -70,44 +58,26 @@ ffm = FFM(
 )
 println("  Model created successfully")
 
-# 4. Train or load checkpoint
-if isfile(weight_file) && !force_retrain
-    println("\n[4/4] Loading checkpoint from: $weight_file")
-    saved = JLD2.load(weight_file)
-    device = ffm.config[:device]
-    ps = saved["parameters"] |> device
-    st = saved["states"] |> device
-    losses = saved["losses"]
-    println("  Loaded trained parameters and states")
-else
-    println("\n[4/4] Compiling and training for $n_epochs epochs...")
-    compiled_funcs = PCFM.compile_functions(ffm, batch_size)
-    losses, tstate = train_ffm!(ffm, u_data; compiled_funcs, epochs = n_epochs, verbose = true)
-    println("\nFinal loss: $(losses[end])")
+# 3. Compile and train
+println("\n[3/3] Compiling and training for $n_epochs epochs...")
+compiled_funcs = PCFM.compile_functions(ffm, batch_size)
+losses, tstate = train_ffm!(ffm, u_data; compiled_funcs, epochs = n_epochs, verbose = true)
+println("\nFinal loss: $(losses[end])")
 
-    ps = fmap(x -> x isa AbstractArray ? Array(x) : x, tstate.parameters)
-    st = fmap(x -> x isa AbstractArray ? Array(x) : x, tstate.states)
-
-    println("Saving checkpoint to: $weight_file")
-    mkpath(dirname(weight_file))
-    JLD2.save(weight_file, "parameters", ps, "states", st, "losses", losses, "config", ffm.config)
-end
+# Save checkpoint (parameters and states moved to CPU for portability)
+ps = fmap(x -> x isa AbstractArray ? Array(x) : x, tstate.parameters)
+st = fmap(x -> x isa AbstractArray ? Array(x) : x, tstate.states)
+mkpath(dirname(weight_file))
+JLD2.save(weight_file, "parameters", ps, "states", st, "losses", losses, "config", ffm.config)
+println("Checkpoint saved to: $weight_file")
 
 # ---------------------------------------------------------------------------
 # Visualise training curve
 # ---------------------------------------------------------------------------
-if !isempty(losses)
-    p1 = Plots.plot(1:length(losses), losses,
-        yscale = :log10,
-        xlabel = "Epoch", ylabel = "Loss (log scale)",
-        title = "Burgers — Training Loss", legend = false, linewidth = 2)
-    display(p1)
-end
-
-arr_data = Array(u_data)
-p_data = [Plots.heatmap(arr_data[:, :, 1, i],
-              title = "Training Sample $i", xlabel = "Time", ylabel = "Space", c = :viridis)
-          for i in 1:min(2, batch_size)]
-display(Plots.plot(p_data..., layout = (1, length(p_data)), size = (800, 300)))
+p1 = Plots.plot(1:length(losses), losses,
+    yscale = :log10,
+    xlabel = "Epoch", ylabel = "Loss (log scale)",
+    title = "Burgers — Training Loss", legend = false, linewidth = 2)
+display(p1)
 
 println("\nDone!")
