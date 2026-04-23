@@ -162,7 +162,7 @@ function run_parallel(root; N_ic=80, N_bc=80, seed=42, filename="RD_neumann_trai
 
         # Python/h5py shape: (N_ic, N_bc, Nx, nt)
         # Julia HDF5 reversed dims: (nt, Nx, N_bc, N_ic)
-        d_create(f, "u", datatype(Float32),
+        create_dataset(f, "u", datatype(Float32),
                  dataspace(nt_RD, Nx_RD, N_bc, N_ic))
 
         Threads.@threads for i_ic in 1:N_ic

@@ -89,7 +89,7 @@ function generate_burgers_dataset(path, N_ic, N_bc; Nx=100, Nt=100, T=1.0, seed=
         # Pre-allocate the solution dataset.
         # Python/h5py shape: (N_ic, N_bc, Nx+1, Nt+1)
         # Julia HDF5.jl stores in Fortran order, so create with reversed dims:
-        d_create(f, "u", datatype(Float32),
+        create_dataset(f, "u", datatype(Float32),
                  dataspace(Nt + 1, Nx + 1, N_bc, N_ic))
 
         Threads.@threads for i_ic in 1:N_ic
@@ -131,7 +131,7 @@ function generate_burgers_dataset_diffBCs(
         f["t"]  = Float32.(t)
 
         # Python/h5py shape: (N_bc, N_ic, Nx+1, Nt+1)
-        d_create(f, "u", datatype(Float32),
+        create_dataset(f, "u", datatype(Float32),
                  dataspace(Nt + 1, Nx + 1, N_ic, N_bc))
 
         Threads.@threads for i_bc in 1:N_bc
