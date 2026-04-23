@@ -21,7 +21,7 @@ echo "Job ID:      $SLURM_JOB_ID"
 echo "Node:        $SLURMD_NODENAME"
 echo "GPUs:        $CUDA_VISIBLE_DEVICES"
 echo "Start:       $(date)"
-echo "Project dir: $PROJECT_DIR"
+echo "Project dir: $SLURM_SUBMIT_DIR"
 echo "--------------------------------------"
 
 # ── run ───────────────────────────────────────────────────────────────────────
