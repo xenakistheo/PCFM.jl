@@ -176,7 +176,7 @@ function navier_stokes(root; nw=100, nf=100, s=64, T=49, steps=50, mu=1e-3,
     fs  = Float32.(0.1 * sqrt(2) .* sin.(2π .* (X .+ Y) .+ reshape(phi, 1, 1, nf)))
     # shape: (s, s, nf)
 
-    h5open(path, "a") do f
+    h5open(path, "w") do f
         # Python/h5py shapes: a:(nw,s,s), f:(nf,s,s), u:(nw,nf,s,s,steps)
         # Julia HDF5 reversed dims: a:(s,s,nw), f:(s,s,nf), u:(steps,s,s,nf,nw)
         create_dataset(f, "a", datatype(Float32), dataspace(s, s, nw))
