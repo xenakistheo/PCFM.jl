@@ -14,8 +14,10 @@ using Reactant, Lux
 using JLD2, Functors
 using Plots
 using CUDA
+using KernelAbstractions
 
 backend = CUDABackend()
+backend isa GPU
 
 # Set random seed
 using Random
@@ -102,11 +104,11 @@ sample_compiled_funcs = (n_samples == batch_size) ? compiled_funcs : PCFM.compil
 # @time samples = sample_pcfm(ffm, (parameters = ps, states = st), n_samples, 100;
 #     compiled_funcs = sample_compiled_funcs, verbose = true);
 
-# @time samples_exa = sample_pcfm(ffm, (parameters = ps, states = st), n_samples, 100, heat_constraints!, nothing; 
-#     compiled_funcs = sample_compiled_funcs, verbose = true)
+@time samples_exa = sample_pcfm(ffm, (parameters = ps, states = st), n_samples, 100, heat_constraints!, nothing; 
+    backend=backend, compiled_funcs = sample_compiled_funcs, verbose = true)
 
-@time samples_jump = sample_pcfm(ffm, (parameters = ps, states = st), n_samples, 100, heat_constraints!, nothing; 
-    compiled_funcs = sample_compiled_funcs, verbose = true, mode="jump")
+# @time samples_jump = sample_pcfm(ffm, (parameters = ps, states = st), n_samples, 100, heat_constraints!, nothing; 
+#     compiled_funcs = sample_compiled_funcs, verbose = true, mode="jump")
 
 # println("\n" * "=" ^ 60)
 # println("Training Complete!")
