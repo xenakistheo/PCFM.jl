@@ -35,15 +35,9 @@ println("=" ^ 60)
 println("2D Navier-Stokes — Functional Flow Matching")
 println("=" ^ 60)
 
-# 1. Generate dataset if not present
+# 1. Check dataset exists
 if !isfile(train_file)
-    println("\n[1/2] Generating Navier-Stokes dataset (saved to $data_dir)...")
-    println("  Warning: this can take a long time. Consider running on GPU.")
-    include(joinpath(datasets_dir, "generate_ns_2d.jl"))
-    navier_stokes(data_dir;
-                  nw=100, nf=100, s=s, T=49, steps=nt,
-                  mu=1e-3, batch_size=1024, seed=42, delta=1e-3)
-    println("  Done.")
+    error("Training data not found at $train_file.\nRun examples/generate_ns_data.jl first.")
 else
     println("\n[1/2] Dataset found: $train_file")
 end

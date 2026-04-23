@@ -26,3 +26,10 @@ constraint.
     Other stuff. 
 What was up with using a 'Gaussian process'?
 Need to train models for each BVP. 
+
+
+Todo:
+test current scripts for heatequation.
+Check that constraints are being applied correctly.
+Check that training data is being generated correctly for all BVPs. 
+Find out how to train models for each BVP.
