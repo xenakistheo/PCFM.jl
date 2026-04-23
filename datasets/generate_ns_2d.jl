@@ -12,6 +12,7 @@ using HDF5
 using FFTW
 using Random
 using LinearAlgebra
+using CUDA
 
 include("random_fields.jl")
 
@@ -23,6 +24,9 @@ include("random_fields.jl")
 Solve the 2D incompressible Navier-Stokes equations in vorticity form on a
 periodic domain using a pseudo-spectral Crank-Nicolson scheme.
 
+Works on CPU (Array) or GPU (CuArray) — spectral constant arrays are moved
+to match the device of the input automatically.
+
 # Arguments
   - `w0`: Initial vorticity field, shape `(s, s, batch)`
   - `f`: Forcing term, shape `(s, s)` or `(s, s, batch)`
@@ -32,13 +36,15 @@ periodic domain using a pseudo-spectral Crank-Nicolson scheme.
   - `record_steps`: Number of in-time snapshots to record (including t=0)
 
 # Returns
-  - Solution array of shape `(s, s, batch, record_steps)`
+  - Solution array of shape `(s, s, batch, record_steps)` on CPU
 """
 function solve_navier_stokes_2d(w0, f; visc=1e-3, T=49, delta_t=1e-3, record_steps=50)
     s     = size(w0, 1)
     batch = size(w0, 3)
     k_max = s ÷ 2
     steps = ceil(Int, T / delta_t)
+
+    on_gpu = w0 isa CuArray
 
     # Forward FFT over spatial dims (1,2); result shape (s, s, batch)
     w_h = fft(w0, 1:2)
@@ -60,8 +66,17 @@ function solve_navier_stokes_2d(w0, f; visc=1e-3, T=49, delta_t=1e-3, record_ste
     # Dealiasing mask (2/3 rule)
     dealias = Float64.(abs.(k_x) .<= (2/3) * k_max .&& abs.(k_y) .<= (2/3) * k_max)
 
+    # Move spectral constants to same device as input
+    if on_gpu
+        k_x     = CuArray(k_x)
+        k_y     = CuArray(k_y)
+        lap     = CuArray(lap)
+        dealias = CuArray(dealias)
+    end
+
+    # Solution stored on CPU regardless of compute device
     sol   = zeros(Float64, s, s, batch, record_steps)
-    sol[:, :, :, 1] .= w0
+    sol[:, :, :, 1] .= on_gpu ? Array(w0) : w0
 
     c = 2
     t = 0.0
@@ -101,22 +116,23 @@ function solve_navier_stokes_2d(w0, f; visc=1e-3, T=49, delta_t=1e-3, record_ste
 
         if j % record_time == 0 && c <= record_steps
             w = real.(ifft(w_h, 1:2))
-            if any(isnan, w)
+            w_cpu = on_gpu ? Array(w) : w
+            if any(isnan, w_cpu)
                 error("NaN values encountered at step $j.")
             end
-            sol[:, :, :, c] .= w
+            sol[:, :, :, c] .= w_cpu
             c += 1
         end
     end
 
-    return sol  # (s, s, batch, record_steps)
+    return sol  # (s, s, batch, record_steps) on CPU
 end
 
 # ── Main generation function ──────────────────────────────────────────────────
 
 """
     navier_stokes(root; nw=100, nf=100, s=64, T=49, steps=50, mu=1e-3,
-                  batch_size=1024, seed=42, delta=1e-3)
+                  batch_size=1024, seed=42, delta=1e-3, use_gpu=false)
 
 Generate a 2D Navier-Stokes dataset with `nw` initial vorticity fields and
 `nf` forcing fields, and save to an HDF5 file.
@@ -132,9 +148,15 @@ Generate a 2D Navier-Stokes dataset with `nw` initial vorticity fields and
   - `batch_size`: Number of (w, f) pairs to solve simultaneously
   - `seed`: Random seed
   - `delta`: Internal solver time-step
+  - `use_gpu`: Move batches to GPU (CuArray) before solving; uses cuFFT automatically
 """
 function navier_stokes(root; nw=100, nf=100, s=64, T=49, steps=50, mu=1e-3,
-                       batch_size=1024, seed=42, delta=1e-3)
+                       batch_size=1024, seed=42, delta=1e-3, use_gpu=false)
+    if use_gpu && !CUDA.functional()
+        @warn "use_gpu=true but CUDA is not functional — falling back to CPU."
+        use_gpu = false
+    end
+
     Random.seed!(seed)
 
     mkpath(root)
@@ -151,7 +173,6 @@ function navier_stokes(root; nw=100, nf=100, s=64, T=49, steps=50, mu=1e-3,
     X   = [x for x in ft, _ in ft]   # (s, s)
     Y   = [y for _ in ft, y in ft]   # (s, s)
     phi = Float32.(π/2 .* range(0.0, 1.0, length=nf))  # (nf,)
-    # fs[i,j,k] = 0.1*sqrt(2)*sin(2π(X[i,j] + Y[i,j]) + phi[k])
     fs  = Float32.(0.1 * sqrt(2) .* sin.(2π .* (X .+ Y) .+ reshape(phi, 1, 1, nf)))
     # shape: (s, s, nf)
 
@@ -167,8 +188,8 @@ function navier_stokes(root; nw=100, nf=100, s=64, T=49, steps=50, mu=1e-3,
 
         # Flatten to (s, s, nw*nf) pairs for batched solving.
         # Index layout: global index k = (i_w - 1)*nf + i_f
-        w0_exp  = reshape(repeat(reshape(w0, s, s, nw, 1), outer=(1,1,1,nf)), s, s, nw*nf)
-        fs_exp  = reshape(repeat(reshape(fs, s, s, 1, nf), outer=(1,1,nw,1)), s, s, nw*nf)
+        w0_exp = reshape(repeat(reshape(w0, s, s, nw, 1), outer=(1,1,1,nf)), s, s, nw*nf)
+        fs_exp = reshape(repeat(reshape(fs, s, s, 1, nf), outer=(1,1,nw,1)), s, s, nw*nf)
 
         n_total = nw * nf
         n_batch = ceil(Int, n_total / batch_size)
@@ -180,15 +201,20 @@ function navier_stokes(root; nw=100, nf=100, s=64, T=49, steps=50, mu=1e-3,
 
             w_batch = Float64.(w0_exp[:, :, idx_start:idx_end])
             f_batch = Float64.(fs_exp[:, :, idx_start:idx_end])
+
+            # Optionally move to GPU — fft/ifft dispatch to cuFFT automatically
+            if use_gpu
+                w_batch = CuArray(w_batch)
+                f_batch = CuArray(f_batch)
+            end
+
             sol = solve_navier_stokes_2d(w_batch, f_batch;
                                          visc=mu, T=T, delta_t=delta,
                                          record_steps=steps)
-            # sol shape: (s, s, batch_len, steps)
-            # Store into u: Julia HDF5 shape (steps, s, s, nf, nw)
+            # sol is always on CPU (Array); write directly to HDF5
             for (local_idx, global_idx) in enumerate(idx_start:idx_end)
                 i_w = (global_idx - 1) ÷ nf + 1
                 i_f = (global_idx - 1) % nf + 1
-                # permute (s, s, steps) → (steps, s, s) for HDF5 storage
                 f["u"][:, :, :, i_f, i_w] = Float32.(permutedims(sol[:, :, local_idx, :], (3, 1, 2)))
             end
         end
