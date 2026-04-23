@@ -148,14 +148,16 @@ end
 
 # ── Main script ──────────────────────────────────────────────────────────────
 
-# Training data: vary IC and BC
-generate_burgers_dataset("datasets/data/", 80, 80; seed=42, filename="burgers_train")
-generate_burgers_dataset("datasets/data/", 30, 30; seed=0,  filename="burgers_test")
+if abspath(PROGRAM_FILE) == @__FILE__
+    # Training data: vary IC and BC
+    generate_burgers_dataset("datasets/data/", 80, 80; seed=42, filename="burgers_train")
+    generate_burgers_dataset("datasets/data/", 30, 30; seed=0,  filename="burgers_test")
 
-# Sampling data for fixed ICs (many BCs per IC)
-generate_burgers_dataset("datasets/data/", 20, 512; Nx=100, Nt=100, seed=42,
-                         filename="burgers_sampling_diffICs")
+    # Sampling data for fixed ICs (many BCs per IC)
+    generate_burgers_dataset("datasets/data/", 20, 512; Nx=100, Nt=100, seed=42,
+                             filename="burgers_sampling_diffICs")
 
-# Sampling data for fixed BCs (many ICs per BC)
-generate_burgers_dataset_diffBCs("datasets/data/"; N_bc=20, N_ic=512, Nx=100, Nt=100,
-                                 seed=42, filename="burgers_sampling_diffBCs")
+    # Sampling data for fixed BCs (many ICs per BC)
+    generate_burgers_dataset_diffBCs("datasets/data/"; N_bc=20, N_ic=512, Nx=100, Nt=100,
+                                     seed=42, filename="burgers_sampling_diffBCs")
+end

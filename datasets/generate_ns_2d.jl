@@ -200,6 +200,8 @@ end
 
 # ── Main script ───────────────────────────────────────────────────────────────
 
-navier_stokes("datasets/data/";
-              nw=100, nf=100, s=64, T=49, steps=50,
-              mu=1e-3, batch_size=1024, seed=42, delta=1e-3)
+if abspath(PROGRAM_FILE) == @__FILE__
+    navier_stokes("datasets/data/";
+                  nw=100, nf=100, s=64, T=49, steps=50,
+                  mu=1e-3, batch_size=1024, seed=42, delta=1e-3)
+end

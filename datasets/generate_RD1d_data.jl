@@ -181,9 +181,11 @@ end
 
 # ── Main script ───────────────────────────────────────────────────────────────
 
-# Training data: vary IC and BC
-run_parallel("datasets/data/"; N_ic=80, N_bc=80, seed=42, filename="RD_neumann_train")
-run_parallel("datasets/data/"; N_ic=30, N_bc=30, seed=0,  filename="RD_neumann_test")
+if abspath(PROGRAM_FILE) == @__FILE__
+    # Training data: vary IC and BC
+    run_parallel("datasets/data/"; N_ic=80, N_bc=80, seed=42, filename="RD_neumann_train")
+    run_parallel("datasets/data/"; N_ic=30, N_bc=30, seed=0,  filename="RD_neumann_test")
 
-# Sampling data: fixed ICs, many BCs
-run_parallel("datasets/data/"; N_ic=20, N_bc=512, seed=42, filename="RD_sampling_diffICs")
+    # Sampling data: fixed ICs, many BCs
+    run_parallel("datasets/data/"; N_ic=20, N_bc=512, seed=42, filename="RD_sampling_diffICs")
+end
