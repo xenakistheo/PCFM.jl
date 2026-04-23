@@ -207,7 +207,7 @@ function navier_stokes(root; nw=100, nf=100, s=64, T=49, steps=50, mu=1e-3,
             idx_start = (b - 1) * batch_size + 1
             idx_end   = min(b * batch_size, n_total)
             batch_len = idx_end - idx_start + 1
-            println("Batch $b / $n_batch  (samples $idx_start–$idx_end, size=$batch_len)")
+            println("Batch $b / $n_batch  (samples $(idx_start)-$(idx_end), size=$(batch_len))")
             flush(stdout)
 
             w_batch = Float64.(w0_exp[:, :, idx_start:idx_end])
