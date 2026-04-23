@@ -20,12 +20,12 @@ data_dir = joinpath(@__DIR__, "..", "datasets", "data")
 println("Generating training set...")
 navier_stokes(data_dir;
               nw=100, nf=100, s=64, T=49, steps=50,
-              mu=1e-3, batch_size=1024, seed=42, delta=1e-3)
+              mu=1e-3, batch_size=1024, seed=42, delta=1e-4)
 
 # Test set: 30 × 30 = 900 solutions
 println("Generating test set...")
 navier_stokes(data_dir;
               nw=30, nf=30, s=64, T=49, steps=50,
-              mu=1e-3, batch_size=1024, seed=0, delta=1e-3)
+              mu=1e-3, batch_size=1024, seed=0, delta=1e-4)
 
 println("Done.")

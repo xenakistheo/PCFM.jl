@@ -151,7 +151,7 @@ Generate a 2D Navier-Stokes dataset with `nw` initial vorticity fields and
   - `use_gpu`: Move batches to GPU (CuArray) before solving; uses cuFFT automatically
 """
 function navier_stokes(root; nw=100, nf=100, s=64, T=49, steps=50, mu=1e-3,
-                       batch_size=1024, seed=42, delta=1e-3, use_gpu=false)
+                       batch_size=1024, seed=42, delta=1e-4, use_gpu=false)
     if use_gpu && !CUDA.functional()
         @warn "use_gpu=true but CUDA is not functional — falling back to CPU."
         use_gpu = false
@@ -229,5 +229,5 @@ end
 if abspath(PROGRAM_FILE) == @__FILE__
     navier_stokes("datasets/data/";
                   nw=100, nf=100, s=64, T=49, steps=50,
-                  mu=1e-3, batch_size=1024, seed=42, delta=1e-3)
+                  mu=1e-3, batch_size=1024, seed=42, delta=1e-4)
 end
