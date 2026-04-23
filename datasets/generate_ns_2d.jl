@@ -14,6 +14,9 @@ using Random
 using LinearAlgebra
 using CUDA
 
+# Use all available CPU threads for FFTW (no-op on GPU)
+FFTW.set_num_threads(Sys.CPU_THREADS)
+
 include("random_fields.jl")
 
 # ── NS solver ─────────────────────────────────────────────────────────────────
@@ -38,7 +41,7 @@ to match the device of the input automatically.
 # Returns
   - Solution array of shape `(s, s, batch, record_steps)` on CPU
 """
-function solve_navier_stokes_2d(w0, f; visc=1e-3, T=49, delta_t=1e-3, record_steps=50)
+function solve_navier_stokes_2d(w0, f; visc=1e-3, T=49, delta_t=1e-3, record_steps=50, verbose=false)
     s     = size(w0, 1)
     batch = size(w0, 3)
     k_max = s ÷ 2
@@ -113,6 +116,12 @@ function solve_navier_stokes_2d(w0, f; visc=1e-3, T=49, delta_t=1e-3, record_ste
         w_h    = num ./ (1.0 .+ factor)
 
         t += delta_t
+
+        if verbose && j % max(1, steps ÷ 10) == 0
+            pct = round(Int, 100 * j / steps)
+            println("    step $j / $steps  ($pct%)")
+            flush(stdout)
+        end
 
         if j % record_time == 0 && c <= record_steps
             w = real.(ifft(w_h, 1:2))
@@ -197,7 +206,9 @@ function navier_stokes(root; nw=100, nf=100, s=64, T=49, steps=50, mu=1e-3,
         for b in 1:n_batch
             idx_start = (b - 1) * batch_size + 1
             idx_end   = min(b * batch_size, n_total)
-            println("Batch $b / $n_batch")
+            batch_len = idx_end - idx_start + 1
+            println("Batch $b / $n_batch  (samples $idx_start–$idx_end, size=$batch_len)")
+            flush(stdout)
 
             w_batch = Float64.(w0_exp[:, :, idx_start:idx_end])
             f_batch = Float64.(fs_exp[:, :, idx_start:idx_end])
@@ -208,9 +219,11 @@ function navier_stokes(root; nw=100, nf=100, s=64, T=49, steps=50, mu=1e-3,
                 f_batch = CuArray(f_batch)
             end
 
-            sol = solve_navier_stokes_2d(w_batch, f_batch;
+            t_batch = @elapsed sol = solve_navier_stokes_2d(w_batch, f_batch;
                                          visc=mu, T=T, delta_t=delta,
-                                         record_steps=steps)
+                                         record_steps=steps, verbose=true)
+            println("  Batch $b done in $(round(t_batch/60, digits=1)) min")
+            flush(stdout)
             # sol is always on CPU (Array); write directly to HDF5
             for (local_idx, global_idx) in enumerate(idx_start:idx_end)
                 i_w = (global_idx - 1) ÷ nf + 1
