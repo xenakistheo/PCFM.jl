@@ -210,6 +210,8 @@ function sample_pcfm(ffm::FFM, tstate, n_samples, n_steps, H!, params;
     emb_channels = ffm.config[:emb_channels]
     device = ffm.config[:device]
 
+    @show backend isa GPU
+
     # Extract parameters and states
     if hasfield(typeof(tstate), :parameters)
         ps = tstate.parameters
@@ -262,7 +264,6 @@ function sample_pcfm(ffm::FFM, tstate, n_samples, n_steps, H!, params;
         x_1 = x .+ v .* (1.0f0 - τ)
 
         # Step 2: Apply constraint - fix initial condition
-        @. x_1[:, 1:1, :, :] = u_0_ic
         ##############
         if mode == "jump"
             # JuMP version — batched over all samples at once
@@ -271,6 +272,7 @@ function sample_pcfm(ffm::FFM, tstate, n_samples, n_steps, H!, params;
             set_silent(model)
             @variable(model, u[1:nx, 1:nt, 1:n_samples])
             @objective(model, Min, sum((u[i,j,s] - x_1_cpu[i,j,1,s])^2 for i in 1:nx, j in 1:nt, s in 1:n_samples))
+            @constraint(model, [i in 1:nx, s in 1:n_samples], u[i, 1, s] == x_1_cpu[i, 1, 1, s])
             @constraint(model, [j in 1:nt, s in 1:n_samples], dx * sum(u[i,j,s] for i in 1:(nx-1)) == 0.0)
             optimize!(model)
             x_0 = reshape(Float32.(value.(u)), nx, nt, 1, n_samples) |> device
@@ -279,18 +281,15 @@ function sample_pcfm(ffm::FFM, tstate, n_samples, n_steps, H!, params;
             N = nx * nt * n_samples
 
             if backend isa GPU
-                # GPU path: keep data on device, use array iteration (no scalar indexing)
-                x_1_flat = x_1[:, :, 1, :]                              # (nx, nt, n_samples) on device
-                u0_batch = x_1_flat[:, 1, :]                            # (nx, n_samples) on device
-                indices = KernelAbstractions.adapt(backend, collect(1:N))
-                values  = KernelAbstractions.adapt(backend, vec(x_1_flat))
+                x_1_b = x_1[:, :, 1, :]
+                x1_vec = KernelAbstractions.adapt(backend, vec(x_1_b))
                 core = ExaCore(backend=backend)
-                u = variable(core, 1:N, start = values)
-                objective(core, (u[i] - values[i])^2 for i in indices)
-                p = (Nx=nx, Nt=nt, dx=dx, u0=u0_batch, n_samples=n_samples, backend=backend)
-                H!(core, u, p)
+                θ = parameter(core, x1_vec)              # x_1_flat can be a CuArray
+                u = variable(core, 1:N; start = x1_vec)
+                objective(core, (u[i] - θ[i])^2 for i in 1:N)
+                H!(core, u, (Nx=nx, Nt=nt, dx=dx, u0=x_1_b[:, 1, :], n_samples=n_samples, backend=backend))  
                 nlp = ExaModel(core)
-                result = madnlp(nlp, linear_solver=MadNLPGPU.LapackCUDASolver, print_level=MadNLP.ERROR)
+                result = madnlp(nlp, linear_solver=MadNLPGPU.CUDSSSolver)
                 x_exa_vec = solution(result, u)
                 x_0 = reshape(Float32.(x_exa_vec), nx, nt, 1, n_samples)
             else

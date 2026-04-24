@@ -5,6 +5,41 @@ using KernelAbstractions
 function heat_constraints!(core, u_flat, params)
     (; Nx, Nt, dx, u0, n_samples, backend) = params
 
+    idx(i, t, s) = i + (t-1)*Nx + (s-1)*Nx*Nt
+
+    u0_param = parameter(core, u0)
+
+    # 1. Initial condition
+    constraint(
+        core,
+        (
+            u_flat[idx(i, 1, s)] - u0_param[i, s]
+            for i in 1:Nx, s in 1:n_samples
+        );
+        lcon = KernelAbstractions.adapt(backend, zeros(Nx * n_samples)),
+        ucon = KernelAbstractions.adapt(backend, zeros(Nx * n_samples)),
+    )
+
+    # 2. Mass conservation
+    constraint(
+        core,
+        (
+            sum(u_flat[idx(i, t, s)] for i in 1:Nx-1) * dx
+            for t in 1:Nt, s in 1:n_samples
+        );
+        lcon = KernelAbstractions.adapt(backend, zeros(Nt * n_samples)),
+        ucon = KernelAbstractions.adapt(backend, zeros(Nt * n_samples)),
+    )
+
+    return nothing
+end
+
+function heat_constraints2!(core, u_flat, params)
+    """This is the old (not gpu friendly)
+    heat constraint. Keeping it here for now. 
+    """
+    (; Nx, Nt, dx, u0, n_samples, backend) = params
+
     # u0 is (Nx, n_samples)
     # flat index: i + (t-1)*Nx + (s-1)*Nx*Nt
     idx(i, t, s) = i + (t-1)*Nx + (s-1)*Nx*Nt
