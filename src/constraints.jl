@@ -1,8 +1,19 @@
 using ExaModels
 using KernelAbstractions
 
+function heat_constraints!(model::Model, u, params)
+    (; Nx, Nt, dx, u0, n_samples) = params
+    """
+    Constraints for the JuMP model of Heat Eq. 
+    u should have shape (Nx, Nt, n_samples)
+    """
+    # @constraint(model, [i in 1:Nx, s in 1:n_samples], u[i, 1, s] == u0[i, 1, 1, s]) #IC
+    @constraint(model, [j in 1:Nt, s in 1:n_samples], dx * sum(u[i,j,s] for i in 1:(Nx-1)) == 0.0) #Mass constraint 
+end 
 
-function heat_constraints!(core, u_flat, params)
+
+
+function heat_constraints!(core::ExaCore, u_flat, params)
     (; Nx, Nt, dx, u0, n_samples, backend) = params
 
     idx(i, t, s) = i + (t-1)*Nx + (s-1)*Nx*Nt
@@ -10,15 +21,15 @@ function heat_constraints!(core, u_flat, params)
     u0_param = parameter(core, u0)
 
     # 1. Initial condition
-    constraint(
-        core,
-        (
-            u_flat[idx(i, 1, s)] - u0_param[i, s]
-            for i in 1:Nx, s in 1:n_samples
-        );
-        lcon = KernelAbstractions.adapt(backend, zeros(Nx * n_samples)),
-        ucon = KernelAbstractions.adapt(backend, zeros(Nx * n_samples)),
-    )
+    # constraint(
+    #     core,
+    #     (
+    #         u_flat[idx(i, 1, s)] - u0_param[i, s]
+    #         for i in 1:Nx, s in 1:n_samples
+    #     );
+    #     lcon = KernelAbstractions.adapt(backend, zeros(Nx * n_samples)),
+    #     ucon = KernelAbstractions.adapt(backend, zeros(Nx * n_samples)),
+    # )
 
     # 2. Mass conservation
     constraint(
@@ -34,7 +45,7 @@ function heat_constraints!(core, u_flat, params)
     return nothing
 end
 
-function heat_constraints2!(core, u_flat, params)
+function heat_constraints2!(core::ExaCore, u_flat, params)
     """This is the old (not gpu friendly)
     heat constraint. Keeping it here for now. 
     """
@@ -67,7 +78,7 @@ function heat_constraints2!(core, u_flat, params)
     return nothing
 end
 
-function ns_constraints!(core, u_flat, params)
+function ns_constraints!(core::ExaCore, u_flat, params)
     (; Nx, Ny, Nt, dx, dy, u0, n_samples, backend) = params
 
     # u0 is (Nx, Ny, n_samples)
@@ -100,7 +111,7 @@ function ns_constraints!(core, u_flat, params)
     return nothing
 end
 
-function rd_constraints!(core, u_flat, params)
+function rd_constraints!(core::ExaCore, u_flat, params)
     (; Nx, Nt, dx, dt, rho, nu, u0, n_samples, backend) = params
 
     # u0 is (Nx, n_samples)
@@ -149,7 +160,7 @@ function rd_constraints!(core, u_flat, params)
     return nothing
 end
 
-function burgers_constraints!(core, u_flat, params)
+function burgers_constraints!(core::ExaCore, u_flat, params)
     (; Nx, Nt, dx, dt, left_bc, n_samples, backend) = params
 
     # flat index: i + (t-1)*Nx + (s-1)*Nx*Nt
