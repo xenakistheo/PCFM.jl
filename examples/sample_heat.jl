@@ -111,61 +111,61 @@ sample_compiled_funcs = (n_samples == batch_size) ? compiled_funcs : PCFM.compil
 ########################################################################################################################################################
 
 
-# nx = ffm.config[:nx]
-# nt = ffm.config[:nt]
-# emb_channels = ffm.config[:emb_channels]
-# device = ffm.config[:device]
-# ps = ps
-# st = st
-# model_fn = sample_compiled_funcs.model
-# prepare_input_fn = sample_compiled_funcs.prepare_input
+nx = ffm.config[:nx]
+nt = ffm.config[:nt]
+emb_channels = ffm.config[:emb_channels]
+device = ffm.config[:device]
+ps = ps
+st = st
+model_fn = sample_compiled_funcs.model
+prepare_input_fn = sample_compiled_funcs.prepare_input
 
-# x_grid = range(0, 2π, length=nx)
-# u_0_ic = sin.(x_grid .+ π/4)
-# u_0_ic = reshape(u_0_ic, nx, 1, 1, 1)
-# # Broadcast to all samples
-# u_0_ic = repeat(u_0_ic, 1, 1, 1, n_samples) |> device
-
-
-# x_0 = randn(Float32, nx, nt, 1, n_samples) |> device
-# x = copy(x_0)
-# n_steps = 100
-# dt = 1.0f0 / n_steps
-# dx = x_grid[2] - x_grid[1]
-
-# #Enter loop
-# step = 0
-# τ = step * dt
-# τ_next = τ + dt
-# t_vec = fill(τ, n_samples) |> device
-# x_input = prepare_input_fn(x, t_vec, nx, nt, n_samples, emb_channels)
-# v, st = model_fn(x_input, ps, st)
-# x_1 = x .+ v .* (1.0f0 - τ)
+x_grid = range(0, 2π, length=nx)
+u_0_ic = sin.(x_grid .+ π/4)
+u_0_ic = reshape(u_0_ic, nx, 1, 1, 1)
+# Broadcast to all samples
+u_0_ic = repeat(u_0_ic, 1, 1, 1, n_samples) |> device
 
 
-# # ExaModel version — solve projection for all samples at once
-# N = nx * nt * n_samples
-# backend isa GPU
+x_0 = randn(Float32, nx, nt, 1, n_samples) |> device
+x = copy(x_0)
+n_steps = 100
+dt = 1.0f0 / n_steps
+dx = x_grid[2] - x_grid[1]
 
-# # x_1_cpu = CpKernelAbstractions.adapt(backend, x_1)
-# x_1_cpu = Array(x_1[:, :, 1, :])
-# #Enter ExaModels version 
-# @show typeof(x_1)
-# @show KernelAbstractions.get_backend(x_1)
-# x_1_flat = vec(x_1_cpu) # (nx, nt, n_samples) on device
-# u = variable(core, 1:N, start=x_1_flat)
-# u1_data = KernelAbstractions.adapt(backend, [(k, x_1_flat[k]) for k in 1:N]) #the indexing in here is the problem. It is not allowed to be on gpu
-# objective(core, (u[d[1]] - d[2])^2 for d in u1_data)
-# heat_constraints!(core, u, (Nx=nx, Nt=nt, dx=dx, u0=x_1_cpu[:, 1, :], n_samples=n_samples, backend=backend))
-
-# nlp = ExaModel(core)
+#Enter loop
+step = 0
+τ = step * dt
+τ_next = τ + dt
+t_vec = fill(τ, n_samples) |> device
+x_input = prepare_input_fn(x, t_vec, nx, nt, n_samples, emb_channels)
+v, st = model_fn(x_input, ps, st)
+x_1 = x .+ v .* (1.0f0 - τ)
 
 
-# # Solve and benchmark on CPU
-# @time result = madnlp(nlp)
+# ExaModel version — solve projection for all samples at once
+N = nx * nt * n_samples
+backend isa GPU
 
-# x_exa_vec = solution(result, u)
-# x_0 = reshape(Float32.(x_exa_vec), nx, nt, 1, n_samples)
+# x_1_cpu = CpKernelAbstractions.adapt(backend, x_1)
+x_1_cpu = Array(x_1[:, :, 1, :])
+#Enter ExaModels version 
+@show typeof(x_1)
+@show KernelAbstractions.get_backend(x_1)
+x_1_flat = vec(x_1_cpu) # (nx, nt, n_samples) on device
+u = variable(core, 1:N, start=x_1_flat)
+u1_data = KernelAbstractions.adapt(backend, [(k, x_1_flat[k]) for k in 1:N])
+objective(core, (u[d[1]] - d[2])^2 for d in u1_data)
+heat_constraints!(core, u, (Nx=nx, Nt=nt, dx=dx, u0=x_1_cpu[:, 1, :], n_samples=n_samples, backend=backend))
+
+nlp = ExaModel(core)
+
+
+# Solve and benchmark on CPU
+@time result = madnlp(nlp)
+
+x_exa_vec = solution(result, u)
+x_0 = reshape(Float32.(x_exa_vec), nx, nt, 1, n_samples)
 
 ########################################################################################################################################################
 ########################################################################################################################################################
