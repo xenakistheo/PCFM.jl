@@ -147,15 +147,25 @@ x_1 = x .+ v .* (1.0f0 - τ)
 N = nx * nt * n_samples
 backend isa GPU
 
-# x_1_cpu = CpKernelAbstractions.adapt(backend, x_1)
-x_1_cpu = Array(x_1[:, :, 1, :])
+# x_1_cpu = KernelAbstractions.adapt(backend, x_1)
+x_1_cpu = cu(x_1[:, :, 1, :]) # Convert to (Nx, Nt, n_samples)-cpu-array
 #Enter ExaModels version 
-@show typeof(x_1)
-@show KernelAbstractions.get_backend(x_1)
-x_1_flat = vec(x_1_cpu) # (nx, nt, n_samples) on device
-u = variable(core, 1:N, start=x_1_flat)
-u1_data = KernelAbstractions.adapt(backend, [(k, x_1_flat[k]) for k in 1:N])
-objective(core, (u[d[1]] - d[2])^2 for d in u1_data)
+# @show typeof(x_1)
+# @show KernelAbstractions.get_backend(x_1)
+x_1_flat = vec(x_1_cpu) # (nx * nt * n_samples) vector 
+core = ExaCore(backend=backend)
+# u = variable(core, 1:N, start=x_1_flat)
+# [(k, x_1_flat[k]) for k in 1:N]
+# zip(1:N, x_1_flat)
+
+θ = parameter(core, x_1_flat)              # x_1_flat can be a CuArray
+u = variable(core, 1:N; start = x_1_flat)
+objective(core, (u[i] - θ[i])^2 for i in 1:N)
+# u1_data = KernelAbstractions.adapt(backend, [(k, x_1_flat[k]) for k in 1:N]) #this is the problematic line 
+# objective(core, (u[d[1]] - d[2])^2 for d in u1_data)
+# objective(core, (u[i] - x_1_flat[i])^2 for i in 1:N)
+
+
 heat_constraints!(core, u, (Nx=nx, Nt=nt, dx=dx, u0=x_1_cpu[:, 1, :], n_samples=n_samples, backend=backend))
 
 nlp = ExaModel(core)
