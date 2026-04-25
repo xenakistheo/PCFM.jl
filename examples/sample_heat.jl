@@ -180,23 +180,23 @@ tstate_inf = (parameters = ps, states = st)
 # Runs 
 
 #The following benchmarks were recorded using the following compute 
-# salloc -p mit_normal_gpu --gres=gpu:1 --cpus-per-task=4 --mem=8G --time=03:00:00
+# salloc -p mit_normal_gpu --gres=gpu:1 --cpus-per-task=4 --mem=64G --time=03:00:00
 
-#1st run 223.243632 seconds (465.92 M allocations: 39.920 GiB, 5.10% gc time, 2 lock conflicts, 47.91% compilation time: <1% of which was recompilation)
-#2nd run 100.667030 seconds (11.57 M allocations: 15.124 GiB, 3.05% gc time)
-@time samples_exa = sample_pcfm(ffm, (parameters = ps, states = st), n_samples, 100, heat_constraints!, nothing; 
+#1st run 236.599683 seconds (493.11 M allocations: 41.098 GiB, 4.62% gc time, 1 lock conflict, 51.06% compilation time: <1% of which was recompilation)
+#2nd run  98.144399 seconds (11.48 M allocations: 15.121 GiB, 2.81% gc time)
+@time samples_exa = sample_pcfm(ffm, (parameters = ps, states = st), n_samples, 100, heat_constraints!; 
     backend=backend, compiled_funcs = sample_compiled_funcs, verbose = true); 
 
 
-#1st run 96.231772 seconds (160.30 M allocations: 27.130 GiB, 27.83% gc time, 20.63% compilation time)
-#2nd run 71.144598 seconds (33.79 M allocations: 22.076 GiB, 28.22% gc time)
-@time samples_exa = sample_pcfm(ffm, (parameters = ps, states = st), n_samples, 100, heat_constraints!, nothing; 
+#1st run 101.670634 seconds (192.11 M allocations: 29.090 GiB, 22.53% gc time, 24.50% compilation time)
+#2nd run 83.031268 seconds (35.11 M allocations: 23.100 GiB, 28.98% gc time, 0.80% compilation time)
+@time samples_exa = sample_pcfm(ffm, (parameters = ps, states = st), n_samples, 100, heat_constraints!; 
     backend=CPU(), compiled_funcs = sample_compiled_funcs, verbose = true);  
 
 # JuMP - Compiled Functions 
-#1st run 178.025426 seconds (1.63 G allocations: 115.355 GiB, 33.69% gc time, 0.14% compilation time)
-#2nd run 173.674010 seconds (1.63 G allocations: 115.330 GiB, 35.61% gc time)
-@time samples_jump = sample_pcfm(ffm, (parameters = ps, states = st), n_samples, 100, heat_constraints!, nothing; 
+#1st run 212.458600 seconds
+#2nd run 175.130955 seconds (1.62 G allocations: 111.857 GiB, 33.80% gc time)
+@time samples_jump = sample_pcfm(ffm, (parameters = ps, states = st), n_samples, 100, heat_constraints!; 
     backend=CPU(), compiled_funcs = sample_compiled_funcs, verbose = true, mode="jump"); 
 
 # println("\n" * "=" ^ 60)
