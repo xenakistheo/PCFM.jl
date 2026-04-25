@@ -89,7 +89,7 @@ function generate_burgers_dataset(path, N_ic, N_bc; Nx=100, Nt=100, T=1.0, seed=
         # Pre-allocate the solution dataset.
         # Python/h5py shape: (N_ic, N_bc, Nx+1, Nt+1)
         # Julia HDF5.jl stores in Fortran order, so create with reversed dims:
-        d_create(f, "u", datatype(Float32),
+        create_dataset(f, "u", datatype(Float32),
                  dataspace(Nt + 1, Nx + 1, N_bc, N_ic))
 
         Threads.@threads for i_ic in 1:N_ic
@@ -131,7 +131,7 @@ function generate_burgers_dataset_diffBCs(
         f["t"]  = Float32.(t)
 
         # Python/h5py shape: (N_bc, N_ic, Nx+1, Nt+1)
-        d_create(f, "u", datatype(Float32),
+        create_dataset(f, "u", datatype(Float32),
                  dataspace(Nt + 1, Nx + 1, N_ic, N_bc))
 
         Threads.@threads for i_bc in 1:N_bc
@@ -148,14 +148,16 @@ end
 
 # ── Main script ──────────────────────────────────────────────────────────────
 
-# Training data: vary IC and BC
-generate_burgers_dataset("datasets/data/", 80, 80; seed=42, filename="burgers_train")
-generate_burgers_dataset("datasets/data/", 30, 30; seed=0,  filename="burgers_test")
+if abspath(PROGRAM_FILE) == @__FILE__
+    # Training data: vary IC and BC
+    generate_burgers_dataset("datasets/data/", 80, 80; seed=42, filename="burgers_train")
+    generate_burgers_dataset("datasets/data/", 30, 30; seed=0,  filename="burgers_test")
 
-# Sampling data for fixed ICs (many BCs per IC)
-generate_burgers_dataset("datasets/data/", 20, 512; Nx=100, Nt=100, seed=42,
-                         filename="burgers_sampling_diffICs")
+    # Sampling data for fixed ICs (many BCs per IC)
+    generate_burgers_dataset("datasets/data/", 20, 512; Nx=100, Nt=100, seed=42,
+                             filename="burgers_sampling_diffICs")
 
-# Sampling data for fixed BCs (many ICs per BC)
-generate_burgers_dataset_diffBCs("datasets/data/"; N_bc=20, N_ic=512, Nx=100, Nt=100,
-                                 seed=42, filename="burgers_sampling_diffBCs")
+    # Sampling data for fixed BCs (many ICs per BC)
+    generate_burgers_dataset_diffBCs("datasets/data/"; N_bc=20, N_ic=512, Nx=100, Nt=100,
+                                     seed=42, filename="burgers_sampling_diffBCs")
+end

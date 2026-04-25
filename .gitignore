@@ -31,5 +31,5 @@ JuliaLocalPreferences.toml
 # Weights
 examples/checkpoints/*
 
-#datasets
-datasets/data/*
+# Datasets
+datasets/data/*.h5

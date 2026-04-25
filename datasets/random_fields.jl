@@ -96,9 +96,9 @@ function sample(grf::GaussianRF, N::Int)
     # Scale each spatial mode by sqrt_eig (broadcast over batch dimension)
     coeff .*= grf.sqrt_eig
 
-    # Unnormalized backward IFFT over spatial dims (matches torch norm='backward')
+    # Normalized IFFT over spatial dims (matches torch.fft.ifft norm='backward')
     spatial_dims = 1:grf.n_dims
-    u = real.(bfft(coeff, spatial_dims))
+    u = real.(ifft(coeff, spatial_dims))
 
     return u
 end
