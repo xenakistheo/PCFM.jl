@@ -46,6 +46,20 @@ function heat_constraints!(core::ExaCore, u_flat, params)
 end
 
 
+function ns_constraints!(model::Model, u, params)
+    (; Nx, Ny, Nt, dx, dy, u0, n_samples) = params
+    # u has shape (Nx, Ny, Nt, n_samples)
+    M0 = [sum(u0[i, j, s] for i in 1:Nx, j in 1:Ny) * dx * dy for s in 1:n_samples]
+
+    # 1. Initial condition
+    @constraint(model, [i in 1:Nx, j in 1:Ny, s in 1:n_samples], u[i, j, 1, s] == u0[i, j, s])
+
+    # 2. Global mass conservation per sample for t >= 2
+    @constraint(model, [t in 2:Nt, s in 1:n_samples],
+        sum(u[i, j, t, s] for i in 1:Nx, j in 1:Ny) * dx * dy == M0[s])
+end
+
+
 function ns_constraints!(core::ExaCore, u_flat, params)
     (; Nx, Ny, Nt, dx, dy, u0, n_samples, backend) = params
 
@@ -78,6 +92,34 @@ function ns_constraints!(core::ExaCore, u_flat, params)
 
     return nothing
 end
+
+function rd_constraints!(model::Model, u, params)
+    (; Nx, Nt, dx, dt, rho, nu, u0, n_samples) = params
+    # u has shape (Nx, Nt, n_samples)
+
+    # 1. Initial condition
+    @constraint(model, [i in 1:Nx, s in 1:n_samples], u[i, 1, s] == u0[i, s])
+
+    # 2. Mass evolution (trapezoidal rule)
+    @constraint(model, [t in 2:Nt, s in 1:n_samples],
+        sum(u[i, t, s] for i in 1:Nx) * dx
+        - sum(u[i, t-1, s] for i in 1:Nx) * dx
+        - 0.5*dt*rho*(
+            sum(u[i, t,   s] * (1 - u[i, t,   s]) for i in 1:Nx) * dx
+            + sum(u[i, t-1, s] * (1 - u[i, t-1, s]) for i in 1:Nx) * dx
+        )
+        - 0.5*dt*(
+            (
+                -nu*(-25*u[1,    t,   s] + 48*u[2,    t,   s] - 36*u[3,    t,   s] + 16*u[4,    t,   s] - 3*u[5,    t,   s]) / (12*dx)
+              - -nu*( 25*u[Nx,   t,   s] - 48*u[Nx-1, t,   s] + 36*u[Nx-2, t,   s] - 16*u[Nx-3, t,   s] + 3*u[Nx-4, t,   s]) / (12*dx)
+            )
+            + (
+                -nu*(-25*u[1,    t-1, s] + 48*u[2,    t-1, s] - 36*u[3,    t-1, s] + 16*u[4,    t-1, s] - 3*u[5,    t-1, s]) / (12*dx)
+              - -nu*( 25*u[Nx,   t-1, s] - 48*u[Nx-1, t-1, s] + 36*u[Nx-2, t-1, s] - 16*u[Nx-3, t-1, s] + 3*u[Nx-4, t-1, s]) / (12*dx)
+            )
+        ) == 0.0)
+end
+
 
 function rd_constraints!(core::ExaCore, u_flat, params)
     (; Nx, Nt, dx, dt, rho, nu, u0, n_samples, backend) = params
@@ -127,6 +169,27 @@ function rd_constraints!(core::ExaCore, u_flat, params)
 
     return nothing
 end
+
+function burgers_constraints!(model::Model, u, params)
+    (; Nx, Nt, dx, dt, left_bc, n_samples) = params
+    # u has shape (Nx, Nt, n_samples)
+
+    # 1. Dirichlet BC at left boundary
+    @constraint(model, [t in 1:Nt, s in 1:n_samples], u[1, t, s] == left_bc)
+
+    # 2. Neumann BC at right boundary
+    @constraint(model, [t in 1:Nt, s in 1:n_samples], u[Nx, t, s] == u[Nx-1, t, s])
+
+    # 3. Mass evolution (trapezoidal rule)
+    @constraint(model, [t in 2:Nt, s in 1:n_samples],
+        sum(u[i, t,   s] for i in 1:Nx) * dx
+        - sum(u[i, t-1, s] for i in 1:Nx) * dx
+        + 0.5*dt*(
+            (0.5*u[Nx, t,   s]^2 - 0.5*u[1, t,   s]^2)
+            + (0.5*u[Nx, t-1, s]^2 - 0.5*u[1, t-1, s]^2)
+        ) == 0.0)
+end
+
 
 function burgers_constraints!(core::ExaCore, u_flat, params)
     (; Nx, Nt, dx, dt, left_bc, n_samples, backend) = params
