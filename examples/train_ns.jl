@@ -8,6 +8,7 @@ FFM input format after loading: (s, s, t, 1, batch).
 
 using PCFM
 using Reactant, Lux
+using JLD2, Functors
 using Plots
 using Random
 
@@ -16,18 +17,19 @@ Random.seed!(1234)
 # ---------------------------------------------------------------------------
 # Paths
 # ---------------------------------------------------------------------------
-datasets_dir = joinpath(@__DIR__, "..", "datasets")
-data_dir     = joinpath(datasets_dir, "data")
-train_file   = joinpath(data_dir, "ns_nw100_nf100_s64_t50_mu0.001.h5")
+data_dir    = joinpath(@__DIR__, "..", "datasets", "data")
+train_file  = joinpath(data_dir, "ns_nw100_nf100_s64_t50_mu0.001.h5")
+weight_file = joinpath(@__DIR__, "checkpoints", "ffm_ns_checkpoint.jld2")
 
 # ---------------------------------------------------------------------------
 # Configuration
 # ---------------------------------------------------------------------------
-batch_size   = 16
-s            = 64    # spatial grid size (s × s)
-nt           = 50    # number of recorded time snapshots
-emb_channels = 32
-n_epochs     = 1000
+batch_size    = 16
+s             = 64    # spatial grid size (s × s)
+nt            = 50    # number of recorded time snapshots
+emb_channels  = 32
+n_epochs      = 1000
+force_retrain = false
 
 # Fourier modes: (s_modes, s_modes, t_modes) — keep well below s/2 and nt/2
 ns_modes = (12, 12, 16)
@@ -62,46 +64,40 @@ ffm = FFM(
 println("  spatial_size = $(ffm.config[:spatial_size]),  modes = $(ffm.config[:modes])")
 println("  in_channels  = $(1 + emb_channels + length((s, s)) + 1)  (u + time_emb + pos_x + pos_y + pos_t)")
 
-# 4. Compile (optional — comment out if Reactant is unavailable)
+# 4. Compile
 println("\n[4/5] Compiling functions with Reactant...")
 compiled_funcs = PCFM.compile_functions(ffm, batch_size)
 
-# 5. Train
-println("\n[5/5] Training for $n_epochs epochs...")
-losses, tstate = train_ffm!(
-    ffm, u_data;
-    compiled_funcs,
-    epochs  = n_epochs,
-    verbose = true
-)
-println("\nFinal loss: $(losses[end])")
+# 5. Train or load checkpoint
+losses = Float32[]
+if isfile(weight_file) && !force_retrain
+    println("\n[5/5] Loading checkpoint from: $weight_file")
+    saved  = JLD2.load(weight_file)
+    device = ffm.config[:device]
+    ps     = saved["parameters"] |> device
+    st     = saved["states"]     |> device
+    losses = saved["losses"]
+    println("  Loaded parameters, states, and loss history")
+else
+    println("\n[5/5] Training for $n_epochs epochs...")
+    losses, tstate = train_ffm!(ffm, u_data; compiled_funcs, epochs = n_epochs, verbose = true)
+    println("\nFinal loss: $(losses[end])")
+
+    ps = fmap(x -> x isa AbstractArray ? Array(x) : x, tstate.parameters)
+    st = fmap(x -> x isa AbstractArray ? Array(x) : x, tstate.states)
+    mkpath(dirname(weight_file))
+    JLD2.save(weight_file, "parameters", ps, "states", st, "losses", losses, "config", ffm.config)
+    println("Checkpoint saved to: $weight_file")
+end
 
 # ---------------------------------------------------------------------------
-# Sample and visualise
+# Plot training curve
 # ---------------------------------------------------------------------------
-println("\nGenerating samples...")
-samples = sample_ffm(ffm, tstate, 4, 50; compiled_funcs, verbose = true)
-# samples shape: (s, s, nt, 1, 4)
-
-p_loss = plot(1:length(losses), losses;
+p1 = plot(1:length(losses), losses;
     yscale  = :log10,
     xlabel  = "Epoch", ylabel = "Loss (log)",
     title   = "NS Training Loss",
     legend  = false, linewidth = 2)
-
-arr_data    = Array(u_data)
-arr_samples = Array(samples)
-
-# Show first vorticity snapshot (t=1) from data and generated samples
-p_data = [heatmap(arr_data[:, :, 1, 1, i];
-              title = "Data $i, t=0", xlabel = "x", ylabel = "y", c = :RdBu)
-          for i in 1:min(2, batch_size)]
-
-p_gen = [heatmap(arr_samples[:, :, 1, 1, i];
-             title = "Sample $i, t=0", xlabel = "x", ylabel = "y", c = :RdBu)
-         for i in 1:2]
-
-display(p_loss)
-display(plot(p_data..., p_gen...; layout = (2, 2), size = (900, 700)))
+display(p1)
 
 println("\nDone!")
