@@ -16,6 +16,8 @@ end
 
 
 function heat_constraints!(core::ExaCore, u_flat, u0_flat, nt, n_samples, grid_points, grid_spacing, dt, params=nothing; backend=CPU())
+    nx  = grid_points[1]                                                                                                                                             
+    dx = grid_spacing[1]
 
     idx(i, t, s) = i + (t-1)*nx + (s-1)*nx*nt
 
@@ -64,6 +66,8 @@ end
 
 
 function ns_constraints!(core::ExaCore, u_flat, u0_flat, nt, n_samples, grid_points, grid_spacing, dt, params=nothing; backend=CPU())
+    nx, ny  = grid_points                                                                                                                                            
+    dx, dy = grid_spacing
 
     # u0 is (nx, ny, n_samples)
     # flat index: i + (j-1)*nx + (t-1)*nx*ny + (s-1)*nx*ny*nt
@@ -95,7 +99,7 @@ function ns_constraints!(core::ExaCore, u_flat, u0_flat, nt, n_samples, grid_poi
     return nothing
 end
 
-function rd_constraints!(model::Model, u, u0, nt, n_samples, grid_points, grid_spacing, dt, params=[;])
+function rd_constraints!(model::Model, u, u0, nt, n_samples, grid_points, grid_spacing, dt, params=(;))
     nx  = grid_points[1]                                                                                                                                             
     dx = grid_spacing[1]
     rho = get(params, :rho, 1.0) # Default values                                                                                                                                      
@@ -127,8 +131,11 @@ function rd_constraints!(model::Model, u, u0, nt, n_samples, grid_points, grid_s
 end
 
 
-function rd_constraints!(core::ExaCore, u_flat, u0_flat, nt, n_samples, grid_points, grid_spacing, dt, params=nothing; backend=CPU())
-
+function rd_constraints!(core::ExaCore, u_flat, u0_flat, nt, n_samples, grid_points, grid_spacing, dt, params=(;); backend=CPU())
+    nx  = grid_points[1]                                                                                                                                             
+    dx = grid_spacing[1]
+    rho = get(params, :rho, 1.0) # Default values                                                                                                                                      
+    nu  = get(params, :nu, 0.01)
 
     # u0 is (nx, n_samples)
     # flat index: i + (t-1)*nx + (s-1)*nx*nt
@@ -200,7 +207,9 @@ end
 
 
 function burgers_constraints!(core::ExaCore, u_flat, u0_flat, nt, n_samples, grid_points, grid_spacing, dt, params=nothing; backend=CPU())
-
+    nx  = grid_points[1]                                                                                                                                             
+    dx = grid_spacing[1]
+    
     # flat index: i + (t-1)*nx + (s-1)*nx*nt
     idx(i, t, s) = i + (t-1)*nx + (s-1)*nx*nt
 
