@@ -157,7 +157,10 @@ Fixed initial condition: u(x,0) = sin(x + π/4)
 # Returns
   - Generated samples satisfying the initial condition constraint
 """
-function sample_pcfm(ffm::FFM, tstate, n_samples, n_steps, H!, params;
+function sample_pcfm(ffm::FFM, tstate, n_samples, n_steps, H!;
+        constraint_parameters = nothing,
+        domain = (x_start=0.0f0, x_end=2f0π, t_start=0.0f0, t_end=1.0f0),                                                                                        
+        IC_func = x -> sin(x + π/4), 
         backend = CPU(),
         mode = "exa",
         use_compiled = true,
@@ -190,8 +193,8 @@ function sample_pcfm(ffm::FFM, tstate, n_samples, n_steps, H!, params;
     end
 
     # Fixed initial condition: u(x,0) = sin(x + π/4)
-    x_grid = range(0, 2π, length=nx)
-    u_0_ic = sin.(x_grid .+ π/4)
+    x_grid = range(domain.x_start, domain.x_end, length=nx) 
+    u_0_ic = IC_func.(x_grid .+ π/4)
     u_0_ic = reshape(u_0_ic, nx, 1, 1, 1)
     # Broadcast to all samples
     u_0_ic = repeat(u_0_ic, 1, 1, 1, n_samples) |> device
