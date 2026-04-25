@@ -102,8 +102,8 @@ end
 function rd_constraints!(model::Model, u, u0, nt, n_samples, grid_points, grid_spacing, dt, params=(;))
     nx  = grid_points[1]                                                                                                                                             
     dx = grid_spacing[1]
-    rho = get(params, :rho, 1.0) # Default values                                                                                                                                      
-    nu  = get(params, :nu, 0.01)
+    rho = get(params, :rho, 0.01) # Default values                                                                                                                                      
+    nu  = get(params, :nu, 0.005)
 
     # u has shape (nx, nt, n_samples)
 
@@ -134,8 +134,8 @@ end
 function rd_constraints!(core::ExaCore, u_flat, u0_flat, nt, n_samples, grid_points, grid_spacing, dt, params=(;); backend=CPU())
     nx  = grid_points[1]                                                                                                                                             
     dx = grid_spacing[1]
-    rho = get(params, :rho, 1.0) # Default values                                                                                                                                      
-    nu  = get(params, :nu, 0.01)
+    rho = get(params, :rho, 0.01) # Default values                                                                                                                                      
+    nu  = get(params, :nu, 0.005)
 
     # u0 is (nx, n_samples)
     # flat index: i + (t-1)*nx + (s-1)*nx*nt
@@ -209,7 +209,7 @@ end
 function burgers_constraints!(core::ExaCore, u_flat, u0_flat, nt, n_samples, grid_points, grid_spacing, dt, params=nothing; backend=CPU())
     nx  = grid_points[1]                                                                                                                                             
     dx = grid_spacing[1]
-    
+
     # flat index: i + (t-1)*nx + (s-1)*nx*nt
     idx(i, t, s) = i + (t-1)*nx + (s-1)*nx*nt
 
