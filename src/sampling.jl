@@ -164,11 +164,10 @@ function sample_pcfm(ffm::FFM, tstate, n_samples, n_steps, H!, params;
         compiled_funcs = nothing,
         verbose = true)
 
-    spatial_size = ffm.config[:spatial_size]
-    nx           = spatial_size[1]   # 1D-specific constrained sampling
-    nt           = ffm.config[:nt]
+    nx = ffm.config[:nx]
+    nt = ffm.config[:nt]
     emb_channels = ffm.config[:emb_channels]
-    device       = ffm.config[:device]
+    device = ffm.config[:device]
 
     @show backend isa GPU
 
@@ -198,7 +197,7 @@ function sample_pcfm(ffm::FFM, tstate, n_samples, n_steps, H!, params;
     u_0_ic = repeat(u_0_ic, 1, 1, 1, n_samples) |> device
 
     # Start from Gaussian noise
-    x_0 = randn(Float32, spatial_size..., nt, 1, n_samples) |> device
+    x_0 = randn(Float32, nx, nt, 1, n_samples) |> device
     x = copy(x_0)
 
     dt = 1.0f0 / n_steps
@@ -212,10 +211,10 @@ function sample_pcfm(ffm::FFM, tstate, n_samples, n_steps, H!, params;
 
         τ = step * dt
         τ_next = τ + dt
-        t_vec = fill(Float32(τ), n_samples) |> device
+        t_vec = fill(τ, n_samples) |> device
 
         # Prepare input with embeddings
-        x_input = prepare_input_fn(x, t_vec, spatial_size, nt, n_samples, emb_channels)
+        x_input = prepare_input_fn(x, t_vec, (nx,), nt, n_samples, emb_channels)
 
         # Predict velocity field
         v, st = model_fn(x_input, ps, st)
@@ -236,23 +235,36 @@ function sample_pcfm(ffm::FFM, tstate, n_samples, n_steps, H!, params;
             # @constraint(model, [i in 1:nx, s in 1:n_samples], u[i, 1, s] == x_1_cpu[i, 1, 1, s])
             # @constraint(model, [j in 1:nt, s in 1:n_samples], dx * sum(u[i,j,s] for i in 1:(nx-1)) == 0.0)
             optimize!(model)
+            # @show device
             x_0 = reshape(Float32.(value.(u)), nx, nt, 1, n_samples) |> device
         else
             # ExaModel version — solve projection for all samples at once
             N = nx * nt * n_samples
 
             if backend isa GPU
-                x_1_b = x_1[:, :, 1, :]
-                x1_vec = KernelAbstractions.adapt(backend, vec(x_1_b))
+                # x_1 is a Reactant ConcreteRArray (XLA-managed), not a plain CuArray.
+                # ExaModels/MadNLP expect regular CUDA pointers, so we must round-trip
+                # through CPU before adapting to the CUDA backend.
+                x_1_cpu_arr = Float32.(Array(x_1))          # Reactant -> CPU
+                x_1_b = x_1_cpu_arr[:, :, 1, :]             # (nx, nt, n_samples) CPU
+                x1_vec = KernelAbstractions.adapt(backend, vec(x_1_b))   # CPU -> CuArray
+                u0_gpu  = KernelAbstractions.adapt(backend, x_1_b[:, 1, :])  # (nx, n_samples)
                 core = ExaCore(backend=backend)
-                θ = parameter(core, x1_vec)              # x_1_flat can be a CuArray
+                θ = parameter(core, x1_vec)
                 u = variable(core, 1:N; start = x1_vec)
                 objective(core, (u[i] - θ[i])^2 for i in 1:N)
-                H!(core, u, (Nx=nx, Nt=nt, dx=dx, u0=x_1_b[:, 1, :], n_samples=n_samples, backend=backend))  
+                H!(core, u, (Nx=nx, Nt=nt, dx=dx, u0=u0_gpu, n_samples=n_samples, backend=backend))
                 nlp = ExaModel(core)
-                result = madnlp(nlp, linear_solver=MadNLPGPU.CUDSSSolver)
+                result = madnlp(nlp, linear_solver=MadNLPGPU.CUDSSSolver, print_level = MadNLP.ERROR)
                 x_exa_vec = solution(result, u)
-                x_0 = reshape(Float32.(x_exa_vec), nx, nt, 1, n_samples)
+                # The code below can be a bottleneck
+                x_gpu = Float32.(x_exa_vec)
+                x_cpu = Array(x_gpu)
+                x_cpu = reshape(x_cpu, nx, nt, 1, n_samples)
+                x_0 = x_cpu |> device
+                # @show typeof(x_exa_vec)
+                # x_0 = Array(reshape(Float32.(x_exa_vec), nx, nt, 1, n_samples)) |> device
+                # @show typeof(x_0)
             else
                 # CPU path: pull to CPU, use tuple embedding
                 x_1_cpu = Array(x_1)                                     # (nx, nt, 1, n_samples)
@@ -266,20 +278,17 @@ function sample_pcfm(ffm::FFM, tstate, n_samples, n_steps, H!, params;
                 H!(core, u, p)
                 nlp = ExaModel(core)
                 result = madnlp(nlp, print_level=MadNLP.ERROR)
-                # println("reached3")
                 x_exa_vec = solution(result, u)
                 # MadNLP returns Float64; cast back to Float32 before moving to device
-                # println("reached4")
                 x_0 = reshape(Float32.(Array(x_exa_vec)), nx, nt, 1, n_samples) |> device
-                # println("reached5")
             end
         end
         ##############
 
         # Step 3: Interpolate between x_0 and x_1 (corrected) at time t+dt
-        # println("reached")
-        x = x_0 .+ (x_1 .- x_0) .* τ_next
-        # println("reached2")
+        
+        # @show typeof(x_0) typeof(x_1) typeof(τ_next)
+        x = x_0 .+ (x_1 .- x_0) .* τ_next #This is the line that fails
     end
 
     return x
