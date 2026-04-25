@@ -28,12 +28,11 @@ function sample_ffm(ffm::FFM, tstate, n_samples, n_steps;
         use_compiled = true,
         compiled_funcs = nothing,
         verbose = true)
-    nx = ffm.config[:nx]
-    nt = ffm.config[:nt]
+    spatial_size = ffm.config[:spatial_size]
+    nt           = ffm.config[:nt]
     emb_channels = ffm.config[:emb_channels]
-    device = ffm.config[:device]
+    device       = ffm.config[:device]
 
-    # Extract parameters and states
     if hasfield(typeof(tstate), :parameters)
         ps = tstate.parameters
         st = tstate.states
@@ -42,40 +41,24 @@ function sample_ffm(ffm::FFM, tstate, n_samples, n_steps;
         st = tstate[2]
     end
 
-    # Use compiled or regular functions
     if use_compiled && compiled_funcs !== nothing
-        model_fn = compiled_funcs.model
+        model_fn         = compiled_funcs.model
         prepare_input_fn = compiled_funcs.prepare_input
     else
-        model_fn = ffm.model
+        model_fn         = ffm.model
         prepare_input_fn = prepare_input
     end
 
-    # Start from Gaussian noise
-    x = randn(Float32, nx, nt, 1, n_samples) |> device
+    x  = randn(Float32, spatial_size..., nt, 1, n_samples) |> device
     dt = 1.0f0 / n_steps
 
-    # Euler integration from t=0 to t=1
     for step in 0:(n_steps - 1)
-        if verbose && step % 10 == 0
-            println("Sampling step: $step/$n_steps")
-        end
+        verbose && step % 10 == 0 && println("Sampling step: $step/$n_steps")
 
-        t_scalar = step * dt
-        t_vec = fill(t_scalar, n_samples) |> device
-
-        # Prepare input with embeddings
-        x_input = prepare_input_fn(x, t_vec, nx, nt, n_samples, emb_channels)
-
-        # Predict velocity field
-        if use_compiled
-            v, st = model_fn(x_input, ps, st)
-        else
-            v, st = model_fn(x_input, ps, st)
-        end
-
-        # Update state: x ← x + v * dt
-        x = x .+ v .* dt
+        t_vec   = fill(Float32(step * dt), n_samples) |> device
+        x_input = prepare_input_fn(x, t_vec, spatial_size, nt, n_samples, emb_channels)
+        v, st   = model_fn(x_input, ps, st)
+        x       = x .+ v .* dt
     end
 
     return x
@@ -104,12 +87,12 @@ function sample_pcfm(ffm::FFM, tstate, n_samples, n_steps;
         use_compiled = true,
         compiled_funcs = nothing,
         verbose = true)
-    nx = ffm.config[:nx]
-    nt = ffm.config[:nt]
+    spatial_size = ffm.config[:spatial_size]
+    nx           = spatial_size[1]   # 1D-specific constraint sampling
+    nt           = ffm.config[:nt]
     emb_channels = ffm.config[:emb_channels]
-    device = ffm.config[:device]
+    device       = ffm.config[:device]
 
-    # Extract parameters and states
     if hasfield(typeof(tstate), :parameters)
         ps = tstate.parameters
         st = tstate.states
@@ -118,60 +101,36 @@ function sample_pcfm(ffm::FFM, tstate, n_samples, n_steps;
         st = tstate[2]
     end
 
-    # Use compiled or regular functions
     if use_compiled && compiled_funcs !== nothing
-        model_fn = compiled_funcs.model
+        model_fn         = compiled_funcs.model
         prepare_input_fn = compiled_funcs.prepare_input
     else
-        model_fn = ffm.model
+        model_fn         = ffm.model
         prepare_input_fn = prepare_input
     end
 
     # Fixed initial condition: u(x,0) = sin(x + π/4)
     x_grid = range(0, 2π, length=nx)
     u_0_ic = sin.(x_grid .+ π/4)
-    u_0_ic = reshape(u_0_ic, nx, 1, 1, 1)
-    # Broadcast to all samples
-    u_0_ic = repeat(u_0_ic, 1, 1, 1, n_samples) |> device
+    u_0_ic = repeat(reshape(u_0_ic, nx, 1, 1, 1), 1, 1, 1, n_samples) |> device
 
-    # Start from Gaussian noise
-    x_0 = randn(Float32, nx, nt, 1, n_samples) |> device
-    x = copy(x_0)
+    x_0 = randn(Float32, spatial_size..., nt, 1, n_samples) |> device
+    x   = copy(x_0)
+    dt  = 1.0f0 / n_steps
 
-    dt = 1.0f0 / n_steps
-
-    # Euler integration from t=0 to t=1
     for step in 0:(n_steps - 1)
-        if verbose && step % 10 == 0
-            println("PCFM step: $step/$n_steps")
-        end
+        verbose && step % 10 == 0 && println("PCFM step: $step/$n_steps")
 
-        τ = step * dt
+        τ      = step * dt
         τ_next = τ + dt
-        t_vec = fill(τ, n_samples) |> device
+        t_vec  = fill(Float32(τ), n_samples) |> device
 
-        # Prepare input with embeddings
-        x_input = prepare_input_fn(x, t_vec, nx, nt, n_samples, emb_channels)
+        x_input = prepare_input_fn(x, t_vec, spatial_size, nt, n_samples, emb_channels)
+        v, st   = model_fn(x_input, ps, st)
 
-        # Predict velocity field
-        v, st = model_fn(x_input, ps, st)
-
-        # Step 1: Extrapolate to t=1
         x_1 = x .+ v .* (1.0f0 - τ)
-
-        # Step 2: Apply constraint - fix initial condition
         @. x_1[:, 1:1, :, :] = u_0_ic
-        ##############
-        # model = Model(MadNLP.Optimizer)
-        # @variable(model, u[1:Nx, 1:Nt])
-        # @objective(model, Min, sum((u[i, j] - x_1[i, j])^2 for i in 1:Nx, j in 1:Nt))
-        # @constraint(model, [j in 1:Nt], dx * sum(u[i, j] for i in 1:Nx) == 0.0)
-        # optimize!(model)
-        # x_0 = value.(u)
 
-        ##############
-
-        # Step 3: Interpolate between x_0 and x_1 (corrected) at time t+dt
         x = x_0 .+ (x_1 .- x_0) .* τ_next
     end
 
@@ -205,10 +164,13 @@ function sample_pcfm(ffm::FFM, tstate, n_samples, n_steps, H!, params;
         compiled_funcs = nothing,
         verbose = true)
 
-    nx = ffm.config[:nx]
-    nt = ffm.config[:nt]
+    spatial_size = ffm.config[:spatial_size]
+    nx           = spatial_size[1]   # 1D-specific constrained sampling
+    nt           = ffm.config[:nt]
     emb_channels = ffm.config[:emb_channels]
-    device = ffm.config[:device]
+    device       = ffm.config[:device]
+
+    @show backend isa GPU
 
     # Extract parameters and states
     if hasfield(typeof(tstate), :parameters)
@@ -236,7 +198,7 @@ function sample_pcfm(ffm::FFM, tstate, n_samples, n_steps, H!, params;
     u_0_ic = repeat(u_0_ic, 1, 1, 1, n_samples) |> device
 
     # Start from Gaussian noise
-    x_0 = randn(Float32, nx, nt, 1, n_samples) |> device
+    x_0 = randn(Float32, spatial_size..., nt, 1, n_samples) |> device
     x = copy(x_0)
 
     dt = 1.0f0 / n_steps
@@ -250,10 +212,10 @@ function sample_pcfm(ffm::FFM, tstate, n_samples, n_steps, H!, params;
 
         τ = step * dt
         τ_next = τ + dt
-        t_vec = fill(τ, n_samples) |> device
+        t_vec = fill(Float32(τ), n_samples) |> device
 
         # Prepare input with embeddings
-        x_input = prepare_input_fn(x, t_vec, nx, nt, n_samples, emb_channels)
+        x_input = prepare_input_fn(x, t_vec, spatial_size, nt, n_samples, emb_channels)
 
         # Predict velocity field
         v, st = model_fn(x_input, ps, st)
@@ -262,7 +224,6 @@ function sample_pcfm(ffm::FFM, tstate, n_samples, n_steps, H!, params;
         x_1 = x .+ v .* (1.0f0 - τ)
 
         # Step 2: Apply constraint - fix initial condition
-        @. x_1[:, 1:1, :, :] = u_0_ic
         ##############
         if mode == "jump"
             # JuMP version — batched over all samples at once
@@ -271,7 +232,9 @@ function sample_pcfm(ffm::FFM, tstate, n_samples, n_steps, H!, params;
             set_silent(model)
             @variable(model, u[1:nx, 1:nt, 1:n_samples])
             @objective(model, Min, sum((u[i,j,s] - x_1_cpu[i,j,1,s])^2 for i in 1:nx, j in 1:nt, s in 1:n_samples))
-            @constraint(model, [j in 1:nt, s in 1:n_samples], dx * sum(u[i,j,s] for i in 1:(nx-1)) == 0.0)
+            H!(model, u, (Nx=nx, Nt=nt, dx=dx, u0=x_1_cpu, n_samples=n_samples))
+            # @constraint(model, [i in 1:nx, s in 1:n_samples], u[i, 1, s] == x_1_cpu[i, 1, 1, s])
+            # @constraint(model, [j in 1:nt, s in 1:n_samples], dx * sum(u[i,j,s] for i in 1:(nx-1)) == 0.0)
             optimize!(model)
             x_0 = reshape(Float32.(value.(u)), nx, nt, 1, n_samples) |> device
         else
@@ -279,18 +242,15 @@ function sample_pcfm(ffm::FFM, tstate, n_samples, n_steps, H!, params;
             N = nx * nt * n_samples
 
             if backend isa GPU
-                # GPU path: keep data on device, use array iteration (no scalar indexing)
-                x_1_flat = x_1[:, :, 1, :]                              # (nx, nt, n_samples) on device
-                u0_batch = x_1_flat[:, 1, :]                            # (nx, n_samples) on device
-                indices = KernelAbstractions.adapt(backend, collect(1:N))
-                values  = KernelAbstractions.adapt(backend, vec(x_1_flat))
+                x_1_b = x_1[:, :, 1, :]
+                x1_vec = KernelAbstractions.adapt(backend, vec(x_1_b))
                 core = ExaCore(backend=backend)
-                u = variable(core, 1:N, start = values)
-                objective(core, (u[i] - values[i])^2 for i in indices)
-                p = (Nx=nx, Nt=nt, dx=dx, u0=u0_batch, n_samples=n_samples, backend=backend)
-                H!(core, u, p)
+                θ = parameter(core, x1_vec)              # x_1_flat can be a CuArray
+                u = variable(core, 1:N; start = x1_vec)
+                objective(core, (u[i] - θ[i])^2 for i in 1:N)
+                H!(core, u, (Nx=nx, Nt=nt, dx=dx, u0=x_1_b[:, 1, :], n_samples=n_samples, backend=backend))  
                 nlp = ExaModel(core)
-                result = madnlp(nlp, linear_solver=MadNLPGPU.LapackCUDASolver, print_level=MadNLP.ERROR)
+                result = madnlp(nlp, linear_solver=MadNLPGPU.CUDSSSolver)
                 x_exa_vec = solution(result, u)
                 x_0 = reshape(Float32.(x_exa_vec), nx, nt, 1, n_samples)
             else
@@ -306,15 +266,20 @@ function sample_pcfm(ffm::FFM, tstate, n_samples, n_steps, H!, params;
                 H!(core, u, p)
                 nlp = ExaModel(core)
                 result = madnlp(nlp, print_level=MadNLP.ERROR)
+                # println("reached3")
                 x_exa_vec = solution(result, u)
                 # MadNLP returns Float64; cast back to Float32 before moving to device
+                # println("reached4")
                 x_0 = reshape(Float32.(Array(x_exa_vec)), nx, nt, 1, n_samples) |> device
+                # println("reached5")
             end
         end
         ##############
 
         # Step 3: Interpolate between x_0 and x_1 (corrected) at time t+dt
+        # println("reached")
         x = x_0 .+ (x_1 .- x_0) .* τ_next
+        # println("reached2")
     end
 
     return x
