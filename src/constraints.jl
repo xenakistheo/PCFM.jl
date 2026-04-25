@@ -49,14 +49,14 @@ end
 function ns_constraints!(model::Model, u, params)
     (; Nx, Ny, Nt, dx, dy, u0, n_samples) = params
     # u has shape (Nx, Ny, Nt, n_samples)
-    M0 = [sum(u0[i, j, s] for i in 1:Nx, j in 1:Ny) * dx * dy for s in 1:n_samples]
+    M0 = [sum(u0[i, j, s] for i in 1:Nx, j in 1:Ny) for s in 1:n_samples]
 
     # 1. Initial condition
     @constraint(model, [i in 1:Nx, j in 1:Ny, s in 1:n_samples], u[i, j, 1, s] == u0[i, j, s])
 
     # 2. Global mass conservation per sample for t >= 2
     @constraint(model, [t in 2:Nt, s in 1:n_samples],
-        sum(u[i, j, t, s] for i in 1:Nx, j in 1:Ny) * dx * dy == M0[s])
+        sum(u[i, j, t, s] for i in 1:Nx, j in 1:Ny) == M0[s])
 end
 
 
@@ -81,10 +81,10 @@ function ns_constraints!(core::ExaCore, u_flat, params)
     # 2. Global mass conservation per sample: ∑_{i,j} u*dx*dy = M0[s] for t >= 2
     # Embed (t, s, M0[s]) as data so ExaModels can access M0 as a constant
     # --------------------------------------------------
-    M0 = [sum(u0[i, j, s] for i in 1:Nx for j in 1:Ny) * dx * dy for s in 1:n_samples]
+    M0 = [sum(u0[i, j, s] for i in 1:Nx for j in 1:Ny) for s in 1:n_samples]
     ts_M0 = [(t, s, M0[s]) for t in 2:Nt for s in 1:n_samples]
     constraint(core,
-        (sum(u_flat[idx(i, j, d[1], d[2])] for i in 1:Nx for j in 1:Ny) * dx * dy - d[3]
+        (sum(u_flat[idx(i, j, d[1], d[2])] for i in 1:Nx for j in 1:Ny) - d[3]
             for d in ts_M0);
         lcon = KernelAbstractions.adapt(backend, zeros((Nt-1) * n_samples)),
         ucon = KernelAbstractions.adapt(backend, zeros((Nt-1) * n_samples))
