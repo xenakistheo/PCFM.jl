@@ -99,19 +99,17 @@ end
 
 Load a random batch of 2D Navier-Stokes vorticity solutions from an HDF5 file.
 
-Each sample has shape (s, s, t). Returns array of shape (s, s, t, batch_size).
-
-Note: the current FFM model expects (nx, nt, 1, batch) — 2D FFM support is required
-to train on NS data.
+Each raw sample has shape `(s, s, t)`. Returns array of shape `(s, s, t, 1, batch_size)`
+— matching the standard FFM data format `(spatial..., nt, 1, batch)`.
 """
 function load_ns_batch(data_file::String, batch_size::Int)
     ds = NavierStokesDataset(dirname(data_file), "train", basename(data_file))
     sample1 = ds[1]
     s1, s2, t = size(sample1)
-    u_data = zeros(Float32, s1, s2, t, batch_size)
+    u_data = zeros(Float32, s1, s2, t, 1, batch_size)
     indices = rand(1:length(ds), batch_size)
     for (b, idx) in enumerate(indices)
-        u_data[:, :, :, b] = ds[idx]
+        u_data[:, :, :, 1, b] = ds[idx]
     end
     close(ds)
     return u_data

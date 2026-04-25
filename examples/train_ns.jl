@@ -2,15 +2,12 @@
 Training script for Functional Flow Matching on the 2D Navier-Stokes equation
 (vorticity form, pseudo-spectral Crank-Nicolson solver).
 
-Data is generated once and saved to HDF5. Each sample is a vorticity field of
-shape (s, s, t) = (64, 64, 50).
-
-NOTE: The current FFM model expects (nx, nt, 1, batch) — 1D spatial inputs.
-Model training is left as a TODO pending 2D FFM support. This script handles
-data generation and loading only.
+Data: vorticity fields of shape (s, s, t) = (64, 64, 50).
+FFM input format after loading: (s, s, t, 1, batch).
 """
 
 using PCFM
+using Reactant, Lux
 using Plots
 using Random
 
@@ -26,37 +23,85 @@ train_file   = joinpath(data_dir, "ns_nw100_nf100_s64_t50_mu0.001.h5")
 # ---------------------------------------------------------------------------
 # Configuration
 # ---------------------------------------------------------------------------
-batch_size = 32
-s          = 64    # spatial grid size (s × s)
-nt         = 50    # number of recorded time snapshots
+batch_size   = 16
+s            = 64    # spatial grid size (s × s)
+nt           = 50    # number of recorded time snapshots
+emb_channels = 32
+n_epochs     = 1000
 
-# ---------------------------------------------------------------------------
+# Fourier modes: (s_modes, s_modes, t_modes) — keep well below s/2 and nt/2
+ns_modes = (12, 12, 16)
+
 println("=" ^ 60)
 println("2D Navier-Stokes — Functional Flow Matching")
 println("=" ^ 60)
 
-# 1. Check dataset exists
+# 1. Check dataset
 if !isfile(train_file)
     error("Training data not found at $train_file.\nRun examples/generate_ns_data.jl first.")
-else
-    println("\n[1/2] Dataset found: $train_file")
 end
+println("\n[1/5] Dataset found: $train_file")
 
-# 2. Load a batch and inspect
-println("\n[2/2] Loading batch...")
+# 2. Load a batch
+println("\n[2/5] Loading batch...")
 u_data = load_ns_batch(train_file, batch_size)
-println("  Data shape: $(size(u_data))  — (s, s, t, batch_size)")
+println("  Data shape: $(size(u_data))  — (s, s, t, 1, batch_size)")
+
+# 3. Create model
+println("\n[3/5] Creating FFM model for 2D Navier-Stokes...")
+ffm = FFM(
+    spatial_size  = (s, s),
+    nt            = nt,
+    emb_channels  = emb_channels,
+    hidden_channels = 64,
+    proj_channels = 256,
+    n_layers      = 4,
+    modes         = ns_modes,
+    device        = reactant_device()
+)
+println("  spatial_size = $(ffm.config[:spatial_size]),  modes = $(ffm.config[:modes])")
+println("  in_channels  = $(1 + emb_channels + length((s, s)) + 1)  (u + time_emb + pos_x + pos_y + pos_t)")
+
+# 4. Compile (optional — comment out if Reactant is unavailable)
+println("\n[4/5] Compiling functions with Reactant...")
+compiled_funcs = PCFM.compile_functions(ffm, batch_size)
+
+# 5. Train
+println("\n[5/5] Training for $n_epochs epochs...")
+losses, tstate = train_ffm!(
+    ffm, u_data;
+    compiled_funcs,
+    epochs  = n_epochs,
+    verbose = true
+)
+println("\nFinal loss: $(losses[end])")
 
 # ---------------------------------------------------------------------------
-# Visualise a few vorticity snapshots
+# Sample and visualise
 # ---------------------------------------------------------------------------
-arr = u_data
-p_snaps = [Plots.heatmap(arr[:, :, 1, i],
-               title = "Sample $i, t=0", xlabel = "x", ylabel = "y", c = :RdBu)
-           for i in 1:min(4, batch_size)]
-display(Plots.plot(p_snaps..., layout = (2, 2), size = (800, 600)))
+println("\nGenerating samples...")
+samples = sample_ffm(ffm, tstate, 4, 50; compiled_funcs, verbose = true)
+# samples shape: (s, s, nt, 1, 4)
 
-println("""
-TODO: extend FFM to support 2D spatial inputs (s × s × t) before training.
-      The model currently expects (nx, nt, 1, batch).
-""")
+p_loss = plot(1:length(losses), losses;
+    yscale  = :log10,
+    xlabel  = "Epoch", ylabel = "Loss (log)",
+    title   = "NS Training Loss",
+    legend  = false, linewidth = 2)
+
+arr_data    = Array(u_data)
+arr_samples = Array(samples)
+
+# Show first vorticity snapshot (t=1) from data and generated samples
+p_data = [heatmap(arr_data[:, :, 1, 1, i];
+              title = "Data $i, t=0", xlabel = "x", ylabel = "y", c = :RdBu)
+          for i in 1:min(2, batch_size)]
+
+p_gen = [heatmap(arr_samples[:, :, 1, 1, i];
+             title = "Sample $i, t=0", xlabel = "x", ylabel = "y", c = :RdBu)
+         for i in 1:2]
+
+display(p_loss)
+display(plot(p_data..., p_gen...; layout = (2, 2), size = (900, 700)))
+
+println("\nDone!")
