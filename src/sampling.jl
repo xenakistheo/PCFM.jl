@@ -206,6 +206,9 @@ function sample_pcfm(ffm::FFM, tstate, n_samples, n_steps, H!;
     dt = 1.0f0 / n_steps
     dx = x_grid[2] - x_grid[1]
 
+    grid_points = (nx) 
+    grid_spacing = (dx)
+
     # Euler integration from t=0 to t=1
     for step in 0:(n_steps - 1)
         if verbose && step % 10 == 0
@@ -234,7 +237,7 @@ function sample_pcfm(ffm::FFM, tstate, n_samples, n_steps, H!;
             set_silent(model)
             @variable(model, u[1:nx, 1:nt, 1:n_samples])
             @objective(model, Min, sum((u[i,j,s] - x_1_cpu[i,j,1,s])^2 for i in 1:nx, j in 1:nt, s in 1:n_samples))
-            H!(model, u, (Nx=nx, Nt=nt, dx=dx, u0=x_1_cpu, n_samples=n_samples))
+            H!(model, u, x_1_cpu, nt, n_samples, grid_points, grid_spacing, dt, constraint_parameters)
             # @constraint(model, [i in 1:nx, s in 1:n_samples], u[i, 1, s] == x_1_cpu[i, 1, 1, s])
             # @constraint(model, [j in 1:nt, s in 1:n_samples], dx * sum(u[i,j,s] for i in 1:(nx-1)) == 0.0)
             optimize!(model)
