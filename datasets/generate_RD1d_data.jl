@@ -162,7 +162,7 @@ function run_parallel(root; N_ic=80, N_bc=80, seed=42, filename="RD_neumann_trai
 
         # Python/h5py shape: (N_ic, N_bc, Nx, nt)
         # Julia HDF5 reversed dims: (nt, Nx, N_bc, N_ic)
-        d_create(f, "u", datatype(Float32),
+        create_dataset(f, "u", datatype(Float32),
                  dataspace(nt_RD, Nx_RD, N_bc, N_ic))
 
         Threads.@threads for i_ic in 1:N_ic
@@ -181,9 +181,11 @@ end
 
 # ── Main script ───────────────────────────────────────────────────────────────
 
-# Training data: vary IC and BC
-run_parallel("datasets/data/"; N_ic=80, N_bc=80, seed=42, filename="RD_neumann_train")
-run_parallel("datasets/data/"; N_ic=30, N_bc=30, seed=0,  filename="RD_neumann_test")
+if abspath(PROGRAM_FILE) == @__FILE__
+    # Training data: vary IC and BC
+    run_parallel("datasets/data/"; N_ic=80, N_bc=80, seed=42, filename="RD_neumann_train")
+    run_parallel("datasets/data/"; N_ic=30, N_bc=30, seed=0,  filename="RD_neumann_test")
 
-# Sampling data: fixed ICs, many BCs
-run_parallel("datasets/data/"; N_ic=20, N_bc=512, seed=42, filename="RD_sampling_diffICs")
+    # Sampling data: fixed ICs, many BCs
+    run_parallel("datasets/data/"; N_ic=20, N_bc=512, seed=42, filename="RD_sampling_diffICs")
+end

@@ -1,12 +1,13 @@
 """
-Example script for training Functional Flow Matching on 1D diffusion equation.
+Example script for training and sampling from a Functional Flow Matching model
+on the 1D heat (diffusion) equation.
 
 This script demonstrates:
-1. Creating an FFM (Functional Flow Matching) model
+1. Creating an FFM model
 2. Generating training data
 3. Compiling functions with Reactant
 4. Training the model
-5. Generating samples
+5. Generating unconstrained and physics-constrained samples
 """
 
 using PCFM
@@ -27,25 +28,38 @@ dev_gpu = cu
 using Random
 Random.seed!(1234)
 
+# ---------------------------------------------------------------------------
 # Configuration
-batch_size = 32
-
-nx = 100          # Spatial resolution
-nt = 100          # Temporal resolution
+# ---------------------------------------------------------------------------
+batch_size   = 32
+nx           = 100          # Spatial resolution
+nt           = 100          # Temporal resolution
 emb_channels = 32
-n_epochs = 1000
+n_epochs     = 1000
 force_retrain = false
 
 # Checkpoint path
-weight_file = joinpath(@__DIR__, "checkpoints", "ffm_diffusion_checkpoint.jld2")
+weight_file = joinpath(@__DIR__, "checkpoints", "ffm_heat_checkpoint.jld2")
 
 # Data generation parameters
 visc_range = (1.0f0, 5.0f0)
-phi_range = (0.0f0, Float32(π))
-t_range = (0.0f0, 1.0f0)
+phi_range  = (0.0f0, Float32(π))
+t_range    = (0.0f0, 1.0f0)
 
+# Grid
+x_grid = range(0.0f0, 2.0f0*Float32(π); length = nx)
+dx     = Float32(x_grid[2] - x_grid[1])
+dt     = 1.0f0 / (nt - 1)
+
+# Initial condition: u(x, 0) = sin(x + π/4)
+u0_ic = Float32.(sin.(x_grid .+ π/4))
+
+# Constraint params (passed through to heat_constraints!)
+constraint_params = (Nx=nx, Nt=nt, dx=dx)
+
+# ---------------------------------------------------------------------------
 println("=" ^ 60)
-println("Training Functional Flow Matching on 1D Diffusion Equation")
+println("Heat Equation — Functional Flow Matching")
 println("=" ^ 60)
 
 # 1. Generate training data
@@ -54,7 +68,7 @@ u_data = generate_diffusion_data(batch_size, nx, nt, visc_range, phi_range, t_ra
 println("  Data shape: $(size(u_data))")
 
 # 2. Create model
-println("\n[2/5] Creating FFM (Functional Flow Matching) model...")
+println("\n[2/5] Creating FFM model...")
 ffm = FFM(
     nx = nx,
     nt = nt,
@@ -64,10 +78,10 @@ ffm = FFM(
     n_layers = 4,
     modes = (32, 32),
     device = reactant_device()
-);
+)
 println("  Model created successfully")
 
-# 3. Load checkpoint (if available) or train model
+# 3. Load checkpoint or train
 if isfile(weight_file) && !force_retrain
     println("\n[3/5] Loading checkpoint from: $weight_file")
     saved = JLD2.load(weight_file)
@@ -99,11 +113,13 @@ _, st = Lux.setup(Random.default_rng(), ffm.model)
 ps = ps |> device
 st = st |> device
 
+# ---------------------------------------------------------------------------
 # 5. Generate samples
+# ---------------------------------------------------------------------------
 println("\n[5/5] Generating samples...")
 n_samples = 32
-# Reuse compiled_funcs if n_samples == batch_size, otherwise compile for n_samples
 sample_compiled_funcs = (n_samples == batch_size) ? compiled_funcs : PCFM.compile_functions(ffm, n_samples)
+tstate_inf = (parameters = ps, states = st)
 
 
 

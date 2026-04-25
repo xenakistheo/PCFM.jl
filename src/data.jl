@@ -1,3 +1,10 @@
+using HDF5
+
+# Dataset struct definitions
+include("../datasets/burgers1d.jl")
+include("../datasets/rd1d.jl")
+include("../datasets/ns.jl")
+
 """
     generate_diffusion_data(n_samples, nx, nt, visc_range, phi_range, t_range)
 
@@ -42,5 +49,70 @@ function generate_diffusion_data(n_samples, nx, nt, visc_range, phi_range, t_ran
         end
     end
 
+    return u_data
+end
+
+"""
+    load_burgers_batch(data_file, batch_size)
+
+Load a random batch of Burgers equation solutions from an HDF5 file.
+
+# Returns
+  - Array of shape (Nx+1, Nt+1, 1, batch_size)
+"""
+function load_burgers_batch(data_file::String, batch_size::Int)
+    ds = Burgers1DDataset(dirname(data_file), "train", basename(data_file))
+    sample1 = ds[1]
+    nx, nt = size(sample1)
+    u_data = zeros(Float32, nx, nt, 1, batch_size)
+    indices = rand(1:length(ds), batch_size)
+    for (b, idx) in enumerate(indices)
+        u_data[:, :, 1, b] = ds[idx]
+    end
+    close(ds)
+    return u_data
+end
+
+"""
+    load_rd_batch(data_file, batch_size)
+
+Load a random batch of Reaction-Diffusion equation solutions from an HDF5 file.
+
+# Returns
+  - Array of shape (Nx, nt, 1, batch_size)
+"""
+function load_rd_batch(data_file::String, batch_size::Int)
+    ds = RD1DDataset(dirname(data_file), "train", basename(data_file))
+    sample1 = ds[1]
+    nx, nt = size(sample1)
+    u_data = zeros(Float32, nx, nt, 1, batch_size)
+    indices = rand(1:length(ds), batch_size)
+    for (b, idx) in enumerate(indices)
+        u_data[:, :, 1, b] = ds[idx]
+    end
+    close(ds)
+    return u_data
+end
+
+"""
+    load_ns_batch(data_file, batch_size)
+
+Load a random batch of 2D Navier-Stokes vorticity solutions from an HDF5 file.
+
+Each sample has shape (s, s, t). Returns array of shape (s, s, t, batch_size).
+
+Note: the current FFM model expects (nx, nt, 1, batch) — 2D FFM support is required
+to train on NS data.
+"""
+function load_ns_batch(data_file::String, batch_size::Int)
+    ds = NavierStokesDataset(dirname(data_file), "train", basename(data_file))
+    sample1 = ds[1]
+    s1, s2, t = size(sample1)
+    u_data = zeros(Float32, s1, s2, t, batch_size)
+    indices = rand(1:length(ds), batch_size)
+    for (b, idx) in enumerate(indices)
+        u_data[:, :, :, b] = ds[idx]
+    end
+    close(ds)
     return u_data
 end
