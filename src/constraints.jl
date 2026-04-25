@@ -7,8 +7,8 @@ function heat_constraints!(model::Model, u, params)
     Constraints for the JuMP model of Heat Eq. 
     u should have shape (Nx, Nt, n_samples)
     """
-    # @constraint(model, [i in 1:Nx, s in 1:n_samples], u[i, 1, s] == u0[i, 1, 1, s]) #IC
-    @constraint(model, [j in 1:Nt, s in 1:n_samples], dx * sum(u[i,j,s] for i in 1:(Nx-1)) == 0.0) #Mass constraint 
+    @constraint(model, [i in 1:Nx, s in 1:n_samples], u[i, 1, s] == u0[i, 1, 1, s]) #IC
+    @constraint(model, [j in 2:Nt, s in 1:n_samples], sum(u[i,j,s] for i in 1:(Nx-1)) == sum(u0[i,1,1,s] for i in 1:(Nx-1))) #Mass constraint 
 end 
 
 
@@ -21,22 +21,22 @@ function heat_constraints!(core::ExaCore, u_flat, params)
     u0_param = parameter(core, u0)
 
     # 1. Initial condition
-    # constraint(
-    #     core,
-    #     (
-    #         u_flat[idx(i, 1, s)] - u0_param[i, s]
-    #         for i in 1:Nx, s in 1:n_samples
-    #     );
-    #     lcon = KernelAbstractions.adapt(backend, zeros(Nx * n_samples)),
-    #     ucon = KernelAbstractions.adapt(backend, zeros(Nx * n_samples)),
-    # )
+    constraint(
+        core,
+        (
+            u_flat[idx(i, 1, s)] - u0_param[i, s]
+            for i in 1:Nx, s in 1:n_samples
+        );
+        lcon = KernelAbstractions.adapt(backend, zeros(Nx * n_samples)),
+        ucon = KernelAbstractions.adapt(backend, zeros(Nx * n_samples)),
+    )
 
     # 2. Mass conservation
     constraint(
         core,
         (
-            sum(u_flat[idx(i, t, s)] for i in 1:Nx-1) * dx
-            for t in 1:Nt, s in 1:n_samples
+            sum(u_flat[idx(i, t, s)] for i in 1:Nx-1) - sum(u0_param[i, s] for i in 1:Nx-1)
+            for t in 2:Nt, s in 1:n_samples
         );
         lcon = KernelAbstractions.adapt(backend, zeros(Nt * n_samples)),
         ucon = KernelAbstractions.adapt(backend, zeros(Nt * n_samples)),
