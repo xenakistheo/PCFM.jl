@@ -8,14 +8,14 @@ function heat_constraints!(model::Model, u, u0, nt, n_samples, grid_points, grid
     """
     nx  = grid_points[1]                                                                                                                                             
     dx = grid_spacing[1]
+
     @constraint(model, [i in 1:nx, s in 1:n_samples], u[i, 1, s] == u0[i, 1, 1, s]) #IC
     @constraint(model, [j in 2:nt, s in 1:n_samples], sum(u[i,j,s] for i in 1:(nx-1)) == sum(u0[i,1,1,s] for i in 1:(nx-1))) #Mass constraint 
 end 
 
 
 
-function heat_constraints!(core::ExaCore, u_flat, params)
-    (; nx, nt, dx, u0, n_samples, backend) = params
+function heat_constraints!(core::ExaCore, u_flat, u0_flat, nt, n_samples, grid_points, grid_spacing, dt, params=nothing; backend=CPU())
 
     idx(i, t, s) = i + (t-1)*nx + (s-1)*nx*nt
 
@@ -63,8 +63,7 @@ function ns_constraints!(model::Model, u, u0, nt, n_samples, grid_points, grid_s
 end
 
 
-function ns_constraints!(core::ExaCore, u_flat, params)
-    (; nx, ny, nt, dx, dy, u0, n_samples, backend) = params
+function ns_constraints!(core::ExaCore, u_flat, u0_flat, nt, n_samples, grid_points, grid_spacing, dt, params=nothing; backend=CPU())
 
     # u0 is (nx, ny, n_samples)
     # flat index: i + (j-1)*nx + (t-1)*nx*ny + (s-1)*nx*ny*nt
@@ -128,8 +127,8 @@ function rd_constraints!(model::Model, u, u0, nt, n_samples, grid_points, grid_s
 end
 
 
-function rd_constraints!(core::ExaCore, u_flat, params)
-    (; nx, nt, dx, dt, rho, nu, u0, n_samples, backend) = params
+function rd_constraints!(core::ExaCore, u_flat, u0_flat, nt, n_samples, grid_points, grid_spacing, dt, params=nothing; backend=CPU())
+
 
     # u0 is (nx, n_samples)
     # flat index: i + (t-1)*nx + (s-1)*nx*nt
@@ -200,8 +199,7 @@ function burgers_constraints!(model::Model, u, u0, nt, n_samples, grid_points, g
 end
 
 
-function burgers_constraints!(core::ExaCore, u_flat, params)
-    (; nx, Nt, dx, dt, left_bc, n_samples, backend) = params
+function burgers_constraints!(core::ExaCore, u_flat, u0_flat, nt, n_samples, grid_points, grid_spacing, dt, params=nothing; backend=CPU())
 
     # flat index: i + (t-1)*nx + (s-1)*nx*nt
     idx(i, t, s) = i + (t-1)*nx + (s-1)*nx*nt
