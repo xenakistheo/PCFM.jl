@@ -45,38 +45,6 @@ function heat_constraints!(core::ExaCore, u_flat, params)
     return nothing
 end
 
-function heat_constraints2!(core::ExaCore, u_flat, params)
-    """This is the old (not gpu friendly)
-    heat constraint. Keeping it here for now. 
-    """
-    (; Nx, Nt, dx, u0, n_samples, backend) = params
-
-    # u0 is (Nx, n_samples)
-    # flat index: i + (t-1)*Nx + (s-1)*Nx*Nt
-    idx(i, t, s) = i + (t-1)*Nx + (s-1)*Nx*Nt
-
-    # --------------------------------------------------
-    # 1. Initial condition: u(x,0) = u0(x) for each sample
-    # --------------------------------------------------
-    u0_data = [(idx(i, 1, s), u0[i, s]) for i in 1:Nx for s in 1:n_samples]
-    constraint(core,
-        (u_flat[d[1]] - d[2] for d in u0_data);
-        lcon = KernelAbstractions.adapt(backend, zeros(Nx * n_samples)),
-        ucon = KernelAbstractions.adapt(backend, zeros(Nx * n_samples))
-    )
-
-    # --------------------------------------------------
-    # 2. Mass conservation: ∑ u(x,t) dx = 0 for all t and all samples
-    # --------------------------------------------------
-    ts_pairs = [(t, s) for t in 1:Nt for s in 1:n_samples]
-    constraint(core,
-        (sum(u_flat[idx(i, d[1], d[2])] for i in 1:Nx-1) * dx for d in ts_pairs);
-        lcon = KernelAbstractions.adapt(backend, zeros(Nt * n_samples)),
-        ucon = KernelAbstractions.adapt(backend, zeros(Nt * n_samples))
-    )
-
-    return nothing
-end
 
 function ns_constraints!(core::ExaCore, u_flat, params)
     (; Nx, Ny, Nt, dx, dy, u0, n_samples, backend) = params
