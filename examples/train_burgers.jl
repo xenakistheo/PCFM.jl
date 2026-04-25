@@ -25,11 +25,12 @@ weight_file = joinpath(@__DIR__, "checkpoints", "ffm_burgers_checkpoint.jld2")
 # ---------------------------------------------------------------------------
 # Configuration
 # ---------------------------------------------------------------------------
-batch_size   = 32
-nx           = 101      # Nx+1 spatial points
-nt           = 101      # Nt+1 temporal points
-emb_channels = 32
-n_epochs     = 1000
+batch_size    = 32
+nx            = 101      # Nx+1 spatial points
+nt            = 101      # Nt+1 temporal points
+emb_channels  = 32
+n_epochs      = 1000
+force_retrain = false
 
 # ---------------------------------------------------------------------------
 println("=" ^ 60)
@@ -40,12 +41,12 @@ println("=" ^ 60)
 if !isfile(train_file)
     error("Training data not found at $train_file.\nRun examples/generate_burgers_data.jl first.")
 end
-println("\n[1/3] Loading training batch from $train_file ...")
+println("\n[1/4] Loading training batch from $train_file ...")
 u_data = load_burgers_batch(train_file, batch_size)
 println("  Data shape: $(size(u_data))  — (nx, nt, 1, batch_size)")
 
 # 2. Create model
-println("\n[2/3] Creating FFM model...")
+println("\n[2/4] Creating FFM model...")
 ffm = FFM(
     nx = nx,
     nt = nt,
@@ -58,18 +59,28 @@ ffm = FFM(
 )
 println("  Model created successfully")
 
-# 3. Compile and train
-println("\n[3/3] Compiling and training for $n_epochs epochs...")
-compiled_funcs = PCFM.compile_functions(ffm, batch_size)
-losses, tstate = train_ffm!(ffm, u_data; compiled_funcs, epochs = n_epochs, verbose = true)
-println("\nFinal loss: $(losses[end])")
+# 3. Train or load checkpoint
+losses = Float32[]
+if isfile(weight_file) && !force_retrain
+    println("\n[3/4] Loading checkpoint from: $weight_file")
+    saved  = JLD2.load(weight_file)
+    device = ffm.config[:device]
+    ps     = saved["parameters"] |> device
+    st     = saved["states"]     |> device
+    losses = saved["losses"]
+    println("  Loaded parameters, states, and loss history")
+else
+    println("\n[3/4] Compiling and training for $n_epochs epochs...")
+    compiled_funcs = PCFM.compile_functions(ffm, batch_size)
+    losses, tstate = train_ffm!(ffm, u_data; compiled_funcs, epochs = n_epochs, verbose = true)
+    println("\nFinal loss: $(losses[end])")
 
-# Save checkpoint (parameters and states moved to CPU for portability)
-ps = fmap(x -> x isa AbstractArray ? Array(x) : x, tstate.parameters)
-st = fmap(x -> x isa AbstractArray ? Array(x) : x, tstate.states)
-mkpath(dirname(weight_file))
-JLD2.save(weight_file, "parameters", ps, "states", st, "losses", losses, "config", ffm.config)
-println("Checkpoint saved to: $weight_file")
+    ps = fmap(x -> x isa AbstractArray ? Array(x) : x, tstate.parameters)
+    st = fmap(x -> x isa AbstractArray ? Array(x) : x, tstate.states)
+    mkpath(dirname(weight_file))
+    JLD2.save(weight_file, "parameters", ps, "states", st, "losses", losses, "config", ffm.config)
+    println("Checkpoint saved to: $weight_file")
+end
 
 # ---------------------------------------------------------------------------
 # Visualise training curve
