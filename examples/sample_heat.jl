@@ -140,40 +140,74 @@ tstate_inf = (parameters = ps, states = st)
 
 # Runs 
 
-#The following benchmarks were recorded using the following compute 
-# salloc -p mit_normal_gpu --gres=gpu:1 --cpus-per-task=4 --mem=64G --time=03:00:00
+# #The following benchmarks were recorded using the following compute 
+# # salloc -p mit_normal_gpu --gres=gpu:1 --cpus-per-task=4 --mem=64G --time=03:00:00
 
-#1st run 236.599683 seconds (493.11 M allocations: 41.098 GiB, 4.62% gc time, 1 lock conflict, 51.06% compilation time: <1% of which was recompilation)
-#2nd run  98.144399 seconds (11.48 M allocations: 15.121 GiB, 2.81% gc time)
-@time samples_exa = sample_pcfm(ffm, (parameters = ps, states = st), n_samples, 20, heat_constraints!; 
-    backend=backend, compiled_funcs = sample_compiled_funcs, verbose = true); 
+# #1st run 236.599683 seconds (493.11 M allocations: 41.098 GiB, 4.62% gc time, 1 lock conflict, 51.06% compilation time: <1% of which was recompilation)
+# #2nd run  98.144399 seconds (11.48 M allocations: 15.121 GiB, 2.81% gc time)
+# @time samples_exa = sample_pcfm(ffm, (parameters = ps, states = st), n_samples, 20, heat_constraints!; 
+#     backend=backend, compiled_funcs = sample_compiled_funcs, verbose = true); 
 
 
-#1st run 101.670634 seconds (192.11 M allocations: 29.090 GiB, 22.53% gc time, 24.50% compilation time)
-#2nd run 83.031268 seconds (35.11 M allocations: 23.100 GiB, 28.98% gc time, 0.80% compilation time)
-@time samples_exa = sample_pcfm(ffm, (parameters = ps, states = st), n_samples, 20, heat_constraints!; 
-    backend=CPU(), compiled_funcs = sample_compiled_funcs, verbose = true);  
+# #1st run 101.670634 seconds (192.11 M allocations: 29.090 GiB, 22.53% gc time, 24.50% compilation time)
+# #2nd run 83.031268 seconds (35.11 M allocations: 23.100 GiB, 28.98% gc time, 0.80% compilation time)
+# @time samples_exa = sample_pcfm(ffm, (parameters = ps, states = st), n_samples, 20, heat_constraints!; 
+#     backend=CPU(), compiled_funcs = sample_compiled_funcs, verbose = true);  
 
-# JuMP - Compiled Functions 
-#1st run 212.458600 seconds
-#2nd run 175.130955 seconds (1.62 G allocations: 111.857 GiB, 33.80% gc time)
-@time samples_jump = sample_pcfm(ffm, (parameters = ps, states = st), n_samples, 20, heat_constraints!; 
-    backend=CPU(), compiled_funcs = sample_compiled_funcs, verbose = true, mode="jump"); 
+# # JuMP - Compiled Functions 
+# #1st run 212.458600 seconds
+# #2nd run 175.130955 seconds (1.62 G allocations: 111.857 GiB, 33.80% gc time)
+# @time samples_jump = sample_pcfm(ffm, (parameters = ps, states = st), n_samples, 20, heat_constraints!; 
+#     backend=CPU(), compiled_funcs = sample_compiled_funcs, verbose = true, mode="jump"); 
 
-@time samples_jump = sample_pcfm(ffm, (parameters = ps, states = st), n_samples, 20, heat_constraints!; 
-    backend=CPU(), compiled_funcs = sample_compiled_funcs, verbose = true, mode="jump", optimizer=Ipopt.Optimizer); 
+# @time samples_jump = sample_pcfm(ffm, (parameters = ps, states = st), n_samples, 20, heat_constraints!; 
+#     backend=CPU(), compiled_funcs = sample_compiled_funcs, verbose = true, mode="jump", optimizer=Ipopt.Optimizer); 
 
 
 
 
 ##############
+# ExaModels, MadNLP, GPU
 @btime sample_pcfm($ffm, (parameters = $ps, states = $st),
-                   $n_samples, 20, heat_constraints!;
+                   $n_samples, 100, heat_constraints!;
+                   backend=backend,
+                   compiled_funcs = sample_compiled_funcs,
+                   verbose = true,
+                   mode="exa");
+
+# ExaModels, MadNLP, CPU
+@btime sample_pcfm($ffm, (parameters = $ps, states = $st),
+                   $n_samples, 100, heat_constraints!;
+                   backend=CPU(),
+                   compiled_funcs = sample_compiled_funcs,
+                   verbose = true,
+                   mode="exa");
+
+
+#JuMP, MadNLP
+@btime sample_pcfm($ffm, (parameters = $ps, states = $st),
+                   $n_samples, 100, heat_constraints!;
+                   backend=CPU(),
+                   compiled_funcs = sample_compiled_funcs,
+                   verbose = true,
+                   mode="jump",
+                   optimizer=MadNLP.Optimizer);
+
+
+#JuMP, Ipopt
+@btime sample_pcfm($ffm, (parameters = $ps, states = $st),
+                   $n_samples, 100, heat_constraints!;
                    backend=CPU(),
                    compiled_funcs = sample_compiled_funcs,
                    verbose = true,
                    mode="jump",
                    optimizer=Ipopt.Optimizer);
+
+
+
+
+
+
 # println("\n" * "=" ^ 60)
 # println("Training Complete!")
 # println("=" ^ 60)
