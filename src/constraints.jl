@@ -76,22 +76,25 @@ function ns_constraints!(core::ExaCore, u_flat, u0_flat, nt, n_samples, grid_poi
     # --------------------------------------------------
     # 1. Initial condition for each sample
     # --------------------------------------------------
-    u0_data = [(idx(i, j, 1, s), u0_flat[i, j, s]) for i in 1:nx for j in 1:Ny for s in 1:n_samples]
+    u0_param = parameter(core, u0_flat)
+
     constraint(core,
-        (u_flat[d[1]] - d[2] for d in u0_data);
+        (u_flat[idx(i, j, 1, s)] - u0_param[i, j, s]
+         for i in 1:nx, j in 1:ny, s in 1:n_samples);
         lcon = KernelAbstractions.adapt(backend, zeros(nx * ny * n_samples)),
         ucon = KernelAbstractions.adapt(backend, zeros(nx * ny * n_samples))
     )
 
     # --------------------------------------------------
-    # 2. Global mass conservation per sample: ∑_{i,j} u*dx*dy = M0[s] for t >= 2
-    # Embed (t, s, M0[s]) as data so ExaModels can access M0 as a constant
+    # 2. Global mass conservation per sample: ∑_{i,j} u = M0[s] for t >= 2
     # --------------------------------------------------
-    M0 = [sum(u0_flat[i, j, s] for i in 1:nx for j in 1:ny) for s in 1:n_samples]
-    ts_M0 = [(t, s, M0[s]) for t in 2:nt for s in 1:n_samples]
+    M0 = dropdims(sum(u0_flat, dims=(1, 2)), dims=(1, 2))  # shape: (n_samples,)
+    M0_param = parameter(core, M0)
+
+    ts_pairs = [(t, s) for t in 2:nt for s in 1:n_samples]
     constraint(core,
-        (sum(u_flat[idx(i, j, d[1], d[2])] for i in 1:nx for j in 1:ny) - d[3]
-            for d in ts_M0);
+        (sum(u_flat[idx(i, j, d[1], d[2])] for i in 1:nx, j in 1:ny) - M0_param[d[2]]
+            for d in ts_pairs);
         lcon = KernelAbstractions.adapt(backend, zeros((nt-1) * n_samples)),
         ucon = KernelAbstractions.adapt(backend, zeros((nt-1) * n_samples))
     )
@@ -144,9 +147,11 @@ function rd_constraints!(core::ExaCore, u_flat, u0_flat, nt, n_samples, grid_poi
     # --------------------------------------------------
     # 1. Initial condition for each sample
     # --------------------------------------------------
-    u0_data = [(idx(i, 1, s), u0_flat[i, s]) for i in 1:nx for s in 1:n_samples]
+    u0_param = parameter(core, u0_flat)
+
     constraint(core,
-        (u_flat[d[1]] - d[2] for d in u0_data);
+        (u_flat[idx(i, 1, s)] - u0_param[i, s]
+         for i in 1:nx, s in 1:n_samples);
         lcon = KernelAbstractions.adapt(backend, zeros(nx * n_samples)),
         ucon = KernelAbstractions.adapt(backend, zeros(nx * n_samples))
     )
