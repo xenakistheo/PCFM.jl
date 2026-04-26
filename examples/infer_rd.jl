@@ -10,9 +10,14 @@ using Reactant, Lux
 using JLD2
 using Plots
 using Random
-using ExaModels, MadNLP
+using CUDA, KernelAbstractions
+using ExaModels, MadNLP, MadNLPGPU
+using JuMP, Ipopt
+using BenchmarkTools
 
 Random.seed!(42)
+
+backend = CUDABackend()
 
 # ---------------------------------------------------------------------------
 # Paths and config — must match what was used during training
@@ -105,22 +110,65 @@ tstate_inf = (parameters = ps, states = st)
 println("\n[3/3] Compiling and generating $n_samples samples...")
 compiled_funcs = PCFM.compile_functions(ffm, n_samples)
 
-@time samples = sample_pcfm(ffm, tstate_inf, n_samples, n_steps, rd_constraints!;
-    domain = (x_start=0f0, x_end=1f0, t_start=0f0, t_end=1f0),
-    IC_func = IC_func_rd,
-    constraint_parameters = (rho=0.01f0, nu=0.005f0),
-    compiled_funcs = compiled_funcs,
-    verbose = true)
+const rd_domain = (x_start=0f0, x_end=1f0, t_start=0f0, t_end=1f0)
+const rd_params = (rho=0.01f0, nu=0.005f0)
 
-println("  Samples shape: $(size(samples))  (nx, nt, 1, n_samples)")
+# ExaModels, MadNLP, GPU
+@btime sample_pcfm($ffm, $tstate_inf, $n_samples, $n_steps, rd_constraints!;
+    domain = rd_domain,
+    IC_func = $IC_func_rd,
+    constraint_parameters = rd_params,
+    backend = backend,
+    compiled_funcs = $compiled_funcs,
+    verbose = true,
+    mode = "exa");
 
-# ---------------------------------------------------------------------------
-# Visualise
-# ---------------------------------------------------------------------------
-arr = Array(samples)
-plots = [Plots.heatmap(arr[:, :, 1, i],
-             title = "Sample $i", xlabel = "Time", ylabel = "Space", c = :viridis)
-         for i in 1:min(4, n_samples)]
-display(Plots.plot(plots..., layout = (2, 2), size = (900, 600)))
+# ExaModels, MadNLP, CPU
+@btime sample_pcfm($ffm, $tstate_inf, $n_samples, $n_steps, rd_constraints!;
+    domain = rd_domain,
+    IC_func = $IC_func_rd,
+    constraint_parameters = rd_params,
+    backend = CPU(),
+    compiled_funcs = $compiled_funcs,
+    verbose = true,
+    mode = "exa");
 
-println("\nDone!")
+# JuMP, MadNLP
+@btime sample_pcfm($ffm, $tstate_inf, $n_samples, $n_steps, rd_constraints!;
+    domain = rd_domain,
+    IC_func = $IC_func_rd,
+    constraint_parameters = rd_params,
+    backend = CPU(),
+    compiled_funcs = $compiled_funcs,
+    verbose = true,
+    mode = "jump",
+    optimizer = MadNLP.Optimizer);
+
+# JuMP, Ipopt
+@btime sample_pcfm($ffm, $tstate_inf, $n_samples, $n_steps, rd_constraints!;
+    domain = rd_domain,
+    IC_func = $IC_func_rd,
+    constraint_parameters = rd_params,
+    backend = CPU(),
+    compiled_funcs = $compiled_funcs,
+    verbose = true,
+    mode = "jump",
+    optimizer = Ipopt.Optimizer);
+
+# # ---------------------------------------------------------------------------
+# # Visualise last result
+# # ---------------------------------------------------------------------------
+# samples = sample_pcfm(ffm, tstate_inf, n_samples, n_steps, rd_constraints!;
+#     domain = rd_domain,
+#     IC_func = IC_func_rd,
+#     constraint_parameters = rd_params,
+#     compiled_funcs = compiled_funcs,
+#     verbose = false)
+
+# arr = Array(samples)
+# plots = [Plots.heatmap(arr[:, :, 1, i],
+#              title = "Sample $i", xlabel = "Time", ylabel = "Space", c = :viridis)
+#          for i in 1:min(4, n_samples)]
+# display(Plots.plot(plots..., layout = (2, 2), size = (900, 600)))
+
+# println("\nDone!")
