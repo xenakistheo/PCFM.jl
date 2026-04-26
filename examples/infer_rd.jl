@@ -1,5 +1,6 @@
 """
-Load a trained FFM checkpoint and generate Reaction-Diffusion equation samples.
+Load a trained FFM checkpoint and generate Reaction-Diffusion equation samples
+using physics-constrained flow matching (PCFM).
 
 Run train_rd.jl first to produce the checkpoint.
 """
@@ -9,6 +10,7 @@ using Reactant, Lux
 using JLD2
 using Plots
 using Random
+using ExaModels, MadNLP
 
 Random.seed!(42)
 
@@ -18,14 +20,53 @@ Random.seed!(42)
 weight_file = joinpath(@__DIR__, "checkpoints", "ffm_rd_checkpoint.jld2")
 
 n_samples    = 8
-n_steps      = 100   # Euler steps in the flow
+n_steps      = 100
 nx           = 128
 nt           = 100
 emb_channels = 32
 
 # ---------------------------------------------------------------------------
+# Initial condition (fixed seed for reproducibility)
+# ---------------------------------------------------------------------------
+function generate_ic(xc; k_tot=3, num_choice_k=2)
+    selected = rand(1:k_tot, num_choice_k)
+    onehot = zeros(Int, k_tot)
+    for j in selected
+        onehot[j] += 1
+    end
+    kk = 2π .* (1:k_tot) .* onehot ./ (xc[end] - xc[1])
+    amp = rand(k_tot, 1)
+    phs = 2π .* rand(k_tot, 1)
+    u = vec(sum(amp .* sin.(kk .* xc' .+ phs), dims=1))
+    if rand() < 0.1
+        u = abs.(u)
+    end
+    u .*= rand([-1, 1])
+    if rand() < 0.1
+        xL_m = rand() * 0.35 + 0.1
+        xR_m = rand() * 0.35 + 0.55
+        trns = 0.01
+        mask = 0.5 .* (tanh.((xc .- xL_m) ./ trns) .- tanh.((xc .- xR_m) ./ trns))
+        u .*= mask
+    end
+    u .-= minimum(u)
+    if maximum(u) > 0
+        u ./= maximum(u)
+    end
+    return u
+end
+
+x_rd = Float32.(range(0f0, 1f0, length=nx))
+Random.seed!(0)
+u0_fixed = Float32.(generate_ic(collect(x_rd)))
+Random.seed!(42)
+
+dx_rd = x_rd[2] - x_rd[1]
+IC_func_rd = x -> u0_fixed[clamp(round(Int, (x - x_rd[1]) / dx_rd) + 1, 1, nx)]
+
+# ---------------------------------------------------------------------------
 println("=" ^ 60)
-println("Reaction-Diffusion Equation — Load checkpoint and sample")
+println("Reaction-Diffusion Equation — PCFM sampling")
 println("=" ^ 60)
 
 if !isfile(weight_file)
@@ -64,8 +105,12 @@ tstate_inf = (parameters = ps, states = st)
 println("\n[3/3] Compiling and generating $n_samples samples...")
 compiled_funcs = PCFM.compile_functions(ffm, n_samples)
 
-@time samples = sample_ffm(ffm, tstate_inf, n_samples, n_steps;
-    compiled_funcs = compiled_funcs, verbose = true)
+@time samples = sample_pcfm(ffm, tstate_inf, n_samples, n_steps, rd_constraints!;
+    domain = (x_start=0f0, x_end=1f0, t_start=0f0, t_end=1f0),
+    IC_func = IC_func_rd,
+    constraint_parameters = (rho=0.01f0, nu=0.005f0),
+    compiled_funcs = compiled_funcs,
+    verbose = true)
 
 println("  Samples shape: $(size(samples))  (nx, nt, 1, n_samples)")
 
