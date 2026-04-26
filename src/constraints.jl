@@ -172,7 +172,7 @@ function rd_constraints!(core::ExaCore, u_flat, u0_flat, nt, n_samples, grid_poi
             - 0.5*dt*(
                 (
                     -nu*(-25*u_flat[idx(1,    d[1],   d[2])] + 48*u_flat[idx(2,    d[1],   d[2])] - 36*u_flat[idx(3,    d[1],   d[2])] + 16*u_flat[idx(4,    d[1],   d[2])] - 3*u_flat[idx(5,    d[1],   d[2])]) / (12*dx)
-                  - -nu*( 25*u_flat[idx(nx,   d[1],   d[2])] - 48*u_flat[idx(nx-1, d[1],   d[2])] + 36*u_flat[idx(nx-2, d[1],   d[2])] - 16*u_flat[idx(Nx-3, d[1],   d[2])] + 3*u_flat[idx(nx-4, d[1],   d[2])]) / (12*dx)
+                  - -nu*( 25*u_flat[idx(nx,   d[1],   d[2])] - 48*u_flat[idx(nx-1, d[1],   d[2])] + 36*u_flat[idx(nx-2, d[1],   d[2])] - 16*u_flat[idx(nx-3, d[1],   d[2])] + 3*u_flat[idx(nx-4, d[1],   d[2])]) / (12*dx)
                 )
                 + (
                     -nu*(-25*u_flat[idx(1,    d[1]-1, d[2])] + 48*u_flat[idx(2,    d[1]-1, d[2])] - 36*u_flat[idx(3,    d[1]-1, d[2])] + 16*u_flat[idx(4,    d[1]-1, d[2])] - 3*u_flat[idx(5,    d[1]-1, d[2])]) / (12*dx)
