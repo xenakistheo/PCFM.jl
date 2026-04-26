@@ -111,7 +111,7 @@ function rd_constraints!(model::Model, u, u0, nt, n_samples, grid_points, grid_s
     # u has shape (nx, nt, n_samples)
 
     # 1. Initial condition
-    @constraint(model, [i in 1:nx, s in 1:n_samples], u[i, 1, s] == u0[i, s])
+    @constraint(model, [i in 1:nx, s in 1:n_samples], u[i, 1, s] == u0[i, 1, 1, s])
 
     # 2. Mass evolution (trapezoidal rule)
     @constraint(model, [t in 2:nt, s in 1:n_samples],
