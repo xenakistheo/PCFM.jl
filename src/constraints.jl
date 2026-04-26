@@ -21,7 +21,7 @@ function heat_constraints!(core::ExaCore, u_flat, u0_flat, nt, n_samples, grid_p
 
     idx(i, t, s) = i + (t-1)*nx + (s-1)*nx*nt
 
-    u0_param = parameter(core, u0)
+    u0_param = parameter(core, u0_flat)
 
     # 1. Initial condition
     constraint(
@@ -76,7 +76,7 @@ function ns_constraints!(core::ExaCore, u_flat, u0_flat, nt, n_samples, grid_poi
     # --------------------------------------------------
     # 1. Initial condition for each sample
     # --------------------------------------------------
-    u0_data = [(idx(i, j, 1, s), u0[i, j, s]) for i in 1:nx for j in 1:Ny for s in 1:n_samples]
+    u0_data = [(idx(i, j, 1, s), u0_flat[i, j, s]) for i in 1:nx for j in 1:Ny for s in 1:n_samples]
     constraint(core,
         (u_flat[d[1]] - d[2] for d in u0_data);
         lcon = KernelAbstractions.adapt(backend, zeros(nx * ny * n_samples)),
@@ -87,7 +87,7 @@ function ns_constraints!(core::ExaCore, u_flat, u0_flat, nt, n_samples, grid_poi
     # 2. Global mass conservation per sample: ∑_{i,j} u*dx*dy = M0[s] for t >= 2
     # Embed (t, s, M0[s]) as data so ExaModels can access M0 as a constant
     # --------------------------------------------------
-    M0 = [sum(u0[i, j, s] for i in 1:nx for j in 1:ny) for s in 1:n_samples]
+    M0 = [sum(u0_flat[i, j, s] for i in 1:nx for j in 1:ny) for s in 1:n_samples]
     ts_M0 = [(t, s, M0[s]) for t in 2:nt for s in 1:n_samples]
     constraint(core,
         (sum(u_flat[idx(i, j, d[1], d[2])] for i in 1:nx for j in 1:ny) - d[3]
@@ -144,7 +144,7 @@ function rd_constraints!(core::ExaCore, u_flat, u0_flat, nt, n_samples, grid_poi
     # --------------------------------------------------
     # 1. Initial condition for each sample
     # --------------------------------------------------
-    u0_data = [(idx(i, 1, s), u0[i, s]) for i in 1:nx for s in 1:n_samples]
+    u0_data = [(idx(i, 1, s), u0_flat[i, s]) for i in 1:nx for s in 1:n_samples]
     constraint(core,
         (u_flat[d[1]] - d[2] for d in u0_data);
         lcon = KernelAbstractions.adapt(backend, zeros(nx * n_samples)),
