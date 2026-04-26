@@ -163,6 +163,7 @@ function sample_pcfm(ffm::FFM, tstate, n_samples, n_steps, H!;
         IC_func = x -> sin(x + π/4), 
         backend = CPU(),
         mode = "exa",
+        optimizer = MadNLP.Optimizer,
         use_compiled = true,
         compiled_funcs = nothing,
         verbose = true)
@@ -172,7 +173,12 @@ function sample_pcfm(ffm::FFM, tstate, n_samples, n_steps, H!;
     emb_channels = ffm.config[:emb_channels]
     device = ffm.config[:device]
 
-    @show backend isa GPU
+    println("\n------------------------")
+    println("------Sampling PCFM------")
+    println("Modelling: $mode")
+    println("Optimizer: ", string(optimizer))
+    println("Backend: ", string(backend))
+    println("------------------------\n")
 
     # Extract parameters and states
     if hasfield(typeof(tstate), :parameters)
@@ -233,7 +239,7 @@ function sample_pcfm(ffm::FFM, tstate, n_samples, n_steps, H!;
         if mode == "jump"
             # JuMP version — batched over all samples at once
             x_1_cpu = Array(x_1)  # (nx, nt, 1, n_samples)
-            model = Model(MadNLP.Optimizer)
+            model = Model(optimizer)
             set_silent(model)
             @variable(model, u[1:nx, 1:nt, 1:n_samples])
             @objective(model, Min, sum((u[i,j,s] - x_1_cpu[i,j,1,s])^2 for i in 1:nx, j in 1:nt, s in 1:n_samples))
