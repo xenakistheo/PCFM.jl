@@ -198,12 +198,10 @@ function sample_pcfm(ffm::FFM, tstate, n_samples, n_steps, H!;
         prepare_input_fn = prepare_input
     end
 
-    # Fixed initial condition: u(x,0) = sin(x + π/4)
-    x_grid = range(domain.x_start, domain.x_end, length=nx) 
-    u_0_ic = IC_func.(x_grid .+ π/4)
-    u_0_ic = reshape(u_0_ic, nx, 1, 1, 1)
-    # Broadcast to all samples
-    u_0_ic = repeat(u_0_ic, 1, 1, 1, n_samples) |> device
+    x_grid = range(domain.x_start, domain.x_end, length=nx)
+    u_0_ic_vals = Float32.(IC_func.(x_grid))                          # (nx,)
+    u_0_ic_mat  = repeat(reshape(u_0_ic_vals, nx, 1), 1, n_samples)  # (nx, n_samples) CPU
+    u_0_ic = repeat(reshape(u_0_ic_vals, nx, 1, 1, 1), 1, 1, 1, n_samples) |> device
 
     # Start from Gaussian noise
     x_0 = randn(Float32, nx, nt, 1, n_samples) |> device
@@ -260,7 +258,7 @@ function sample_pcfm(ffm::FFM, tstate, n_samples, n_steps, H!;
                 x_1_cpu_arr = Float32.(Array(x_1))          # Reactant -> CPU
                 x_1_b = x_1_cpu_arr[:, :, 1, :]             # (nx, nt, n_samples) CPU
                 x1_vec = KernelAbstractions.adapt(backend, vec(x_1_b))   # CPU -> CuArray
-                u0_gpu  = KernelAbstractions.adapt(backend, x_1_b[:, 1, :])  # (nx, n_samples)
+                u0_gpu  = KernelAbstractions.adapt(backend, u_0_ic_mat)  # (nx, n_samples)
                 core = ExaCore(backend=backend)
                 θ = parameter(core, x1_vec)
                 u = variable(core, 1:N; start = x1_vec)
@@ -281,7 +279,7 @@ function sample_pcfm(ffm::FFM, tstate, n_samples, n_steps, H!;
                 # CPU path: pull to CPU, use tuple embedding
                 x_1_cpu = Array(x_1)                                     # (nx, nt, 1, n_samples)
                 x_1_flat = x_1_cpu[:, :, 1, :]                          # (nx, nt, n_samples)
-                u0_batch = x_1_flat[:, 1, :]                            # (nx, n_samples)
+                u0_batch = u_0_ic_mat                                    # (nx, n_samples)
                 x1_data = [(k, vec(x_1_flat)[k]) for k in 1:N]
                 core = ExaCore(backend=backend)
                 u = variable(core, 1:N, start = vec(x_1_flat))
