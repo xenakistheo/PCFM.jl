@@ -76,3 +76,16 @@ function constraint_deviation_plot(u_ref, u_proj, T, H, params=nothing; title=""
     
     return f
 end
+
+function constraint_deviation_plot(u, time, H, params=nothing; title="")
+    f = Figure()
+    ax = Axis(
+        f[1,1],
+        title=title, 
+        xlabel = "Time",
+    )
+    h_ref = H(u)
+    lines!(ax, T[1:length(h)], h_sol, label="Solution", linestyle=:dash)
+    axislegend(position = :rb)
+    return f
+end
