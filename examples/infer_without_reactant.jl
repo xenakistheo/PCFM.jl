@@ -15,6 +15,7 @@ using Lux
 #using Reactant
 using JLD2, Functors
 using Plots
+using cuDNN
 using CUDA
 using KernelAbstractions
 using ExaModels, MadNLP, MadNLPGPU
@@ -316,7 +317,7 @@ grid_spacing = (dx)
 
 
 # for step in 0:(n_steps - 1) # start of loop 
-    step = 0
+    step = 1
     if step % 10 == 0
         println("PCFM step: $step/$n_steps")
     end
@@ -336,8 +337,6 @@ grid_spacing = (dx)
 
     # Step 2: Apply constraint - fix initial condition
     ##############
-    
-    # ExaModel version — solve projection for all samples at once
     N = nx * nt * n_samples
     x_1_cpu_arr = Float32.(x_1)    # Reactant -> CPU
     x_1_b = x_1_cpu_arr[:, :, 1, :]             # (nx, nt, n_samples) CPU
@@ -347,19 +346,12 @@ grid_spacing = (dx)
     θ = parameter(core, x1_vec)
     u = variable(core, 1:N; start = x1_vec)
     objective(core, (u[i] - θ[i])^2 for i in 1:N)
-    H!(core, u, u0_gpu, nt, n_samples, grid_points, grid_spacing, dt, constraint_parameters; backend=backend)
+    heat_constraints!(core, u, u0_gpu, nt, n_samples, grid_points, grid_spacing, dt, nothing; backend=backend)
     nlp = ExaModel(core)
     result = madnlp(nlp, linear_solver=MadNLPGPU.CUDSSSolver, print_level = MadNLP.ERROR)
     x_exa_vec = solution(result, u)
-    # The code below can be a bottleneck
-    x_gpu = Float32.(x_exa_vec)
-    x_cpu = Array(x_gpu)
-    x_cpu = reshape(x_cpu, nx, nt, 1, n_samples)
-    x_0 = x_cpu |> device
-    # @show typeof(x_exa_vec)
-    # x_0 = Array(reshape(Float32.(x_exa_vec), nx, nt, 1, n_samples)) |> device
-    # @show typeof(x_0)
-        
+    x_0 = reshape(Float32.(x_exa_vec), nx, nt, 1, n_samples)
+
   
     ##############
 
