@@ -166,11 +166,13 @@ function prepare_input(x_t, t, spatial_size::Tuple, nt, n_samples, emb_dim; max_
     chan_dim = total_grid + 1           # channel axis index in the tensor
     batch_dim = total_grid + 2
 
+    backend = KernelAbstractions.get_backend(t)
+
     # Sinusoidal time embedding: (n_samples, emb_dim) → broadcast to full grid
     timesteps = t .* Float32(max_positions)
     half_dim = emb_dim ÷ 2
     emb_scale = Float32(log(max_positions)) / Float32(half_dim - 1)
-    emb_base = exp.(Float32.(-collect(0:(half_dim - 1)) .* emb_scale))
+    emb_base = KernelAbstractions.adapt(backend, exp.(Float32.(-collect(0:(half_dim - 1)) .* emb_scale)))
     t_emb = hcat(sin.(timesteps * emb_base'), cos.(timesteps * emb_base'))  # (n_samples, emb_dim)
     t_emb = permutedims(t_emb, (2, 1))                                       # (emb_dim, n_samples)
 
@@ -181,7 +183,7 @@ function prepare_input(x_t, t, spatial_size::Tuple, nt, n_samples, emb_dim; max_
     # One normalised position channel per grid dimension (spatial dims + temporal)
     pos_channels = [begin
         sz    = grid_dims[i]
-        pos_i = Float32.(collect(range(0.0f0, 1.0f0, length = sz)))
+        pos_i = KernelAbstractions.adapt(backend, Float32.(collect(range(0.0f0, 1.0f0, length = sz))))
         shape = ntuple(d -> d == i ? sz : 1, total_grid + 2)
         rep   = ntuple(d -> d == i ? 1 :
                             (d <= total_grid ? grid_dims[d] :
