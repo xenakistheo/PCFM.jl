@@ -171,8 +171,9 @@ function sample_pcfm(ffm::FFM, tstate, n_samples, n_steps, H!;
     dt = 1.0f0 / n_steps
     dx = x_grid[2] - x_grid[1]
 
-    grid_points = (nx) 
+    grid_points = (nx)
     grid_spacing = (dx)
+    t_vec = fill(0f0, n_samples) |> device
 
     # Euler integration from t=0 to t=1
     for step in 0:(n_steps - 1)
@@ -182,7 +183,7 @@ function sample_pcfm(ffm::FFM, tstate, n_samples, n_steps, H!;
 
         τ = step * dt
         τ_next = τ + dt
-        t_vec = fill(τ, n_samples) |> device
+        fill!(t_vec, τ)
 
         # Prepare input with embeddings
         x_input = prepare_input_fn(x, t_vec, (nx,), nt, n_samples, emb_channels) 
@@ -213,7 +214,7 @@ function sample_pcfm(ffm::FFM, tstate, n_samples, n_steps, H!;
             N = nx * nt * n_samples
 
             if backend isa GPU
-                x1_vec = vec(x_1[:, :, 1, :])
+                x1_vec = reshape(x_1, N)
                 core = ExaCore(backend=backend)
                 θ = parameter(core, x1_vec)
                 u = variable(core, 1:N; start = x1_vec)
@@ -251,9 +252,7 @@ function sample_pcfm(ffm::FFM, tstate, n_samples, n_steps, H!;
         ##############
 
         # Step 3: Interpolate between x_0 and x_1 (corrected) at time t+dt
-        
-        # @show typeof(x_0) typeof(x_1) typeof(τ_next)
-        x = x_0 .+ (x_1 .- x_0) .* τ_next #This is the line that fails
+        @. x = x_0 + (x_1 - x_0) * τ_next #This is the line that fails
     end
 
     return x
@@ -387,22 +386,20 @@ grid_spacing = (dx)
 # 37.737 s (1544423 allocations: 20.34 GiB)
 
 # #JuMP, MadNLP
-# @btime sample_pcfm($ffm, (parameters = $ps, states = $st),
-#                    $n_samples, 100, heat_constraints!;
-#                    backend=CPU(),
-#                    compiled_funcs = sample_compiled_funcs,
-#                    verbose = true,
-#                    mode="jump",
-#                    optimizer=MadNLP.Optimizer);
+@btime sample_pcfm($ffm, (parameters = $ps, states = $st),
+                   $n_samples, 100, heat_constraints!;
+                   backend=CPU(),
+                   verbose = true,
+                   mode="jump",
+                   optimizer=MadNLP.Optimizer);
 
 
 # #JuMP, Ipopt
-# @btime sample_pcfm($ffm, (parameters = $ps, states = $st),
-#                    $n_samples, 100, heat_constraints!;
-#                    backend=CPU(),
-#                    compiled_funcs = sample_compiled_funcs,
-#                    verbose = true,
-#                    mode="jump",
-#                    optimizer=Ipopt.Optimizer);
+@btime sample_pcfm($ffm, (parameters = $ps, states = $st),
+                   $n_samples, 100, heat_constraints!;
+                   backend=CPU(),
+                   verbose = true,
+                   mode="jump",
+                   optimizer=Ipopt.Optimizer);
 
 
