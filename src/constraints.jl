@@ -41,8 +41,8 @@ function heat_constraints!(core::ExaCore, u_flat, u0_flat, nt, n_samples, grid_p
             sum(u_flat[idx(i, t, s)] for i in 1:nx-1) - sum(u0_param[i, s] for i in 1:nx-1)
             for t in 2:nt, s in 1:n_samples
         );
-        lcon = KernelAbstractions.adapt(backend, zeros(nt * n_samples)),
-        ucon = KernelAbstractions.adapt(backend, zeros(nt * n_samples)),
+        lcon = KernelAbstractions.adapt(backend, zeros((nt-1) * n_samples)),
+        ucon = KernelAbstractions.adapt(backend, zeros((nt-1) * n_samples)),
     )
 
     return nothing
