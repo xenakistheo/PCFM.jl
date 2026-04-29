@@ -25,8 +25,7 @@ using JuMP
 using Ipopt
 using BenchmarkTools
 
-include(joinpath(@__DIR__, "..", "optimisation", "plotUtils.jl"))
-
+# include(joinpath(@__DIR__, "..", "optimisation", "plotUtils.jl"))
 
 
 backend = CUDABackend()
@@ -443,11 +442,11 @@ end
 @show backend
 ##############
 # ExaModels, MadNLP, GPU
-@btime sample_pcfm($ffm, (parameters = $ps, states = $st),
-                   $n_samples, 100, heat_constraints!;
-                   backend=backend,
-                   verbose = true,
-                   mode="exa");
+# @btime sample_pcfm($ffm, (parameters = $ps, states = $st),
+#                    $n_samples, 100, heat_constraints!;
+#                    backend=backend,
+#                    verbose = true,
+#                    mode="exa");
 
 starting_noise = randn(Float32, nx, nt, 1, n_samples) 
 
@@ -464,15 +463,15 @@ samples_exa_gpu_old = sample_pcfm_old(ffm, (parameters = ps, states = st),
                    verbose = true,
                    mode="exa",
                    initial_vals=starting_noise);
-samples_exa_gpu
+
 #80.824 s (11250911 allocations: 14.42 GiB)
 
 # # ExaModels, MadNLP, CPU
-@btime sample_pcfm($ffm, (parameters = $ps, states = $st),
-                   $n_samples, 100, heat_constraints!;
-                   backend=CPU(),
-                   verbose = true,
-                   mode="exa");
+# @btime sample_pcfm($ffm, (parameters = $ps, states = $st),
+#                    $n_samples, 100, heat_constraints!;
+#                    backend=CPU(),
+#                    verbose = true,
+#                    mode="exa");
 # 37.737 s (1544423 allocations: 20.34 GiB)
 
 
@@ -489,8 +488,15 @@ samples_exa_cpu_old = sample_pcfm_old(ffm, (parameters = ps, states = st),
                    mode="exa");
 
 # #JuMP, MadNLP
-@btime sample_pcfm($ffm, (parameters = $ps, states = $st),
-                   $n_samples, 100, heat_constraints!;
+# @btime sample_pcfm($ffm, (parameters = $ps, states = $st),
+#                    $n_samples, 100, heat_constraints!;
+#                    backend=CPU(),
+#                    verbose = true,
+#                    mode="jump",
+#                    optimizer=MadNLP.Optimizer);
+
+samples_jump_madnlp = sample_pcfm(ffm, (parameters = ps, states = st),
+                   n_samples, 100, heat_constraints!;
                    backend=CPU(),
                    verbose = true,
                    mode="jump",
@@ -498,12 +504,12 @@ samples_exa_cpu_old = sample_pcfm_old(ffm, (parameters = ps, states = st),
 
 
 # #JuMP, Ipopt
-@btime sample_pcfm($ffm, (parameters = $ps, states = $st),
-                   $n_samples, 100, heat_constraints!;
-                   backend=CPU(),
-                   verbose = true,
-                   mode="jump",
-                   optimizer=Ipopt.Optimizer);
+# @btime sample_pcfm($ffm, (parameters = $ps, states = $st),
+#                    $n_samples, 100, heat_constraints!;
+#                    backend=CPU(),
+#                    verbose = true,
+#                    mode="jump",
+#                    optimizer=Ipopt.Optimizer);
 
 
 samples_ffm = sample_ffm(ffm, (parameters = ps, states = st), n_samples, 100; 
@@ -513,53 +519,6 @@ samples_ffm = sample_ffm(ffm, (parameters = ps, states = st), n_samples, 100;
 ##################
 # Plot solutions to verify correctness 
 
-
-println("\n" * "=" ^ 60)
-println("Training Complete!")
-println("=" ^ 60)
-
-# Visualize results
-println("\nPlotting results...")
-
-# Plot training curve
-p1 = plot(1:length(losses), losses,
-    yscale = :log10,
-    xlabel = "Epoch",
-    ylabel = "Loss (log scale)",
-    title = "Training Loss",
-    legend = false,
-    linewidth = 2)
-
-# Plot samples
-new_samples = samples_exa_gpu
-old_samples = samples_exa_gpu_old
-
-arr_data = Array(new_samples)
-arr_samples = Array(old_samples)
-
-p_data = [heatmap(arr_data[:, :, 1, i],
-              title = "Training Data $i",
-              xlabel = "Time",
-              ylabel = "Space",
-              c = :viridis)
-          for i in 1:min(2, batch_size)]
-
-p_samples = [heatmap(arr_samples[:, :, 1, i],
-                 title = "Generated Sample $i",
-                 xlabel = "Time",
-                 ylabel = "Space",
-                 c = :viridis)
-             for i in 1:4]
-
-# Combine plots
-p2 = plot(p_data..., layout = (1, length(p_data)), size = (800, 300))
-p3 = plot(p_samples..., layout = (1, length(p_samples)), size = (800, 300))
-
-# display(p1)
-display(p2)
-display(p3)
-
-println("\nDone! Check the plots above.")
 
 ######################
 
@@ -656,8 +615,6 @@ plot_constraint_violation(1, new_samples, old_samples, ffm_samples, mass_constra
 
 u1 = randn(nx, nt, n_samples)
 L = 2π
-dx = L / (Nx - 1)   # if grid includes both x=0 and x=2π
-dt = 1/(Nt - 1)
 X = collect(range(0, L; length=nx))
 T = collect(range(0, 1; length=nt))
 core = ExaCore(Float64; backend=backend)
@@ -665,7 +622,7 @@ N = nx * nt * n_samples
 u = variable(core, 1:N, start = vec(u1))
 u1_data = KernelAbstractions.adapt(backend, [(k, vec(u1)[k]) for k in 1:N])
 objective(core, (u[d[1]] - d[2])^2 for d in u1_data)
-heat_constraints!(core, u, (Nx=Nx, Nt=Nt, dx=dx, u0=u1[:, 1, :], n_samples=n_samples, backend=backend))
+heat_constraints!(core, u, u1[:, 1, :], nt, n_samples, [nx], [dx], dt; backend=backend)
 nlp = ExaModel(core)
 result = madnlp(nlp)
 u_exa_vec = solution(result, u)
