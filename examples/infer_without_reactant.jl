@@ -615,8 +615,61 @@ plot_sample(5, new_samples, old_samples, ffm_samples)
 # None of them look like the FFM. 
 
 
+function mass_constraint(u, params)
+    Nx, Nt = params
+    return [sum((u[i, j] - u[i,1]) for i in 1:(Nx-1)) for j in 1:Nt]
+end 
 
-function mass_constraint(u)
-    
+mass_constraint(new_samples[:,:,1,1], (nx, nt))
 
+function plot_constraint_violation(k, u1, u2, u3, H; title="", constraint_params=nothing)
+    f = Figure(size = (1800, 600))
+
+    ax1 = Axis(f[1, 1], 
+                title = "New PCFM",
+                xlabel = "Time", 
+                ylabel = "Violation")
+
+    ax2 = Axis(f[1, 2], 
+                title = "Old PCFM",
+                xlabel = "Violation", 
+                ylabel = "X")
+
+    ax3 = Axis(f[1, 3], 
+                title = "FFM",
+                xlabel = "Time", 
+                ylabel = "Violation")
+
+
+    lines!(ax1, H(u1[:,:,1,k], constraint_params))
+    lines!(ax2, H(u2[:,:,1,k], constraint_params))
+    lines!(ax3, H(u3[:,:,1,k], constraint_params))
+
+
+    Label(f[0, :], title)
+
+    return f
+end 
+
+plot_constraint_violation(1, new_samples, old_samples, ffm_samples, mass_constraint; constraint_params=(nx, nt, dx, dt))
+
+
+u1 = randn(nx, nt, n_samples)
+L = 2π
+dx = L / (Nx - 1)   # if grid includes both x=0 and x=2π
+dt = 1/(Nt - 1)
+X = collect(range(0, L; length=nx))
+T = collect(range(0, 1; length=nt))
+core = ExaCore(Float64; backend=backend)
+N = nx * nt * n_samples
+u = variable(core, 1:N, start = vec(u1))
+u1_data = KernelAbstractions.adapt(backend, [(k, vec(u1)[k]) for k in 1:N])
+objective(core, (u[d[1]] - d[2])^2 for d in u1_data)
+heat_constraints!(core, u, (Nx=Nx, Nt=Nt, dx=dx, u0=u1[:, 1, :], n_samples=n_samples, backend=backend))
+nlp = ExaModel(core)
+result = madnlp(nlp)
+u_exa_vec = solution(result, u)
+u_exa = Array(reshape(u_exa_vec, nx, nt, 1, n_samples))
+
+plot_constraint_violation(1, new_samples, old_samples, u_exa, mass_constraint; constraint_params=(nx, nt, dx, dt))
 
