@@ -479,13 +479,15 @@ samples_exa_cpu = sample_pcfm(ffm, (parameters = ps, states = st),
                    n_samples, 100, heat_constraints!;
                    backend=CPU(),
                    verbose = true,
-                   mode="exa");
+                   mode="exa", 
+                   initial_vals=starting_noise);
 
 samples_exa_cpu_old = sample_pcfm_old(ffm, (parameters = ps, states = st),
                    n_samples, 100, heat_constraints!;
                    backend=CPU(),
                    verbose = true,
-                   mode="exa");
+                   mode="exa", 
+                   initial_vals=starting_noise);
 
 # #JuMP, MadNLP
 # @btime sample_pcfm($ffm, (parameters = $ps, states = $st),
@@ -495,7 +497,7 @@ samples_exa_cpu_old = sample_pcfm_old(ffm, (parameters = ps, states = st),
 #                    mode="jump",
 #                    optimizer=MadNLP.Optimizer);
 
-samples_jump_madnlp = sample_pcfm(ffm, (parameters = ps, states = st),
+samples_jump_madnlp = sample_pcfm_old(ffm, (parameters = ps, states = st),
                    n_samples, 100, heat_constraints!;
                    backend=CPU(),
                    verbose = true,
@@ -563,7 +565,14 @@ function plot_sample(k, u1, u2, u3, title="")
     return f
 end 
 
-plot_sample(1, new_samples, old_samples, ffm_samples)
+# f = Figure(size = (1800, 600))
+# ax[1] = Axis(f[1, 1], 
+#                 title = "New PCFM",
+#                 xlabel = "Time", 
+#                 ylabel = "X")
+
+
+plot_sample(1, new_samples, old_samples, samples_jump_madnlp)
 plot_sample(2, new_samples, old_samples, ffm_samples)
 plot_sample(3, new_samples, old_samples, ffm_samples)
 plot_sample(4, new_samples, old_samples, ffm_samples)
