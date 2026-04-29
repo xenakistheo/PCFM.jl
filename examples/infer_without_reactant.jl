@@ -133,7 +133,8 @@ function sample_pcfm(ffm::FFM, tstate, n_samples, n_steps, H!;
         optimizer = MadNLP.Optimizer,
         use_compiled = true,
         compiled_funcs = nothing,
-        verbose = true)
+        verbose = true,
+        initial_vals=nothing)
 
     nx = ffm.config[:nx]
     nt = ffm.config[:nt]
@@ -170,8 +171,14 @@ function sample_pcfm(ffm::FFM, tstate, n_samples, n_steps, H!;
     u_0_ic_mat  = repeat(reshape(u_0_ic_vals, nx, 1), 1, n_samples)  # (nx, n_samples)
     u_0_ic_mat = KernelAbstractions.adapt(backend, u_0_ic_mat)
 
-    # Start from Gaussian noise
-    x_0 = randn(Float32, nx, nt, 1, n_samples) |> device
+    if initial_vals !== nothing
+        @assert size(initial_vals) == (nx, nt, 1, n_samples)
+        x_0 = initial_vals |> device
+    else
+        # Start from Gaussian noise
+        x_0 = randn(Float32, nx, nt, 1, n_samples) |> device
+    end 
+
     x = copy(x_0)
 
     dt = 1.0f0 / n_steps
@@ -292,8 +299,14 @@ function sample_pcfm_old(ffm::FFM, tstate, n_samples, n_steps, H!;
     u_0_ic_mat  = repeat(reshape(u_0_ic_vals, nx, 1), 1, n_samples)  # (nx, n_samples)
     u_0_ic_mat = KernelAbstractions.adapt(backend, u_0_ic_mat)
 
-    # Start from Gaussian noise
-    x_0 = randn(Float32, nx, nt, 1, n_samples) |> device
+
+    if initial_vals !== nothing
+        @assert size(initial_vals) == (nx, nt, 1, n_samples)
+        x_0 = initial_vals |> device
+    else
+        # Start from Gaussian noise
+        x_0 = randn(Float32, nx, nt, 1, n_samples) |> device
+    end 
     x = copy(x_0)
 
     dt = 1.0f0 / n_steps
@@ -385,17 +398,21 @@ end
                    verbose = true,
                    mode="exa");
 
+starting_noise = randn(Float32, nx, nt, 1, n_samples) |> device
+    
 samples_exa_gpu = sample_pcfm(ffm, (parameters = ps, states = st),
                    n_samples, 100, heat_constraints!;
                    backend=backend,
                    verbose = true,
-                   mode="exa");
+                   mode="exa", 
+                   initial_vals=starting_noise);
 
 samples_exa_gpu_old = sample_pcfm_old(ffm, (parameters = ps, states = st),
                    n_samples, 100, heat_constraints!;
                    backend=backend,
                    verbose = true,
-                   mode="exa");
+                   mode="exa",
+                   initial_vals=starting_noise);
 samples_exa_gpu
 #80.824 s (11250911 allocations: 14.42 GiB)
 
