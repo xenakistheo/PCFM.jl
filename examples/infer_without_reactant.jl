@@ -262,7 +262,8 @@ function sample_pcfm_old(ffm::FFM, tstate, n_samples, n_steps, H!;
         optimizer = MadNLP.Optimizer,
         use_compiled = true,
         compiled_funcs = nothing,
-        verbose = true)
+        verbose = true,
+        initial_vals=nothing)
 
     nx = ffm.config[:nx]
     nt = ffm.config[:nt]
@@ -382,7 +383,57 @@ function sample_pcfm_old(ffm::FFM, tstate, n_samples, n_steps, H!;
 
     return Array(x)
 end
-    
+########################################################################################################################################################
+########################################################################################################################################################
+########################################################################################################################################################
+function sample_ffm(ffm::FFM, tstate, n_samples, n_steps;
+        use_compiled = true,
+        compiled_funcs = nothing,
+        verbose = true,
+        initial_vals=nothing)
+
+    spatial_size = ffm.config[:spatial_size]
+    nt           = ffm.config[:nt]
+    emb_channels = ffm.config[:emb_channels]
+    device       = ffm.config[:device]
+
+    if hasfield(typeof(tstate), :parameters)
+        ps = tstate.parameters
+        st = tstate.states
+    else
+        ps = tstate[1]
+        st = tstate[2]
+    end
+
+    if use_compiled && compiled_funcs !== nothing
+        model_fn         = compiled_funcs.model
+        prepare_input_fn = compiled_funcs.prepare_input
+    else
+        model_fn         = ffm.model
+        prepare_input_fn = prepare_input
+    end
+
+    if initial_vals !== nothing
+        @assert size(initial_vals) == (spatial_size..., nt, 1, n_samples)
+        x = initial_vals |> device
+    else
+        # Start from Gaussian noise
+        x = randn(Float32, nx, nt, 1, n_samples) |> device
+    end 
+
+    dt = 1.0f0 / n_steps
+
+    for step in 0:(n_steps - 1)
+        verbose && step % 10 == 0 && println("Sampling step: $step/$n_steps")
+
+        t_vec   = fill(Float32(step * dt), n_samples) |> device
+        x_input = prepare_input_fn(x, t_vec, spatial_size, nt, n_samples, emb_channels)
+        v, st   = model_fn(x_input, ps, st)
+        x       = x .+ v .* dt
+    end
+
+    return x
+end
 
 ########################################################################################################################################################
 ########################################################################################################################################################
@@ -398,8 +449,8 @@ end
                    verbose = true,
                    mode="exa");
 
-starting_noise = randn(Float32, nx, nt, 1, n_samples) |> device
-    
+starting_noise = randn(Float32, nx, nt, 1, n_samples) 
+
 samples_exa_gpu = sample_pcfm(ffm, (parameters = ps, states = st),
                    n_samples, 100, heat_constraints!;
                    backend=backend,
@@ -455,6 +506,10 @@ samples_exa_cpu_old = sample_pcfm_old(ffm, (parameters = ps, states = st),
                    optimizer=Ipopt.Optimizer);
 
 
+samples_ffm = sample_ffm(ffm, (parameters = ps, states = st), n_samples, 100; 
+    verbose = true,
+    initial_vals=starting_noise)
+
 ##################
 # Plot solutions to verify correctness 
 
@@ -476,8 +531,8 @@ p1 = plot(1:length(losses), losses,
     linewidth = 2)
 
 # Plot samples
-new_samples = samples_exa_cpu
-old_samples = samples_exa_cpu_old
+new_samples = samples_exa_gpu
+old_samples = samples_exa_gpu_old
 
 arr_data = Array(new_samples)
 arr_samples = Array(old_samples)
@@ -507,3 +562,61 @@ display(p3)
 println("\nDone! Check the plots above.")
 
 ######################
+
+new_samples = Array(samples_exa_gpu)
+old_samples = Array(samples_exa_gpu_old)
+ffm_samples = Array(samples_ffm)
+
+using CairoMakie
+CairoMakie.activate!()
+
+
+X = x_grid
+T = range(t_range[1], t_range[2]; length = nt)
+
+function plot_sample(k, u1, u2, u3, title="")
+    f = Figure(size = (1800, 600))
+
+    ax1 = Axis(f[1, 1], 
+                title = "New PCFM",
+                xlabel = "Time", 
+                ylabel = "X")
+
+    ax2 = Axis(f[1, 2], 
+                title = "Old PCFM",
+                xlabel = "Time", 
+                ylabel = "X")
+
+    ax3 = Axis(f[1, 3], 
+                title = "FFM",
+                xlabel = "Time", 
+                ylabel = "X")
+
+
+    heatmap!(ax1, T, X, u1[:,:,1,k]', colormap = :viridis)
+    heatmap!(ax2, T, X, u2[:,:,1,k]', colormap = :viridis)
+    heatmap!(ax3, T, X, u3[:,:,1,k]', colormap = :viridis)
+
+
+    Colorbar(f[1, 4], label = "Amplitude")
+    Label(f[0, :], title)
+
+    return f
+end 
+
+plot_sample(1, new_samples, old_samples, ffm_samples)
+plot_sample(2, new_samples, old_samples, ffm_samples)
+plot_sample(3, new_samples, old_samples, ffm_samples)
+plot_sample(4, new_samples, old_samples, ffm_samples)
+plot_sample(5, new_samples, old_samples, ffm_samples)
+
+#CPU seems equal to GPU. But old PCFM and new PCFM do not seem equal. 
+# Old version varies across samples, while new version seems rather fixed.
+# None of them look like the FFM. 
+
+
+
+function mass_constraint(u)
+    
+
+
