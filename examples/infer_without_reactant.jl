@@ -25,7 +25,7 @@ using JuMP
 using Ipopt
 using BenchmarkTools
 
-# include(joinpath(@__DIR__, "..", "optimisation", "plotUtils.jl"))
+include(joinpath(@__DIR__, "..", "optimisation", "plotUtils.jl"))
 
 
 backend = CUDABackend()
@@ -532,128 +532,38 @@ samples_exa_gpu_old = Array(samples_exa_gpu_old)
 samples_ffm = Array(samples_ffm)
 
 
-new_samples = Array(samples_exa_gpu)
-old_samples = Array(samples_exa_gpu_old)
-ffm_samples = Array(samples_ffm)
-
-using CairoMakie
-CairoMakie.activate!()
+# Compute Analytic Solution 
+u_exact = exp.(-3 .* T') .* sin.(X .+ π/4)   # (nx, nt), analytical solution ν=3
+u_analytic = similar(samples_exa_cpu)
+u_analytic[:,:, 1, 1] = u_exact
+u_analytic
 
 
 X = x_grid
 T = range(t_range[1], t_range[2]; length = nt)
 
-function plot_sample(k, u1, u2, u3, title="")
-    f = Figure(size = (1800, 600))
-
-    ax1 = Axis(f[1, 1], 
-                title = "New PCFM",
-                xlabel = "Time", 
-                ylabel = "X")
-
-    ax2 = Axis(f[1, 2], 
-                title = "Old PCFM",
-                xlabel = "Time", 
-                ylabel = "X")
-
-    ax3 = Axis(f[1, 3], 
-                title = "FFM",
-                xlabel = "Time", 
-                ylabel = "X")
-
-
-    heatmap!(ax1, T, X, u1[:,:,1,k]', colormap = :viridis)
-    heatmap!(ax2, T, X, u2[:,:,1,k]', colormap = :viridis)
-    heatmap!(ax3, T, X, u3[:,:,1,k]', colormap = :viridis)
-
-
-    Colorbar(f[1, 4], label = "Amplitude")
-    Label(f[0, :], title)
-
-    return f
-end 
-
-function plot_sample(frame, solutions, titles)
-    f = Figure(size = (2400, 600))
-    N = size(solutions)[1]
-    @assert N == length(titles)
-
-    axes = []
-    for i in 1:N
-        ax = Axis(f[1, i], 
-                title = titles[i],
-                xlabel = "Time", 
-                ylabel = "X")
-        push!(axes, ax)
-    end 
-
-    for i in 1:N
-        heatmap!(axes[i], T, X, solutions[i][:,:,1,frame]', colormap = :viridis)
-    end 
-
-    # Label(f[0, :], title)
-    return f
-end 
-
-# f = Figure(size = (1800, 600))
-# ax[1] = Axis(f[1, 1], 
-#                 title = "New PCFM",
-#                 xlabel = "Time", 
-#                 ylabel = "X")
 
 K = 1
-# plot_sample(K, [samples_exa_gpu, samples_exa_gpu_old, samples_jump_madnlp], ["ExaGPU new", "ExaGPU old", "JuMP"])
-# plot_sample(K, [samples_jump_madnlp, samples_ffm, samples_exa_cpu, samples_exa_cpu_old], ["JuMP", "FFM", "ExaCPU", "ExaCPU old"])
-plot_sample(K, [u_analytic, samples_exa_gpu, samples_exa_gpu_old, samples_jump_madnlp, samples_ffm, samples_exa_cpu, samples_exa_cpu_old], ["Analytic", "ExaGPU new", "ExaGPU old", "JuMP", "FFM", "ExaCPU", "ExaCPU old"])
 
-plot_sample(1, new_samples, old_samples, samples_jump_madnlp)
-plot_sample(2, new_samples, old_samples, ffm_samples)
-plot_sample(3, new_samples, old_samples, ffm_samples)
-plot_sample(4, new_samples, old_samples, ffm_samples)
-plot_sample(5, new_samples, old_samples, ffm_samples)
-
-#CPU seems equal to GPU. But old PCFM and new PCFM do not seem equal. 
-# Old version varies across samples, while new version seems rather fixed.
-# None of them look like the FFM. 
-
+plot_sample(K, [u_analytic, samples_exa_gpu, samples_exa_gpu_old, samples_jump_madnlp, samples_ffm, samples_exa_cpu, samples_exa_cpu_old], 
+    ["Analytic", "ExaGPU new", "ExaGPU old", "JuMP", "FFM", "ExaCPU", "ExaCPU old"])
 
 function mass_constraint(u, params)
     Nx, Nt = params
     return [sum((u[i, j] - u[i,1]) for i in 1:(Nx-1)) for j in 1:Nt]
 end 
 
-mass_constraint(new_samples[:,:,1,1], (nx, nt))
-
-function plot_constraint_violation(k, u1, u2, u3, H; title="", constraint_params=nothing)
-    f = Figure(size = (1800, 600))
-
-    ax1 = Axis(f[1, 1], 
-                title = "New PCFM",
-                xlabel = "Time", 
-                ylabel = "Violation")
-
-    ax2 = Axis(f[1, 2], 
-                title = "Old PCFM",
-                xlabel = "Violation", 
-                ylabel = "X")
-
-    ax3 = Axis(f[1, 3], 
-                title = "FFM",
-                xlabel = "Time", 
-                ylabel = "Violation")
+plot_constraint_violation(K, [u_analytic, samples_exa_gpu, samples_exa_gpu_old, samples_jump_madnlp, samples_ffm, samples_exa_cpu, samples_exa_cpu_old], 
+    mass_constraint,
+    ["Analytic", "ExaGPU new", "ExaGPU old", "JuMP", "FFM", "ExaCPU", "ExaCPU old"]
+    ; constraint_params=(nx, nt, dx, dt))
 
 
-    lines!(ax1, H(u1[:,:,1,k], constraint_params))
-    lines!(ax2, H(u2[:,:,1,k], constraint_params))
-    lines!(ax3, H(u3[:,:,1,k], constraint_params))
+#CPU seems equal to GPU. But old PCFM and new PCFM do not seem equal. 
+# Old version varies across samples, while new version seems rather fixed.
+# None of them look like the FFM. 
 
 
-    Label(f[0, :], title)
-
-    return f
-end 
-
-plot_constraint_violation(1, new_samples, old_samples, ffm_samples, mass_constraint; constraint_params=(nx, nt, dx, dt))
 
 
 u1 = randn(nx, nt, n_samples)
@@ -671,10 +581,7 @@ result = madnlp(nlp)
 u_exa_vec = solution(result, u)
 u_exa = Array(reshape(u_exa_vec, nx, nt, 1, n_samples))
 
-plot_constraint_violation(1, new_samples, old_samples, u_exa, mass_constraint; constraint_params=(nx, nt, dx, dt))
+plot_constraint_violation(1, [u_exa], mass_constraint, ["Toy"]; 
+    constraint_params=(nx, nt, dx, dt))
 
 
-u_exact = exp.(-3 .* T') .* sin.(X .+ π/4)   # (nx, nt), analytical solution ν=3
-u_analytic = similar(samples_exa_cpu)
-u_analytic[:,:, 1, 1] = u_exact
-u_analytic

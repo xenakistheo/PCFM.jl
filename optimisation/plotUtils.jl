@@ -89,3 +89,109 @@ function constraint_deviation_plot(u, time, H, params=nothing; title="")
     axislegend(position = :rb)
     return f
 end
+
+
+function plot_sample(k, u1, u2, u3, title="")
+    f = Figure(size = (1800, 600))
+
+    ax1 = Axis(f[1, 1], 
+                title = "New PCFM",
+                xlabel = "Time", 
+                ylabel = "X")
+
+    ax2 = Axis(f[1, 2], 
+                title = "Old PCFM",
+                xlabel = "Time", 
+                ylabel = "X")
+
+    ax3 = Axis(f[1, 3], 
+                title = "FFM",
+                xlabel = "Time", 
+                ylabel = "X")
+
+
+    heatmap!(ax1, T, X, u1[:,:,1,k]', colormap = :viridis)
+    heatmap!(ax2, T, X, u2[:,:,1,k]', colormap = :viridis)
+    heatmap!(ax3, T, X, u3[:,:,1,k]', colormap = :viridis)
+
+
+    Colorbar(f[1, 4], label = "Amplitude")
+    Label(f[0, :], title)
+
+    return f
+end 
+
+function plot_sample(frame, solutions, titles)
+    f = Figure(size = (2400, 600))
+    N = size(solutions)[1]
+    @assert N == length(titles)
+
+    axes = []
+    for i in 1:N
+        ax = Axis(f[1, i], 
+                title = titles[i],
+                xlabel = "Time", 
+                ylabel = "X")
+        push!(axes, ax)
+    end 
+
+    for i in 1:N
+        heatmap!(axes[i], T, X, solutions[i][:,:,1,frame]', colormap = :viridis)
+    end 
+
+    # Label(f[0, :], title)
+    return f
+end 
+
+
+function plot_constraint_violation(frame, solutions, H, titles; constraint_params=nothing)
+    f = Figure(size = (2400, 600))
+    N = size(solutions)[1]
+    @assert N == length(titles)
+
+    axes = []
+    for i in 1:N
+        ax = Axis(f[1, i], 
+                title = titles[i],
+                xlabel = "Time", 
+                ylabel = "X")
+        push!(axes, ax)
+    end 
+
+    for i in 1:N
+        lines!(axes[i], H(solutions[i][:,:,1,frame], constraint_params))
+    end 
+
+    # Label(f[0, :], title)
+    return f
+end 
+
+
+function plot_constraint_violation(k, u1, u2, u3, H; title="", constraint_params=nothing)
+    f = Figure(size = (1800, 600))
+
+    ax1 = Axis(f[1, 1], 
+                title = "New PCFM",
+                xlabel = "Time", 
+                ylabel = "Violation")
+
+    ax2 = Axis(f[1, 2], 
+                title = "Old PCFM",
+                xlabel = "Violation", 
+                ylabel = "X")
+
+    ax3 = Axis(f[1, 3], 
+                title = "FFM",
+                xlabel = "Time", 
+                ylabel = "Violation")
+
+
+    lines!(ax1, H(u1[:,:,1,k], constraint_params))
+    lines!(ax2, H(u2[:,:,1,k], constraint_params))
+    lines!(ax3, H(u3[:,:,1,k], constraint_params))
+
+
+    Label(f[0, :], title)
+
+    return f
+end 
