@@ -233,7 +233,10 @@ function sample_pcfm(ffm::FFM, tstate, n_samples, n_steps, H!;
 
         if backend isa GPU
             copyto!(x1_param, reshape(x_1, N))     # no new allocations, no PCIe transfer
-            result = MadNLP.solve!(solver)                 # reuses factorization structure
+            copyto!(solver.x.x, reshape(x_1, N))   # reset primal to x_1
+            result = MadNLP.solve!(solver, 
+                        tol=1e-7, 
+                        bound_relax_factor=1e-7)                 # reuses factorization structure
             x_0 = reshape(Float32.(solution(result, u)), nx, nt, 1, n_samples) |> device
         else
             # CPU path: pull to CPU, use tuple embedding
@@ -598,10 +601,10 @@ end
 #                 xlabel = "Time", 
 #                 ylabel = "X")
 
-K = 10
+K = 1
 # plot_sample(K, [samples_exa_gpu, samples_exa_gpu_old, samples_jump_madnlp], ["ExaGPU new", "ExaGPU old", "JuMP"])
 # plot_sample(K, [samples_jump_madnlp, samples_ffm, samples_exa_cpu, samples_exa_cpu_old], ["JuMP", "FFM", "ExaCPU", "ExaCPU old"])
-plot_sample(K, [samples_exa_gpu, samples_exa_gpu_old, samples_jump_madnlp, samples_ffm, samples_exa_cpu, samples_exa_cpu_old], ["ExaGPU new", "ExaGPU old", "JuMP", "FFM", "ExaCPU", "ExaCPU old"])
+plot_sample(K, [u_analytic, samples_exa_gpu, samples_exa_gpu_old, samples_jump_madnlp, samples_ffm, samples_exa_cpu, samples_exa_cpu_old], ["Analytic", "ExaGPU new", "ExaGPU old", "JuMP", "FFM", "ExaCPU", "ExaCPU old"])
 
 plot_sample(1, new_samples, old_samples, samples_jump_madnlp)
 plot_sample(2, new_samples, old_samples, ffm_samples)
@@ -670,3 +673,8 @@ u_exa = Array(reshape(u_exa_vec, nx, nt, 1, n_samples))
 
 plot_constraint_violation(1, new_samples, old_samples, u_exa, mass_constraint; constraint_params=(nx, nt, dx, dt))
 
+
+u_exact = exp.(-3 .* T') .* sin.(X .+ π/4)   # (nx, nt), analytical solution ν=3
+u_analytic = similar(samples_exa_cpu)
+u_analytic[:,:, 1, 1] = u_exact
+u_analytic
