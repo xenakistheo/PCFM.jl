@@ -502,7 +502,8 @@ samples_jump_madnlp = sample_pcfm_old(ffm, (parameters = ps, states = st),
                    backend=CPU(),
                    verbose = true,
                    mode="jump",
-                   optimizer=MadNLP.Optimizer);
+                   optimizer=MadNLP.Optimizer, 
+                   initial_vals=starting_noise);
 
 
 # #JuMP, Ipopt
@@ -523,6 +524,10 @@ samples_ffm = sample_ffm(ffm, (parameters = ps, states = st), n_samples, 100;
 
 
 ######################
+samples_exa_gpu = Array(samples_exa_gpu)
+samples_exa_gpu_old = Array(samples_exa_gpu_old)
+samples_ffm = Array(samples_ffm)
+
 
 new_samples = Array(samples_exa_gpu)
 old_samples = Array(samples_exa_gpu_old)
@@ -565,12 +570,38 @@ function plot_sample(k, u1, u2, u3, title="")
     return f
 end 
 
+function plot_sample(frame, solutions, titles)
+    f = Figure(size = (2400, 600))
+    N = size(solutions)[1]
+    @assert N == length(titles)
+
+    axes = []
+    for i in 1:N
+        ax = Axis(f[1, i], 
+                title = titles[i],
+                xlabel = "Time", 
+                ylabel = "X")
+        push!(axes, ax)
+    end 
+
+    for i in 1:N
+        heatmap!(axes[i], T, X, solutions[i][:,:,1,frame]', colormap = :viridis)
+    end 
+
+    # Label(f[0, :], title)
+    return f
+end 
+
 # f = Figure(size = (1800, 600))
 # ax[1] = Axis(f[1, 1], 
 #                 title = "New PCFM",
 #                 xlabel = "Time", 
 #                 ylabel = "X")
 
+K = 10
+# plot_sample(K, [samples_exa_gpu, samples_exa_gpu_old, samples_jump_madnlp], ["ExaGPU new", "ExaGPU old", "JuMP"])
+# plot_sample(K, [samples_jump_madnlp, samples_ffm, samples_exa_cpu, samples_exa_cpu_old], ["JuMP", "FFM", "ExaCPU", "ExaCPU old"])
+plot_sample(K, [samples_exa_gpu, samples_exa_gpu_old, samples_jump_madnlp, samples_ffm, samples_exa_cpu, samples_exa_cpu_old], ["ExaGPU new", "ExaGPU old", "JuMP", "FFM", "ExaCPU", "ExaCPU old"])
 
 plot_sample(1, new_samples, old_samples, samples_jump_madnlp)
 plot_sample(2, new_samples, old_samples, ffm_samples)
