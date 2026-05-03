@@ -193,10 +193,6 @@ function sample_pcfm(ffm::FFM, tstate, n_samples, n_steps, H!;
     # Define Optimization problem 
     if mode == "jump"
         u_0_ic_mat = reshape(u_0_ic_mat, nx, 1, 1, n_samples)
-        model = Model(optimizer)
-        set_silent(model)
-        @variable(model, u[1:nx, 1:nt, 1:n_samples])
-        H!(model, u, u_0_ic_mat, nt, n_samples, grid_points, grid_spacing, dt, constraint_parameters)
 
     else #mode == "exa"
         x1_param = KernelAbstractions.adapt(backend, zeros(Float32, N))       # mutable, lives on GPU  
@@ -239,8 +235,14 @@ function sample_pcfm(ffm::FFM, tstate, n_samples, n_steps, H!;
         ##############
         # ExaModel version 
         if mode == "jump"
-            @objective(model, Min, sum((u[i,j,s] - Array(x_1)[i,j,1,s])^2 for i in 1:nx, j in 1:nt, s in 1:n_samples))
-            optimize!(model)                                                                                                                                                                                   
+            x_1_cpu = Array(x_1)
+            model = Model(optimizer)
+            set_silent(model)
+            @variable(model, u[1:nx, 1:nt, 1:n_samples])
+            @objective(model, Min, sum((u[i,j,s] - x_1_cpu[i,j,1,s])^2 for i in 1:nx, j in 1:nt, s in 1:n_samples))
+            H!(model, u, u_0_ic_mat, nt, n_samples, grid_points, grid_spacing, dt, constraint_parameters)
+            optimize!(model)      
+
             x_0 = reshape(Float32.(value.(u)), nx, nt, 1, n_samples) |> device   
         else 
             copyto!(nlp.θ, reshape(x_1, N))
@@ -307,6 +309,7 @@ function sample_pcfm_old(ffm::FFM, tstate, n_samples, n_steps, H!;
     u_0_ic_vals = Float32.(IC_func.(x_grid))                          # (nx,)
     u_0_ic_mat  = repeat(reshape(u_0_ic_vals, nx, 1), 1, n_samples)  # (nx, n_samples)
     u_0_ic_mat = KernelAbstractions.adapt(backend, u_0_ic_mat)
+    u_0_ic_mat_4d = reshape(u_0_ic_mat, nx, 1, 1, n_samples)
 
 
     if initial_vals !== nothing
@@ -353,7 +356,7 @@ function sample_pcfm_old(ffm::FFM, tstate, n_samples, n_steps, H!;
             set_silent(model)
             @variable(model, u[1:nx, 1:nt, 1:n_samples])
             @objective(model, Min, sum((u[i,j,s] - x_1_cpu[i,j,1,s])^2 for i in 1:nx, j in 1:nt, s in 1:n_samples))
-            H!(model, u, x_1_cpu, nt, n_samples, grid_points, grid_spacing, dt, constraint_parameters)
+            H!(model, u, u_0_ic_mat_4d, nt, n_samples, grid_points, grid_spacing, dt, constraint_parameters)
             optimize!(model)
             x_0 = reshape(Float32.(value.(u)), nx, nt, 1, n_samples) |> device
         else
@@ -489,14 +492,14 @@ samples_exa_cpu = sample_pcfm(ffm, (parameters = ps, states = st),
                    backend=CPU(),
                    verbose = true,
                    mode="exa", 
-                   initial_vals=starting_noise) |> cpu_device
+                   initial_vals=starting_noise);
 
 samples_exa_cpu_old = sample_pcfm_old(ffm, (parameters = ps, states = st),
                    n_samples, 100, heat_constraints!;
                    backend=CPU(),
                    verbose = true,
                    mode="exa", 
-                   initial_vals=starting_noise) |> cpu_device
+                   initial_vals=starting_noise);
 
 # #JuMP, MadNLP
 # @btime sample_pcfm($ffm, (parameters = $ps, states = $st),
@@ -506,16 +509,16 @@ samples_exa_cpu_old = sample_pcfm_old(ffm, (parameters = ps, states = st),
 #                    mode="jump",
 #                    optimizer=MadNLP.Optimizer);
 
-samples_jump_madnlp = sample_pcfm(ffm, (parameters = ps, states = st),
-                   n_samples, 100, heat_constraints!;
+@time samples_jump_madnlp = sample_pcfm(ffm, (parameters = ps, states = st),
+                   n_samples, 10, heat_constraints!;
                    backend=CPU(),
                    verbose = true,
                    mode="jump",
                    optimizer=MadNLP.Optimizer, 
                    initial_vals=starting_noise);
 
-samples_jump_madnlp_old = sample_pcfm_old(ffm, (parameters = ps, states = st),
-                   n_samples, 100, heat_constraints!;
+@time samples_jump_madnlp_old = sample_pcfm_old(ffm, (parameters = ps, states = st),
+                   n_samples, 10, heat_constraints!;
                    backend=CPU(),
                    verbose = true,
                    mode="jump",
@@ -547,8 +550,6 @@ u_exact = exp.(-3 .* T') .* sin.(X .+ π/4)   # (nx, nt), analytical solution ν
 u_analytic = similar(samples_exa_cpu)
 u_analytic[:,:, 1, 1] = u_exact
 u_analytic
-
-
 
 
 
