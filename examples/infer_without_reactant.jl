@@ -270,6 +270,19 @@ fig_constraint = plot_constraint_violation(K, [u_analytic, samples_exa_gpu, samp
     ; constraint_params=(nx, nt, dx, dt))
 save("constraint_violation_heat.png", fig_constraint)
 
+# Save samples
+JLD2.save("samples_heat.jld2",
+    "samples_exa_gpu",    samples_exa_gpu,
+    "samples_exa_cpu",    samples_exa_cpu,
+    "samples_jump_madnlp", samples_jump_madnlp,
+    "samples_ffm",        samples_ffm,
+    "u_analytic",         u_analytic)
 
-
+# Load samples
+# data = JLD2.load("samples_heat.jld2")
+# samples_exa_gpu     = data["samples_exa_gpu"]
+# samples_exa_cpu     = data["samples_exa_cpu"]
+# samples_jump_madnlp = data["samples_jump_madnlp"]
+# samples_ffm         = data["samples_ffm"]
+# u_analytic          = data["u_analytic"]
 
