@@ -9,6 +9,7 @@ using Random
 using Optimisers
 using Reactant
 using KernelAbstractions
+using MadNLP, MadNLPGPU, ExaModels
 
 using JuMP
 using HDF5
