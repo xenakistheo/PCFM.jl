@@ -285,14 +285,14 @@ function sample_pcfm(ffm::FFM, tstate, n_samples, n_steps, H!;
             H!(model, u, u_0_ic_mat, nt, n_samples, grid_points, grid_spacing, dt, constraint_parameters)
             optimize!(model)      
 
-            x_0 = reshape(Float32.(value.(u)), nx, nt, 1, n_samples) |> device   
+            x_1 = reshape(Float32.(value.(u)), nx, nt, 1, n_samples) |> device   
         else 
             copyto!(nlp.θ, reshape(x_1, N))
             result = MadNLP.solve!(solver)
             # result = MadNLP.solve!(solver, 
             #             tol=1e-7, 
             #             bound_relax_factor=1e-7)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    
-            x_0 = reshape(Float32.(solution(result, u)), nx, nt, 1, n_samples) |> device
+            x_1 = reshape(Float32.(solution(result, u)), nx, nt, 1, n_samples) |> device
         end 
         ##############
 
