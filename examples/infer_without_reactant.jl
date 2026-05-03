@@ -234,13 +234,20 @@ function sample_pcfm(ffm::FFM, tstate, n_samples, n_steps, H!;
         if backend isa GPU
             copyto!(x1_param, reshape(x_1, N))     # no new allocations, no PCIe transfer
             copyto!(solver.x.x, reshape(x_1, N))   # reset primal to x_1
+            @assert maximum(abs.(x1_param .- reshape(x_1, N))) < 1e-6  # passes
+
+            f = ExaModels.obj(nlp, Array(reshape(x_1, N)))
+            println("Objective at x_1: ", f)  # should be ≈ 0 if θ == x_1
             result = MadNLP.solve!(solver, 
                         tol=1e-7, 
                         bound_relax_factor=1e-7)                 # reuses factorization structure
             x_0 = reshape(Float32.(solution(result, u)), nx, nt, 1, n_samples) |> device
         else
             # CPU path: pull to CPU, use tuple embedding
-            copyto!(x1_param, reshape(x_1, N))
+            copyto!(nlp.θ, reshape(x_1, N))
+            f = ExaModels.obj(nlp, Array(reshape(x_1, N)))
+            println("Objective at x_1: ", f)  # should be ≈ 0 if θ == x_1
+            # copyto!(x1_param, reshape(x_1, N))
             result = MadNLP.solve!(solver)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
             x_0 = reshape(Float32.(solution(result, u)), nx, nt, 1, n_samples) |> device
         end
@@ -532,6 +539,9 @@ samples_exa_gpu_old = Array(samples_exa_gpu_old)
 samples_ffm = Array(samples_ffm)
 
 
+X = x_grid
+T = range(t_range[1], t_range[2]; length = nt)
+
 # Compute Analytic Solution 
 u_exact = exp.(-3 .* T') .* sin.(X .+ π/4)   # (nx, nt), analytical solution ν=3
 u_analytic = similar(samples_exa_cpu)
@@ -539,8 +549,7 @@ u_analytic[:,:, 1, 1] = u_exact
 u_analytic
 
 
-X = x_grid
-T = range(t_range[1], t_range[2]; length = nt)
+
 
 
 K = 1
@@ -584,4 +593,6 @@ u_exa = Array(reshape(u_exa_vec, nx, nt, 1, n_samples))
 plot_constraint_violation(1, [u_exa], mass_constraint, ["Toy"]; 
     constraint_params=(nx, nt, dx, dt))
 
+
+fieldnames(typeof(nlp))
 
