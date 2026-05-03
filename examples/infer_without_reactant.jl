@@ -13,17 +13,18 @@ This script demonstrates:
 #S
 
 using PCFM
-using Lux
-#using Reactant
-using JLD2, Functors
-# using Plots
-using cuDNN
-using CUDA
-using KernelAbstractions
+
 using ExaModels, MadNLP, MadNLPGPU
+# using Plots
+using Lux
+using CUDA
+using cuDNN
+using KernelAbstractions
+using JLD2, Functors
 using JuMP
 using Ipopt
 using BenchmarkTools
+#using Reactant
 
 include(joinpath(@__DIR__, "..", "optimisation", "plotUtils.jl"))
 
@@ -167,8 +168,7 @@ function sample_pcfm(ffm::FFM, tstate, n_samples, n_steps, H!;
 
     x_grid = range(domain.x_start, domain.x_end, length=nx)
     u_0_ic_vals = Float32.(IC_func.(x_grid))                          # (nx,)
-    u_0_ic_mat  = repeat(reshape(u_0_ic_vals, nx, 1), 1, n_samples)  # (nx, n_samples)
-    u_0_ic_mat = KernelAbstractions.adapt(backend, u_0_ic_mat)
+    u_0_ic_mat  = KernelAbstractions.adapt(backend, repeat(reshape(u_0_ic_vals, nx, 1), 1, n_samples))  # (nx, n_samples)
 
     if initial_vals !== nothing
         @assert size(initial_vals) == (nx, nt, 1, n_samples)
@@ -191,7 +191,14 @@ function sample_pcfm(ffm::FFM, tstate, n_samples, n_steps, H!;
     N = nx * nt * n_samples
     
     # Define Optimization problem 
-    if mode == "exa"
+    if mode == "jump"
+        u_0_ic_mat = reshape(u_0_ic_mat, nx, 1, 1, n_samples)
+        model = Model(optimizer)
+        set_silent(model)
+        @variable(model, u[1:nx, 1:nt, 1:n_samples])
+        H!(model, u, u_0_ic_mat, nt, n_samples, grid_points, grid_spacing, dt, constraint_parameters)
+
+    else #mode == "exa"
         x1_param = KernelAbstractions.adapt(backend, zeros(Float32, N))       # mutable, lives on GPU  
         core = ExaCore(backend=backend)                                                                                                                                                                                                     
         θ = parameter(core, x1_param)              # θ references x1_param by address                                                                                                                                                       
@@ -206,6 +213,8 @@ function sample_pcfm(ffm::FFM, tstate, n_samples, n_steps, H!;
             solver = MadNLP.MadNLPSolver(nlp; print_level=MadNLP.ERROR)
         end 
     end 
+
+
 
     # Euler integration from t=0 to t=1
     for step in 0:(n_steps - 1)
@@ -229,12 +238,18 @@ function sample_pcfm(ffm::FFM, tstate, n_samples, n_steps, H!;
         # Step 2: Apply constraints
         ##############
         # ExaModel version 
-        copyto!(nlp.θ, reshape(x_1, N))
-        result = MadNLP.solve!(solver)
-        # result = MadNLP.solve!(solver, 
-        #             tol=1e-7, 
-        #             bound_relax_factor=1e-7)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    
-        x_0 = reshape(Float32.(solution(result, u)), nx, nt, 1, n_samples) |> device
+        if mode == "jump"
+            @objective(model, Min, sum((u[i,j,s] - Array(x_1)[i,j,1,s])^2 for i in 1:nx, j in 1:nt, s in 1:n_samples))
+            optimize!(model)                                                                                                                                                                                   
+            x_0 = reshape(Float32.(value.(u)), nx, nt, 1, n_samples) |> device   
+        else 
+            copyto!(nlp.θ, reshape(x_1, N))
+            result = MadNLP.solve!(solver)
+            # result = MadNLP.solve!(solver, 
+            #             tol=1e-7, 
+            #             bound_relax_factor=1e-7)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    
+            x_0 = reshape(Float32.(solution(result, u)), nx, nt, 1, n_samples) |> device
+        end 
         ##############
 
         # Step 3: Interpolate between x_0 and x_1 (corrected) at time t+dt
@@ -491,13 +506,21 @@ samples_exa_cpu_old = sample_pcfm_old(ffm, (parameters = ps, states = st),
 #                    mode="jump",
 #                    optimizer=MadNLP.Optimizer);
 
-samples_jump_madnlp = sample_pcfm_old(ffm, (parameters = ps, states = st),
+samples_jump_madnlp = sample_pcfm(ffm, (parameters = ps, states = st),
                    n_samples, 100, heat_constraints!;
                    backend=CPU(),
                    verbose = true,
                    mode="jump",
                    optimizer=MadNLP.Optimizer, 
-                   initial_vals=starting_noise) |> cpu_device
+                   initial_vals=starting_noise);
+
+samples_jump_madnlp_old = sample_pcfm_old(ffm, (parameters = ps, states = st),
+                   n_samples, 100, heat_constraints!;
+                   backend=CPU(),
+                   verbose = true,
+                   mode="jump",
+                   optimizer=MadNLP.Optimizer, 
+                   initial_vals=starting_noise); 
 
 
 # #JuMP, Ipopt
@@ -524,6 +547,8 @@ u_exact = exp.(-3 .* T') .* sin.(X .+ π/4)   # (nx, nt), analytical solution ν
 u_analytic = similar(samples_exa_cpu)
 u_analytic[:,:, 1, 1] = u_exact
 u_analytic
+
+
 
 
 
