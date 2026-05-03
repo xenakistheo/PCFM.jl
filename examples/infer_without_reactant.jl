@@ -208,18 +208,20 @@ u_analytic
 
 K = 1
 
-plot_sample(K, [u_analytic, samples_exa_gpu, samples_exa_gpu_old, samples_jump_madnlp, samples_ffm, samples_exa_cpu, samples_exa_cpu_old], 
+fig_samples = plot_sample(K, [u_analytic, samples_exa_gpu, samples_exa_gpu_old, samples_jump_madnlp, samples_ffm, samples_exa_cpu, samples_exa_cpu_old],
     ["Analytic", "ExaGPU new", "ExaGPU old", "JuMP", "FFM", "ExaCPU", "ExaCPU old"])
+save("samples.png", fig_samples)
 
 function mass_constraint(u, params)
     Nx, Nt = params
     return [sum((u[i, j] - u[i,1]) for i in 1:(Nx-1)) for j in 1:Nt]
-end 
+end
 
-plot_constraint_violation(K, [u_analytic, samples_exa_gpu, samples_exa_gpu_old, samples_jump_madnlp, samples_ffm, samples_exa_cpu, samples_exa_cpu_old], 
+fig_constraint = plot_constraint_violation(K, [u_analytic, samples_exa_gpu, samples_exa_gpu_old, samples_jump_madnlp, samples_ffm, samples_exa_cpu, samples_exa_cpu_old],
     mass_constraint,
     ["Analytic", "ExaGPU new", "ExaGPU old", "JuMP", "FFM", "ExaCPU", "ExaCPU old"]
     ; constraint_params=(nx, nt, dx, dt))
+save("constraint_violation.png", fig_constraint)
 
 
 #CPU seems equal to GPU. But old PCFM and new PCFM do not seem equal. 
