@@ -140,22 +140,22 @@ tstate_inf = (parameters = ps, states = st)
 
 starting_noise = randn(Float32, nx, nt, 1, n_samples) 
 
-
+begin 
 # ExaModels, MadNLP, GPU
 @info "ExaModels, MadNLP, GPU"
-@btime samples_exa_gpu = sample_pcfm(ffm, (parameters = $ps, states = $st),
+@btime sample_pcfm(ffm, (parameters = $ps, states = $st),
                    $n_samples, 100, heat_constraints!;
                    backend=backend,
                    verbose = false,
                    mode="exa", 
-                   initial_vals=$starting_noise) 
+                   initial_vals=$starting_noise);
 
 
 
 
 # # ExaModels, MadNLP, CPU
 @info "ExaModels, MadNLP, CPU"
-@btime samples_exa_cpu = sample_pcfm(ffm, (parameters = $ps, states = $st),
+@btime sample_pcfm(ffm, (parameters = $ps, states = $st),
                    $n_samples, 100, heat_constraints!;
                    backend=CPU(),
                    verbose = false,
@@ -166,7 +166,7 @@ starting_noise = randn(Float32, nx, nt, 1, n_samples)
 
 # #JuMP, MadNLP
 @info "JuMP, MadNLP"
-@btime samples_jump_madnlp = sample_pcfm(ffm, (parameters = $ps, states = $st),
+@btime sample_pcfm(ffm, (parameters = $ps, states = $st),
                    $n_samples, 100, heat_constraints!;
                    backend=CPU(),
                    verbose = false,
@@ -188,10 +188,55 @@ starting_noise = randn(Float32, nx, nt, 1, n_samples)
 
 # FFM
 @info "FFM"
-@btime samples_ffm = sample_ffm(ffm, (parameters = $ps, states = $st), $n_samples, 100; 
+@btime sample_ffm(ffm, (parameters = $ps, states = $st), $n_samples, 100; 
     verbose = false,
     initial_vals=$starting_noise);
 
+end 
+
+
+
+begin 
+    # ExaModels, MadNLP, GPU
+@info "ExaModels, MadNLP, GPU"
+samples_exa_gpu = sample_pcfm(ffm, (parameters = ps, states = st),
+                   n_samples, 100, heat_constraints!;
+                   backend=backend,
+                   verbose = false,
+                   mode="exa", 
+                   initial_vals=starting_noise);
+
+
+
+
+# # ExaModels, MadNLP, CPU
+@info "ExaModels, MadNLP, CPU"
+samples_exa_cpu = sample_pcfm(ffm, (parameters = ps, states = st),
+                   n_samples, 100, heat_constraints!;
+                   backend=CPU(),
+                   verbose = false,
+                   mode="exa", 
+                   initial_vals=starting_noise);
+
+
+
+# #JuMP, MadNLP
+@info "JuMP, MadNLP"
+samples_jump_madnlp = sample_pcfm(ffm, (parameters = ps, states = st),
+                   n_samples, 100, heat_constraints!;
+                   backend=CPU(),
+                   verbose = false,
+                   mode="jump",
+                   optimizer=MadNLP.Optimizer, 
+                   initial_vals=starting_noise);
+
+# FFM
+@info "FFM"
+samples_ffm = sample_ffm(ffm, (parameters = ps, states = st), n_samples, 100; 
+    verbose = false,
+    initial_vals=starting_noise);
+end 
+samples_ffm = Array(samples_ffm)
 ##################
 # Plot solutions to verify correctness 
 
@@ -208,47 +253,23 @@ u_analytic
 
 K = 1
 
-fig_samples = plot_sample(K, [u_analytic, samples_exa_gpu, samples_exa_gpu_old, samples_jump_madnlp, samples_ffm, samples_exa_cpu, samples_exa_cpu_old],
-    ["Analytic", "ExaGPU new", "ExaGPU old", "JuMP", "FFM", "ExaCPU", "ExaCPU old"])
-save("samples.png", fig_samples)
+fig_samples = plot_sample(K, [u_analytic, samples_exa_gpu, samples_jump_madnlp, samples_ffm, samples_exa_cpu],
+    ["Analytic", "ExaGPU new", "JuMP", "FFM", "ExaCPU"])
+
+
+save("samples_heat.png", fig_samples)
 
 function mass_constraint(u, params)
     Nx, Nt = params
     return [sum((u[i, j] - u[i,1]) for i in 1:(Nx-1)) for j in 1:Nt]
 end
 
-fig_constraint = plot_constraint_violation(K, [u_analytic, samples_exa_gpu, samples_exa_gpu_old, samples_jump_madnlp, samples_ffm, samples_exa_cpu, samples_exa_cpu_old],
+fig_constraint = plot_constraint_violation(K, [u_analytic, samples_exa_gpu, samples_jump_madnlp, samples_ffm, samples_exa_cpu],
     mass_constraint,
-    ["Analytic", "ExaGPU new", "ExaGPU old", "JuMP", "FFM", "ExaCPU", "ExaCPU old"]
+    ["Analytic", "ExaGPU new", "JuMP", "FFM", "ExaCPU"]
     ; constraint_params=(nx, nt, dx, dt))
-save("constraint_violation.png", fig_constraint)
-
-
-#CPU seems equal to GPU. But old PCFM and new PCFM do not seem equal. 
-# Old version varies across samples, while new version seems rather fixed.
-# None of them look like the FFM. 
+save("constraint_violation_heat.png", fig_constraint)
 
 
 
-
-# u1 = randn(nx, nt, n_samples)
-# L = 2π
-# X = collect(range(0, L; length=nx))
-# T = collect(range(0, 1; length=nt))
-# core = ExaCore(Float64; backend=backend)
-# N = nx * nt * n_samples
-# u = variable(core, 1:N, start = vec(u1))
-# u1_data = KernelAbstractions.adapt(backend, [(k, vec(u1)[k]) for k in 1:N])
-# objective(core, (u[d[1]] - d[2])^2 for d in u1_data)
-# heat_constraints!(core, u, u1[:, 1, :], nt, n_samples, [nx], [dx], dt; backend=backend)
-# nlp = ExaModel(core)
-# result = madnlp(nlp)
-# u_exa_vec = solution(result, u)
-# u_exa = Array(reshape(u_exa_vec, nx, nt, 1, n_samples))
-
-# plot_constraint_violation(1, [u_exa], mass_constraint, ["Toy"]; 
-#     constraint_params=(nx, nt, dx, dt))
-
-
-# fieldnames(typeof(nlp))
 
