@@ -226,31 +226,15 @@ function sample_pcfm(ffm::FFM, tstate, n_samples, n_steps, H!;
         # Step 1: Extrapolate to t=1
         x_1 = x .+ v .* (1.0f0 - τ) 
 
-        # Step 2: Apply constraint - fix initial condition
+        # Step 2: Apply constraints
         ##############
-       
         # ExaModel version 
-
-        if backend isa GPU
-            copyto!(x1_param, reshape(x_1, N))     # no new allocations, no PCIe transfer
-            copyto!(solver.x.x, reshape(x_1, N))   # reset primal to x_1
-            @assert maximum(abs.(x1_param .- reshape(x_1, N))) < 1e-6  # passes
-
-            f = ExaModels.obj(nlp, Array(reshape(x_1, N)))
-            println("Objective at x_1: ", f)  # should be ≈ 0 if θ == x_1
-            result = MadNLP.solve!(solver, 
-                        tol=1e-7, 
-                        bound_relax_factor=1e-7)                 # reuses factorization structure
-            x_0 = reshape(Float32.(solution(result, u)), nx, nt, 1, n_samples) |> device
-        else
-            # CPU path: pull to CPU, use tuple embedding
-            copyto!(nlp.θ, reshape(x_1, N))
-            f = ExaModels.obj(nlp, Array(reshape(x_1, N)))
-            println("Objective at x_1: ", f)  # should be ≈ 0 if θ == x_1
-            # copyto!(x1_param, reshape(x_1, N))
-            result = MadNLP.solve!(solver)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
-            x_0 = reshape(Float32.(solution(result, u)), nx, nt, 1, n_samples) |> device
-        end
+        copyto!(nlp.θ, reshape(x_1, N))
+        result = MadNLP.solve!(solver)
+        # result = MadNLP.solve!(solver, 
+        #             tol=1e-7, 
+        #             bound_relax_factor=1e-7)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    
+        x_0 = reshape(Float32.(solution(result, u)), nx, nt, 1, n_samples) |> device
         ##############
 
         # Step 3: Interpolate between x_0 and x_1 (corrected) at time t+dt
@@ -465,14 +449,14 @@ samples_exa_gpu = sample_pcfm(ffm, (parameters = ps, states = st),
                    backend=backend,
                    verbose = true,
                    mode="exa", 
-                   initial_vals=starting_noise);
+                   initial_vals=starting_noise) |> cpu_device
 
 samples_exa_gpu_old = sample_pcfm_old(ffm, (parameters = ps, states = st),
                    n_samples, 100, heat_constraints!;
                    backend=backend,
                    verbose = true,
                    mode="exa",
-                   initial_vals=starting_noise);
+                   initial_vals=starting_noise) |> cpu_device
 
 #80.824 s (11250911 allocations: 14.42 GiB)
 
@@ -490,14 +474,14 @@ samples_exa_cpu = sample_pcfm(ffm, (parameters = ps, states = st),
                    backend=CPU(),
                    verbose = true,
                    mode="exa", 
-                   initial_vals=starting_noise);
+                   initial_vals=starting_noise) |> cpu_device
 
 samples_exa_cpu_old = sample_pcfm_old(ffm, (parameters = ps, states = st),
                    n_samples, 100, heat_constraints!;
                    backend=CPU(),
                    verbose = true,
                    mode="exa", 
-                   initial_vals=starting_noise);
+                   initial_vals=starting_noise) |> cpu_device
 
 # #JuMP, MadNLP
 # @btime sample_pcfm($ffm, (parameters = $ps, states = $st),
@@ -513,7 +497,7 @@ samples_jump_madnlp = sample_pcfm_old(ffm, (parameters = ps, states = st),
                    verbose = true,
                    mode="jump",
                    optimizer=MadNLP.Optimizer, 
-                   initial_vals=starting_noise);
+                   initial_vals=starting_noise) |> cpu_device
 
 
 # #JuMP, Ipopt
@@ -527,17 +511,10 @@ samples_jump_madnlp = sample_pcfm_old(ffm, (parameters = ps, states = st),
 
 samples_ffm = sample_ffm(ffm, (parameters = ps, states = st), n_samples, 100; 
     verbose = true,
-    initial_vals=starting_noise)
+    initial_vals=starting_noise) |> cpu_device
 
 ##################
 # Plot solutions to verify correctness 
-
-
-######################
-samples_exa_gpu = Array(samples_exa_gpu)
-samples_exa_gpu_old = Array(samples_exa_gpu_old)
-samples_ffm = Array(samples_ffm)
-
 
 X = x_grid
 T = range(t_range[1], t_range[2]; length = nt)
