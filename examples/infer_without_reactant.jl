@@ -118,7 +118,6 @@ n_samples = 32
 # sample_compiled_funcs = (n_samples == batch_size) ? compiled_funcs : PCFM.compile_functions(ffm, n_samples)
 tstate_inf = (parameters = ps, states = st)
 
-@show ffm.config[:device]
 
 
 ########################################################################################################################################################
@@ -138,94 +137,60 @@ tstate_inf = (parameters = ps, states = st)
 ########################################################################################################################################################
 ########################################################################################################################################################
 
-
-@show backend
-##############
-# ExaModels, MadNLP, GPU
-# @btime sample_pcfm($ffm, (parameters = $ps, states = $st),
-#                    $n_samples, 100, heat_constraints!;
-#                    backend=backend,
-#                    verbose = true,
-#                    mode="exa");
 
 starting_noise = randn(Float32, nx, nt, 1, n_samples) 
 
-samples_exa_gpu = sample_pcfm(ffm, (parameters = ps, states = st),
-                   n_samples, 100, heat_constraints!;
+
+# ExaModels, MadNLP, GPU
+@info "ExaModels, MadNLP, GPU"
+@btime samples_exa_gpu = sample_pcfm(ffm, (parameters = $ps, states = $st),
+                   $n_samples, 100, heat_constraints!;
                    backend=backend,
-                   verbose = true,
+                   verbose = false,
                    mode="exa", 
-                   initial_vals=starting_noise) |> cpu_device
+                   initial_vals=$starting_noise) 
 
-samples_exa_gpu_old = sample_pcfm_old(ffm, (parameters = ps, states = st),
-                   n_samples, 100, heat_constraints!;
-                   backend=backend,
-                   verbose = true,
-                   mode="exa",
-                   initial_vals=starting_noise) |> cpu_device
 
-#80.824 s (11250911 allocations: 14.42 GiB)
+
 
 # # ExaModels, MadNLP, CPU
-# @btime sample_pcfm($ffm, (parameters = $ps, states = $st),
-#                    $n_samples, 100, heat_constraints!;
-#                    backend=CPU(),
-#                    verbose = true,
-#                    mode="exa");
-# 37.737 s (1544423 allocations: 20.34 GiB)
-
-
-samples_exa_cpu = sample_pcfm(ffm, (parameters = ps, states = st),
-                   n_samples, 100, heat_constraints!;
+@info "ExaModels, MadNLP, CPU"
+@btime samples_exa_cpu = sample_pcfm(ffm, (parameters = $ps, states = $st),
+                   $n_samples, 100, heat_constraints!;
                    backend=CPU(),
-                   verbose = true,
+                   verbose = false,
                    mode="exa", 
-                   initial_vals=starting_noise);
+                   initial_vals=$starting_noise);
 
-samples_exa_cpu_old = sample_pcfm_old(ffm, (parameters = ps, states = st),
-                   n_samples, 100, heat_constraints!;
-                   backend=CPU(),
-                   verbose = true,
-                   mode="exa", 
-                   initial_vals=starting_noise);
+
 
 # #JuMP, MadNLP
-# @btime sample_pcfm($ffm, (parameters = $ps, states = $st),
-#                    $n_samples, 100, heat_constraints!;
-#                    backend=CPU(),
-#                    verbose = true,
-#                    mode="jump",
-#                    optimizer=MadNLP.Optimizer);
-
-@time samples_jump_madnlp = sample_pcfm(ffm, (parameters = ps, states = st),
-                   n_samples, 10, heat_constraints!;
+@info "JuMP, MadNLP"
+@btime samples_jump_madnlp = sample_pcfm(ffm, (parameters = $ps, states = $st),
+                   $n_samples, 100, heat_constraints!;
                    backend=CPU(),
-                   verbose = true,
+                   verbose = false,
                    mode="jump",
                    optimizer=MadNLP.Optimizer, 
-                   initial_vals=starting_noise);
+                   initial_vals=$starting_noise);
 
-@time samples_jump_madnlp_old = sample_pcfm_old(ffm, (parameters = ps, states = st),
-                   n_samples, 10, heat_constraints!;
-                   backend=CPU(),
-                   verbose = true,
-                   mode="jump",
-                   optimizer=MadNLP.Optimizer, 
-                   initial_vals=starting_noise); 
 
 
 # #JuMP, Ipopt
-# @btime sample_pcfm($ffm, (parameters = $ps, states = $st),
-#                    $n_samples, 100, heat_constraints!;
-#                    backend=CPU(),
-#                    verbose = true,
-#                    mode="jump",
-#                    optimizer=Ipopt.Optimizer);
+@info "JuMP, Ipopt"
+@btime sample_pcfm($ffm, (parameters = $ps, states = $st),
+                   $n_samples, 100, heat_constraints!;
+                   backend=CPU(),
+                   verbose = false,
+                   mode="jump",
+                   optimizer=Ipopt.Optimizer,
+                   initial_vals=$starting_noise);
 
-
-samples_ffm = sample_ffm(ffm, (parameters = ps, states = st), n_samples, 100; 
-    verbose = true,
-    initial_vals=starting_noise) |> cpu_device
+# FFM
+@info "FFM"
+@btime samples_ffm = sample_ffm(ffm, (parameters = $ps, states = $st), $n_samples, 100; 
+    verbose = false,
+    initial_vals=$starting_noise);
 
 ##################
 # Plot solutions to verify correctness 
@@ -238,8 +203,6 @@ u_exact = exp.(-3 .* T') .* sin.(X .+ π/4)   # (nx, nt), analytical solution ν
 u_analytic = similar(samples_exa_cpu)
 u_analytic[:,:, 1, 1] = u_exact
 u_analytic
-
-
 
 
 
@@ -266,24 +229,24 @@ plot_constraint_violation(K, [u_analytic, samples_exa_gpu, samples_exa_gpu_old, 
 
 
 
-u1 = randn(nx, nt, n_samples)
-L = 2π
-X = collect(range(0, L; length=nx))
-T = collect(range(0, 1; length=nt))
-core = ExaCore(Float64; backend=backend)
-N = nx * nt * n_samples
-u = variable(core, 1:N, start = vec(u1))
-u1_data = KernelAbstractions.adapt(backend, [(k, vec(u1)[k]) for k in 1:N])
-objective(core, (u[d[1]] - d[2])^2 for d in u1_data)
-heat_constraints!(core, u, u1[:, 1, :], nt, n_samples, [nx], [dx], dt; backend=backend)
-nlp = ExaModel(core)
-result = madnlp(nlp)
-u_exa_vec = solution(result, u)
-u_exa = Array(reshape(u_exa_vec, nx, nt, 1, n_samples))
+# u1 = randn(nx, nt, n_samples)
+# L = 2π
+# X = collect(range(0, L; length=nx))
+# T = collect(range(0, 1; length=nt))
+# core = ExaCore(Float64; backend=backend)
+# N = nx * nt * n_samples
+# u = variable(core, 1:N, start = vec(u1))
+# u1_data = KernelAbstractions.adapt(backend, [(k, vec(u1)[k]) for k in 1:N])
+# objective(core, (u[d[1]] - d[2])^2 for d in u1_data)
+# heat_constraints!(core, u, u1[:, 1, :], nt, n_samples, [nx], [dx], dt; backend=backend)
+# nlp = ExaModel(core)
+# result = madnlp(nlp)
+# u_exa_vec = solution(result, u)
+# u_exa = Array(reshape(u_exa_vec, nx, nt, 1, n_samples))
 
-plot_constraint_violation(1, [u_exa], mass_constraint, ["Toy"]; 
-    constraint_params=(nx, nt, dx, dt))
+# plot_constraint_violation(1, [u_exa], mass_constraint, ["Toy"]; 
+#     constraint_params=(nx, nt, dx, dt))
 
 
-fieldnames(typeof(nlp))
+# fieldnames(typeof(nlp))
 
