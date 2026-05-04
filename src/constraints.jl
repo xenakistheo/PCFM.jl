@@ -264,28 +264,49 @@ end
 
 
 
+smooth_pos(x, eps) = 0.5 * (x + sqrt(x^2 + eps^2))
+smooth_neg(x, eps) = 0.5 * (x - sqrt(x^2 + eps^2))
 
 function burgers_constraints_IC_Mass_Flux!(model::Model, u, u0, nt, n_samples, grid_points, grid_spacing, dt, params=(;))
     nx  = grid_points[1]
     dx = grid_spacing[1]
-    left_bc_vec = get(params, :left_bc, zeros(Float32, n_samples))
+    k = get(params, :k, 5)
+    eps = get(params, :eps, 1e-6)
 
-    # # u has shape (nx, nt, n_samples)
+    λ = dt / dx
 
-    # # 1. Dirichlet BC at left boundary
-    # @constraint(model, [t in 1:nt, s in 1:n_samples], u[1, t, s] == left_bc_vec[s])
+    # Register smooth functions for JuMP nonlinear expressions
+    register(model, :smooth_pos, 2, smooth_pos; autodiff = true)
+    register(model, :smooth_neg, 2, smooth_neg; autodiff = true)
 
-    # # 2. Neumann BC at right boundary
-    # @constraint(model, [t in 1:nt, s in 1:n_samples], u[nx, t, s] == u[nx-1, t, s])
+        # Godunov / Engquist–Osher flux for Burgers:
+    # F(uL,uR) = 1/2 * max(uL,0)^2 + 1/2 * min(uR,0)^2
+    @NLexpression(model, F[i = 1:nx-1, t = 1:nt, s = 1:n_samples],
+        0.5 * smooth_pos(u[i, t, s], eps)^2 +
+        0.5 * smooth_neg(u[i+1, t, s], eps)^2
+    )
 
-    # # 3. Mass evolution (trapezoidal rule)
-    # @constraint(model, [t in 2:nt, s in 1:n_samples],
-    #     sum(u[i, t,   s] for i in 1:nx) * dx
-    #     - sum(u[i, t-1, s] for i in 1:nx) * dx
-    #     + 0.5*dt*(
-    #         (0.5*u[nx, t,   s]^2 - 0.5*u[1, t,   s]^2)
-    #         + (0.5*u[nx, t-1, s]^2 - 0.5*u[1, t-1, s]^2)
-    #     ) == 0.0)
+    # 1. Initial condition: u(x, 0) = u_IC(x)
+    @constraint(model, [i in 1:nx, s in 1:n_samples],
+        u[i, 1, s] == u0[i, s]
+    )
+
+    # 2. Constant mass: ∫u(x,t)dx = ∫u(x,0)dx
+    @constraint(model, [t in 1:nt, s in 1:n_samples],
+        sum(u[i, t, s] for i in 1:nx) * dx ==
+        sum(u0[i, s] for i in 1:nx) * dx
+    )
+
+    # 3. k local Godunov/Euler updates
+    k_eff = min(k, nt - 1)
+
+    @NLconstraint(model, [t in 1:k_eff, i in 2:nx-1, s in 1:n_samples],
+        u[i, t+1, s] ==
+        u[i, t, s] - λ * (F[i, t, s] - F[i-1, t, s])
+    )
+
+    return nothing
+
 end
 
 
