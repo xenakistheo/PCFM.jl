@@ -5,7 +5,7 @@ include(joinpath(@__DIR__, "..", "utils", "plotUtils.jl"))
 
 
 # Load samples
-data = JLD2.load("samples_heat.jld2")
+data = JLD2.load("datasets/samples/samples_heat.jld2")
 samples_exa_gpu     = data["samples_exa_gpu"]
 samples_exa_cpu     = data["samples_exa_cpu"]
 samples_jump_madnlp = data["samples_jump_madnlp"]
