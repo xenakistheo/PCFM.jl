@@ -16,6 +16,7 @@ using JuMP
 using Ipopt
 using BenchmarkTools
 using Random
+using HDF5
 
 include(joinpath(@__DIR__, "..", "optimisation", "plotUtils.jl"))
 
@@ -197,6 +198,27 @@ end
 samples_ffm = Array(samples_ffm)
 
 ##################
+# Load reference solutions from the test dataset (ground truth)
+
+test_data_file = joinpath(@__DIR__, "..", "datasets", "data", "burgers_test_nIC30_nBC30.h5")
+ref_samples = zeros(Float32, nx, nt, 1, n_samples)
+
+h5open(test_data_file, "r") do f
+    p_locs = read(f["ic"])                          # (N_ic,) — sigmoid p_loc values
+    nt_h5, nx_h5, N_bc, N_ic = size(f["u"])         # Julia reversed dims
+
+    # Find the stored IC closest to p_loc = 0.5 (the fixed inference IC)
+    _, i_ic = findmin(abs.(p_locs .- 0.5f0))
+    @info "Reference IC: p_loc = $(round(p_locs[i_ic]; digits=4)) (index $i_ic / $N_ic)"
+
+    n_load = min(n_samples, N_bc)
+    for i_bc in 1:n_load
+        arr = Float32.(f["u"][:, :, i_bc, i_ic])    # (nt+1, nx+1) in Julia HDF5 ordering
+        ref_samples[:, :, 1, i_bc] = permutedims(arr, (2, 1))  # → (nx+1, nt+1)
+    end
+end
+
+##################
 # Plot solutions
 
 X = x_grid
@@ -204,8 +226,8 @@ T = range(t_range[1], t_range[2]; length=nt)
 K = 1
 
 fig_samples = plot_sample(K,
-    [samples_exa_gpu, samples_exa_cpu, samples_jump_madnlp, samples_ffm],
-    ["ExaGPU", "ExaCPU", "JuMP", "FFM"])
+    [ref_samples, samples_exa_gpu, samples_exa_cpu, samples_jump_madnlp, samples_ffm],
+    ["Reference", "ExaGPU", "ExaCPU", "JuMP", "FFM"])
 save("burgers_samples.png", fig_samples)
 
 function ic_violation(u, params)
@@ -222,6 +244,7 @@ save("burgers_constraint_violation.png", fig_constraint)
 
 # Save samples
 JLD2.save("samples_burgers.jld2",
+    "ref_samples",         ref_samples,
     "samples_exa_gpu",     samples_exa_gpu,
     "samples_exa_cpu",     samples_exa_cpu,
     "samples_jump_madnlp", samples_jump_madnlp,
@@ -229,6 +252,7 @@ JLD2.save("samples_burgers.jld2",
 
 # Load samples
 # data = JLD2.load("samples_burgers.jld2")
+# ref_samples         = data["ref_samples"]
 # samples_exa_gpu     = data["samples_exa_gpu"]
 # samples_exa_cpu     = data["samples_exa_cpu"]
 # samples_jump_madnlp = data["samples_jump_madnlp"]
