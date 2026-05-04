@@ -79,3 +79,6 @@ fig_constraint_ic = plot_constraint_violation(K,
 
 save("plots/IC_constraint_violation_heat.png", fig_constraint_ic)
 
+
+#TODO 
+# Calculate some metrics that show quantitatively how much constrains are being violated - as is being done in PCFM paper. 
