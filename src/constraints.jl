@@ -312,50 +312,59 @@ end
 
 function burgers_constraints_IC_Mass_Flux!(core::ExaCore, u_flat, u0_flat, nt, n_samples, grid_points, grid_spacing, dt, params=(;); backend=CPU())
     nx  = grid_points[1]
-    dx = grid_spacing[1]
-    left_bc_vec = get(params, :left_bc, zeros(Float32, n_samples))
-    left_bc_param = parameter(core, KernelAbstractions.adapt(backend, left_bc_vec))
+    dx  = grid_spacing[1]
+    k   = get(params, :k, 5)
+    eps = get(params, :eps, 1e-6)
+    λ   = dt / dx
 
     # flat index: i + (t-1)*nx + (s-1)*nx*nt
     idx(i, t, s) = i + (t-1)*nx + (s-1)*nx*nt
 
-    # # --------------------------------------------------
-    # # 1. Dirichlet BC at left boundary: u(1,t,s) = left_bc[s]
-    # # --------------------------------------------------
-    # ts_pairs_all = [(t, s) for t in 1:nt for s in 1:n_samples]
-    # constraint(core,
-    #     (u_flat[idx(1, d[1], d[2])] - left_bc_param[d[2]] for d in ts_pairs_all);
-    #     lcon = KernelAbstractions.adapt(backend, zeros(nt * n_samples)),
-    #     ucon = KernelAbstractions.adapt(backend, zeros(nt * n_samples))
-    # )
+    u0_param = parameter(core, u0_flat)
 
-    # # --------------------------------------------------
-    # # 2. Neumann BC at right boundary: u(nx,t,s) = u(nx-1,t,s)
-    # # --------------------------------------------------
-    # constraint(core,
-    #     (u_flat[idx(nx, d[1], d[2])] - u_flat[idx(nx-1, d[1], d[2])] for d in ts_pairs_all);
-    #     lcon = KernelAbstractions.adapt(backend, zeros(nt * n_samples)),
-    #     ucon = KernelAbstractions.adapt(backend, zeros(nt * n_samples))
-    # )
+    # --------------------------------------------------
+    # 1. Initial condition: u(i, 1, s) == u0(i, s)
+    # --------------------------------------------------
+    constraint(core,
+        (u_flat[idx(i, 1, s)] - u0_param[i, s]
+         for i in 1:nx, s in 1:n_samples);
+        lcon = KernelAbstractions.adapt(backend, zeros(nx * n_samples)),
+        ucon = KernelAbstractions.adapt(backend, zeros(nx * n_samples))
+    )
 
-    # # --------------------------------------------------
-    # # 3. Mass evolution (telescoping trapezoidal rule) for all samples:
-    # #    M[t,s] - M[t-1,s] = -0.5*dt*(F[t,s] + F[t-1,s])
-    # # --------------------------------------------------
-    # ts_pairs_inner = [(t, s) for t in 2:nt for s in 1:n_samples]
-    # constraint(core,
-    #     (
-    #         sum(u_flat[idx(i, d[1],   d[2])] for i in 1:nx) * dx
-    #         - sum(u_flat[idx(i, d[1]-1, d[2])] for i in 1:nx) * dx
-    #         + 0.5*dt*(
-    #             (0.5*u_flat[idx(nx, d[1],   d[2])]^2 - 0.5*u_flat[idx(1, d[1],   d[2])]^2)
-    #             + (0.5*u_flat[idx(nx, d[1]-1, d[2])]^2 - 0.5*u_flat[idx(1, d[1]-1, d[2])]^2)
-    #         )
-    #         for d in ts_pairs_inner
-    #     );
-    #     lcon = KernelAbstractions.adapt(backend, zeros((nt-1) * n_samples)),
-    #     ucon = KernelAbstractions.adapt(backend, zeros((nt-1) * n_samples))
-    # )
+    # --------------------------------------------------
+    # 2. Constant mass: ∑u[i,t,s]*dx == ∑u0[i,s]*dx  for all t, s
+    # --------------------------------------------------
+    ts_pairs = [(t, s) for t in 1:nt for s in 1:n_samples]
+    constraint(core,
+        (
+            sum(u_flat[idx(i, d[1], d[2])] for i in 1:nx) * dx -
+            sum(u0_param[i, d[2]] for i in 1:nx) * dx
+            for d in ts_pairs
+        );
+        lcon = KernelAbstractions.adapt(backend, zeros(nt * n_samples)),
+        ucon = KernelAbstractions.adapt(backend, zeros(nt * n_samples))
+    )
 
-    # return nothing
+    # --------------------------------------------------
+    # 3. k local Godunov steps for interior points i in 2:nx-1
+    #    u[i,t+1,s] == u[i,t,s] - λ*(F[i,t,s] - F[i-1,t,s])
+    #    F[i,t,s] = 0.5*smooth_pos(u[i,t,s], eps)^2 + 0.5*smooth_neg(u[i+1,t,s], eps)^2
+    # --------------------------------------------------
+    k_eff = min(k, nt - 1)
+    tis_pairs = [(t, i, s) for t in 1:k_eff for i in 2:nx-1 for s in 1:n_samples]
+    constraint(core,
+        (
+            u_flat[idx(d[2], d[1]+1, d[3])] - u_flat[idx(d[2], d[1], d[3])] +
+            λ * (
+                (0.5*smooth_pos(u_flat[idx(d[2],   d[1], d[3])], eps)^2 + 0.5*smooth_neg(u_flat[idx(d[2]+1, d[1], d[3])], eps)^2) -
+                (0.5*smooth_pos(u_flat[idx(d[2]-1, d[1], d[3])], eps)^2 + 0.5*smooth_neg(u_flat[idx(d[2],   d[1], d[3])], eps)^2)
+            )
+            for d in tis_pairs
+        );
+        lcon = KernelAbstractions.adapt(backend, zeros(k_eff * (nx-2) * n_samples)),
+        ucon = KernelAbstractions.adapt(backend, zeros(k_eff * (nx-2) * n_samples))
+    )
+
+    return nothing
 end
