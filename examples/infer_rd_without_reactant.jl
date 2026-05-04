@@ -114,19 +114,19 @@ tstate_inf = (parameters = ps, states = st)
 
 starting_noise = randn(Float32, nx, nt, 1, n_samples)
 
-# Benchmarks
+
 begin
-    @info "ExaModels, MadNLP, GPU"
-    @btime sample_pcfm($ffm, (parameters=$ps, states=$st),
-                       $n_samples, 100, rd_constraints!;
-                       domain = rd_domain,
-                       IC_func = IC_func_rd,
-                       constraint_parameters = rd_params,
-                       backend = backend,
-                       verbose = false,
-                       mode = "exa",
-                       initial_vals = $starting_noise)
-    flush(stdout)
+    # @info "ExaModels, MadNLP, GPU" - Error: Kernel Invocation uses too much parameter memory
+    # @btime sample_pcfm($ffm, (parameters=$ps, states=$st),
+    #                    $n_samples, 100, rd_constraints!;
+    #                    domain = rd_domain,
+    #                    IC_func = IC_func_rd,
+    #                    constraint_parameters = rd_params,
+    #                    backend = backend,
+    #                    verbose = false,
+    #                    mode = "exa",
+    #                    initial_vals = $starting_noise)
+    # flush(stdout)
 
     @info "ExaModels, MadNLP, CPU"
     @btime sample_pcfm($ffm, (parameters=$ps, states=$st),
@@ -153,18 +153,18 @@ begin
                        initial_vals = $starting_noise)
     flush(stdout)
 
-    @info "JuMP, Ipopt"
-    @btime sample_pcfm($ffm, (parameters=$ps, states=$st),
-                       $n_samples, 100, rd_constraints!;
-                       domain = rd_domain,
-                       IC_func = IC_func_rd,
-                       constraint_parameters = rd_params,
-                       backend = CPU(),
-                       verbose = false,
-                       mode = "jump",
-                       optimizer = Ipopt.Optimizer,
-                       initial_vals = $starting_noise)
-    flush(stdout)
+    # @info "JuMP, Ipopt"
+    # @btime sample_pcfm($ffm, (parameters=$ps, states=$st),
+    #                    $n_samples, 100, rd_constraints!;
+    #                    domain = rd_domain,
+    #                    IC_func = IC_func_rd,
+    #                    constraint_parameters = rd_params,
+    #                    backend = CPU(),
+    #                    verbose = false,
+    #                    mode = "jump",
+    #                    optimizer = Ipopt.Optimizer,
+    #                    initial_vals = $starting_noise)
+    # flush(stdout)
 
     @info "FFM"
     @btime sample_ffm($ffm, (parameters=$ps, states=$st), $n_samples, 100;
@@ -175,16 +175,16 @@ end
 
 # Samples
 begin
-    @info "ExaModels, MadNLP, GPU"
-    samples_exa_gpu = sample_pcfm(ffm, (parameters=ps, states=st),
-                       n_samples, 100, rd_constraints!;
-                       domain = rd_domain,
-                       IC_func = IC_func_rd,
-                       constraint_parameters = rd_params,
-                       backend = backend,
-                       verbose = false,
-                       mode = "exa",
-                       initial_vals = starting_noise)
+    # @info "ExaModels, MadNLP, GPU"
+    # samples_exa_gpu = sample_pcfm(ffm, (parameters=ps, states=st),
+    #                    n_samples, 100, rd_constraints!;
+    #                    domain = rd_domain,
+    #                    IC_func = IC_func_rd,
+    #                    constraint_parameters = rd_params,
+    #                    backend = backend,
+    #                    verbose = false,
+    #                    mode = "exa",
+    #                    initial_vals = starting_noise)
 
     @info "ExaModels, MadNLP, CPU"
     samples_exa_cpu = sample_pcfm(ffm, (parameters=ps, states=st),
@@ -224,8 +224,8 @@ T = range(t_range[1], t_range[2]; length=nt)
 K = 1
 
 fig_samples = plot_sample(K,
-    [samples_exa_gpu, samples_exa_cpu, samples_jump_madnlp, samples_ffm],
-    ["ExaGPU", "ExaCPU", "JuMP", "FFM"])
+    [samples_exa_cpu, samples_jump_madnlp, samples_ffm],
+    ["ExaCPU", "JuMP", "FFM"])
 save("rd_samples.png", fig_samples)
 
 function ic_violation(u, params)
@@ -234,15 +234,15 @@ function ic_violation(u, params)
 end
 
 fig_constraint = plot_constraint_violation(K,
-    [samples_exa_gpu, samples_exa_cpu, samples_jump_madnlp, samples_ffm],
+    [samples_exa_cpu, samples_jump_madnlp, samples_ffm],
     ic_violation,
-    ["ExaGPU", "ExaCPU", "JuMP", "FFM"];
+    ["ExaCPU", "JuMP", "FFM"];
     constraint_params=(nx, nt, dx, dt))
 save("rd_constraint_violation.png", fig_constraint)
 
 # Save samples
 JLD2.save("samples_rd.jld2",
-    "samples_exa_gpu",     samples_exa_gpu,
+    # "samples_exa_gpu",     samples_exa_gpu,
     "samples_exa_cpu",     samples_exa_cpu,
     "samples_jump_madnlp", samples_jump_madnlp,
     "samples_ffm",         samples_ffm)
