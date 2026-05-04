@@ -86,7 +86,7 @@ const burgers_domain = (x_start=0f0, x_end=1f0, t_start=0f0, t_end=1f0)
 const burgers_params = (left_bc = left_bc_vals,)
 
 # ExaModels, MadNLP, GPU
-@btime sample_pcfm($ffm, $tstate_inf, $n_samples, $n_steps, burgers_constraints!;
+@btime sample_pcfm($ffm, $tstate_inf, $n_samples, $n_steps, burgers_constraints_BC_Mass!;
     domain = burgers_domain,
     IC_func = $IC_func_burgers,
     constraint_parameters = burgers_params,
@@ -96,7 +96,7 @@ const burgers_params = (left_bc = left_bc_vals,)
     mode = "exa");
 
 # ExaModels, MadNLP, CPU
-@btime sample_pcfm($ffm, $tstate_inf, $n_samples, $n_steps, burgers_constraints!;
+@btime sample_pcfm($ffm, $tstate_inf, $n_samples, $n_steps, burgers_constraints_BC_Mass!;
     domain = burgers_domain,
     IC_func = $IC_func_burgers,
     constraint_parameters = burgers_params,
@@ -106,7 +106,7 @@ const burgers_params = (left_bc = left_bc_vals,)
     mode = "exa");
 
 # JuMP, MadNLP
-@btime sample_pcfm($ffm, $tstate_inf, $n_samples, $n_steps, burgers_constraints!;
+@btime sample_pcfm($ffm, $tstate_inf, $n_samples, $n_steps, burgers_constraints_BC_Mass!;
     domain = burgers_domain,
     IC_func = $IC_func_burgers,
     constraint_parameters = burgers_params,
@@ -117,7 +117,7 @@ const burgers_params = (left_bc = left_bc_vals,)
     optimizer = MadNLP.Optimizer);
 
 # JuMP, Ipopt
-@btime sample_pcfm($ffm, $tstate_inf, $n_samples, $n_steps, burgers_constraints!;
+@btime sample_pcfm($ffm, $tstate_inf, $n_samples, $n_steps, burgers_constraints_BC_Mass!;
     domain = burgers_domain,
     IC_func = $IC_func_burgers,
     constraint_parameters = burgers_params,
@@ -130,7 +130,7 @@ const burgers_params = (left_bc = left_bc_vals,)
 # # ---------------------------------------------------------------------------
 # # Visualise last result
 # # ---------------------------------------------------------------------------
-# samples = sample_pcfm(ffm, tstate_inf, n_samples, n_steps, burgers_constraints!;
+# samples = sample_pcfm(ffm, tstate_inf, n_samples, n_steps, burgers_constraints_BC_Mass!;
 #     domain = burgers_domain,
 #     IC_func = IC_func_burgers,
 #     constraint_parameters = burgers_params,

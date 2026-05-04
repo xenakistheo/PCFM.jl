@@ -3,6 +3,9 @@ Load a trained FFM checkpoint and benchmark Burgers equation samples
 using physics-constrained flow matching (PCFM), without Reactant.
 
 Run train_burgers.jl first to produce the checkpoint.
+
+This is one of two versions of burgers-inference. 
+Constraints outlined by D.6 
 """
 
 using PCFM
@@ -44,11 +47,11 @@ x_grid = range(0.0f0, 1.0f0; length=nx)
 dx     = Float32(x_grid[2] - x_grid[1])
 dt     = 1.0f0 / (nt - 1)
 
-# Initial condition: viscous Burgers sigmoid
+# Initial condition: viscous Burgers sigmoid - NOT USED 
 const p_loc  = 0.5f0
 const eps_ic = 0.02f0
 IC_func_burgers = x -> 1.0f0 / (1.0f0 + exp((x - p_loc) / eps_ic))
-u0_ic = Float32.(IC_func_burgers.(x_grid))
+u0_ic = Float32.(IC_func_burgers.(x_grid)) # Not Used!!!!!
 
 # ---------------------------------------------------------------------------
 println("=" ^ 60)
@@ -99,7 +102,7 @@ starting_noise = randn(Float32, nx, nt, 1, n_samples)
 begin
     @info "ExaModels, MadNLP, GPU"
     @btime sample_pcfm($ffm, (parameters=$ps, states=$st),
-                       $n_samples, 100, burgers_constraints!;
+                       $n_samples, 100, burgers_constraints_BC_Mass!;
                        domain = burgers_domain,
                        IC_func = IC_func_burgers,
                        constraint_parameters = burgers_params,
@@ -111,7 +114,7 @@ begin
 
     @info "ExaModels, MadNLP, CPU"
     @btime sample_pcfm($ffm, (parameters=$ps, states=$st),
-                       $n_samples, 100, burgers_constraints!;
+                       $n_samples, 100, burgers_constraints_BC_Mass!;
                        domain = burgers_domain,
                        IC_func = IC_func_burgers,
                        constraint_parameters = burgers_params,
@@ -123,7 +126,7 @@ begin
 
     @info "JuMP, MadNLP"
     @btime sample_pcfm($ffm, (parameters=$ps, states=$st),
-                       $n_samples, 100, burgers_constraints!;
+                       $n_samples, 100, burgers_constraints_BC_Mass!;
                        domain = burgers_domain,
                        IC_func = IC_func_burgers,
                        constraint_parameters = burgers_params,
@@ -136,7 +139,7 @@ begin
 
     @info "JuMP, Ipopt"
     @btime sample_pcfm($ffm, (parameters=$ps, states=$st),
-                       $n_samples, 100, burgers_constraints!;
+                       $n_samples, 100, burgers_constraints_BC_Mass!;
                        domain = burgers_domain,
                        IC_func = IC_func_burgers,
                        constraint_parameters = burgers_params,
@@ -158,7 +161,7 @@ end
 begin
     @info "ExaModels, MadNLP, GPU"
     samples_exa_gpu = sample_pcfm(ffm, (parameters=ps, states=st),
-                       n_samples, 100, burgers_constraints!;
+                       n_samples, 100, burgers_constraints_BC_Mass!;
                        domain = burgers_domain,
                        IC_func = IC_func_burgers,
                        constraint_parameters = burgers_params,
@@ -169,7 +172,7 @@ begin
 
     @info "ExaModels, MadNLP, CPU"
     samples_exa_cpu = sample_pcfm(ffm, (parameters=ps, states=st),
-                       n_samples, 100, burgers_constraints!;
+                       n_samples, 100, burgers_constraints_BC_Mass!;
                        domain = burgers_domain,
                        IC_func = IC_func_burgers,
                        constraint_parameters = burgers_params,
@@ -180,7 +183,7 @@ begin
 
     @info "JuMP, MadNLP"
     samples_jump_madnlp = sample_pcfm(ffm, (parameters=ps, states=st),
-                       n_samples, 100, burgers_constraints!;
+                       n_samples, 100, burgers_constraints_BC_Mass!;
                        domain = burgers_domain,
                        IC_func = IC_func_burgers,
                        constraint_parameters = burgers_params,

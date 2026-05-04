@@ -188,7 +188,7 @@ function rd_constraints!(core::ExaCore, u_flat, u0_flat, nt, n_samples, grid_poi
     return nothing
 end
 
-function burgers_constraints!(model::Model, u, u0, nt, n_samples, grid_points, grid_spacing, dt, params=(;))
+function burgers_constraints_BC_Mass!(model::Model, u, u0, nt, n_samples, grid_points, grid_spacing, dt, params=(;))
     nx  = grid_points[1]
     dx = grid_spacing[1]
     left_bc_vec = get(params, :left_bc, zeros(Float32, n_samples))
@@ -212,7 +212,7 @@ function burgers_constraints!(model::Model, u, u0, nt, n_samples, grid_points, g
 end
 
 
-function burgers_constraints!(core::ExaCore, u_flat, u0_flat, nt, n_samples, grid_points, grid_spacing, dt, params=(;); backend=CPU())
+function burgers_constraints_BC_Mass!(core::ExaCore, u_flat, u0_flat, nt, n_samples, grid_points, grid_spacing, dt, params=(;); backend=CPU())
     nx  = grid_points[1]
     dx = grid_spacing[1]
     left_bc_vec = get(params, :left_bc, zeros(Float32, n_samples))
@@ -260,4 +260,81 @@ function burgers_constraints!(core::ExaCore, u_flat, u0_flat, nt, n_samples, gri
     )
 
     return nothing
+end
+
+
+
+
+function burgers_constraints_IC_Mass_Flux!(model::Model, u, u0, nt, n_samples, grid_points, grid_spacing, dt, params=(;))
+    nx  = grid_points[1]
+    dx = grid_spacing[1]
+    left_bc_vec = get(params, :left_bc, zeros(Float32, n_samples))
+
+    # # u has shape (nx, nt, n_samples)
+
+    # # 1. Dirichlet BC at left boundary
+    # @constraint(model, [t in 1:nt, s in 1:n_samples], u[1, t, s] == left_bc_vec[s])
+
+    # # 2. Neumann BC at right boundary
+    # @constraint(model, [t in 1:nt, s in 1:n_samples], u[nx, t, s] == u[nx-1, t, s])
+
+    # # 3. Mass evolution (trapezoidal rule)
+    # @constraint(model, [t in 2:nt, s in 1:n_samples],
+    #     sum(u[i, t,   s] for i in 1:nx) * dx
+    #     - sum(u[i, t-1, s] for i in 1:nx) * dx
+    #     + 0.5*dt*(
+    #         (0.5*u[nx, t,   s]^2 - 0.5*u[1, t,   s]^2)
+    #         + (0.5*u[nx, t-1, s]^2 - 0.5*u[1, t-1, s]^2)
+    #     ) == 0.0)
+end
+
+
+function burgers_constraints_IC_Mass_Flux!(core::ExaCore, u_flat, u0_flat, nt, n_samples, grid_points, grid_spacing, dt, params=(;); backend=CPU())
+    nx  = grid_points[1]
+    dx = grid_spacing[1]
+    left_bc_vec = get(params, :left_bc, zeros(Float32, n_samples))
+    left_bc_param = parameter(core, KernelAbstractions.adapt(backend, left_bc_vec))
+
+    # flat index: i + (t-1)*nx + (s-1)*nx*nt
+    idx(i, t, s) = i + (t-1)*nx + (s-1)*nx*nt
+
+    # # --------------------------------------------------
+    # # 1. Dirichlet BC at left boundary: u(1,t,s) = left_bc[s]
+    # # --------------------------------------------------
+    # ts_pairs_all = [(t, s) for t in 1:nt for s in 1:n_samples]
+    # constraint(core,
+    #     (u_flat[idx(1, d[1], d[2])] - left_bc_param[d[2]] for d in ts_pairs_all);
+    #     lcon = KernelAbstractions.adapt(backend, zeros(nt * n_samples)),
+    #     ucon = KernelAbstractions.adapt(backend, zeros(nt * n_samples))
+    # )
+
+    # # --------------------------------------------------
+    # # 2. Neumann BC at right boundary: u(nx,t,s) = u(nx-1,t,s)
+    # # --------------------------------------------------
+    # constraint(core,
+    #     (u_flat[idx(nx, d[1], d[2])] - u_flat[idx(nx-1, d[1], d[2])] for d in ts_pairs_all);
+    #     lcon = KernelAbstractions.adapt(backend, zeros(nt * n_samples)),
+    #     ucon = KernelAbstractions.adapt(backend, zeros(nt * n_samples))
+    # )
+
+    # # --------------------------------------------------
+    # # 3. Mass evolution (telescoping trapezoidal rule) for all samples:
+    # #    M[t,s] - M[t-1,s] = -0.5*dt*(F[t,s] + F[t-1,s])
+    # # --------------------------------------------------
+    # ts_pairs_inner = [(t, s) for t in 2:nt for s in 1:n_samples]
+    # constraint(core,
+    #     (
+    #         sum(u_flat[idx(i, d[1],   d[2])] for i in 1:nx) * dx
+    #         - sum(u_flat[idx(i, d[1]-1, d[2])] for i in 1:nx) * dx
+    #         + 0.5*dt*(
+    #             (0.5*u_flat[idx(nx, d[1],   d[2])]^2 - 0.5*u_flat[idx(1, d[1],   d[2])]^2)
+    #             + (0.5*u_flat[idx(nx, d[1]-1, d[2])]^2 - 0.5*u_flat[idx(1, d[1]-1, d[2])]^2)
+    #         )
+    #         for d in ts_pairs_inner
+    #     );
+    #     lcon = KernelAbstractions.adapt(backend, zeros((nt-1) * n_samples)),
+    #     ucon = KernelAbstractions.adapt(backend, zeros((nt-1) * n_samples))
+    # )
+
+    # return nothing
 end
