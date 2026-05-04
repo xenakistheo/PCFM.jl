@@ -41,7 +41,7 @@ n_epochs     = 1000
 force_retrain = false
 
 # Checkpoint path
-weight_file = joinpath(@__DIR__, "checkpoints", "ffm_heat_checkpoint.jld2")
+weight_file = joinpath(@__DIR__, "..", "checkpoints", "ffm_heat_checkpoint.jld2")
 
 # Data generation parameters
 visc_range = (1.0f0, 5.0f0)

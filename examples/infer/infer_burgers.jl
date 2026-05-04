@@ -22,7 +22,7 @@ backend = CUDABackend()
 # ---------------------------------------------------------------------------
 # Paths and config — must match what was used during training
 # ---------------------------------------------------------------------------
-weight_file = joinpath(@__DIR__, "checkpoints", "ffm_burgers_checkpoint.jld2")
+weight_file = joinpath(@__DIR__, "..", "checkpoints", "ffm_burgers_checkpoint.jld2")
 
 n_samples    = 8
 n_steps      = 100
