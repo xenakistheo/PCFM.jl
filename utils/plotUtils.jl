@@ -121,7 +121,7 @@ function plot_sample(k, u1, u2, u3, title="")
     return f
 end 
 
-function plot_sample(frame, solutions, titles)
+function plot_sample(frame, solutions, titles; suptitle=nothing)
     f = Figure(size = (2400, 600))
     N = size(solutions)[1]
     @assert N == length(titles)
@@ -139,12 +139,16 @@ function plot_sample(frame, solutions, titles)
         heatmap!(axes[i], T, X, solutions[i][:,:,1,frame]', colormap = :viridis)
     end 
 
-    # Label(f[0, :], title)
+
+    if !isnothing(suptitle)
+        Label(f[0, :], suptitle, fontsize=20, font=:bold)
+    end
+    
     return f
 end 
 
 
-function plot_constraint_violation(frame, solutions, H, titles; constraint_params=nothing)
+function plot_constraint_violation(frame, solutions, H, titles; constraint_params=nothing, suptitle=nothing)
     f = Figure(size = (2400, 600))
     N = size(solutions)[1]
     @assert N == length(titles)
@@ -160,11 +164,13 @@ function plot_constraint_violation(frame, solutions, H, titles; constraint_param
 
     for i in 1:N
         lines!(axes[i], H(solutions[i][:,:,1,frame], constraint_params))
-    end 
+    end
 
-    # Label(f[0, :], title)
+    if !isnothing(suptitle)
+        Label(f[0, :], suptitle, fontsize=20, font=:bold)
+    end
     return f
-end 
+end
 
 
 function plot_constraint_violation(k, u1, u2, u3, H; title="", constraint_params=nothing)
