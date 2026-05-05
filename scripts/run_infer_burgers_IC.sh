@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=pcfm_rd
+#SBATCH --job-name=pcfm_burgersIC
 #SBATCH --partition=mit_normal_gpu
 #SBATCH --gres=gpu:1
 #SBATCH --cpus-per-task=4

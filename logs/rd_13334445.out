@@ -1,0 +1,8 @@
+Job ID:      13334445
+Node:        node3403
+GPUs:        0
+Start:       Tue May  5 09:39:10 EDT 2026
+Project dir: /home/txenakis/projects/18337/PCFM.jl
+--------------------------------------
+Running Burgers IC inference...
+Inference: FAILED

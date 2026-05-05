@@ -1,0 +1,106 @@
+[ Info: Info: starting script
+[ Info: ExaModels, MadNLP, GPU
+[ Info: ExaModels, MadNLP, CPU
+[ Info: JuMP, MadNLP
+ERROR: LoadError: BoundsError: attempt to access 101×1×1×32 Array{Float32, 4} at index [1, 1]
+Stacktrace:
+  [1] throw_boundserror(A::Array{Float32, 4}, I::Tuple{Int64, Int64})
+    @ Base ./essentials.jl:15
+  [2] checkbounds
+    @ ./abstractarray.jl:699 [inlined]
+  [3] getindex
+    @ ./array.jl:928 [inlined]
+  [4] macro expansion
+    @ ~/.julia/packages/MutableArithmetics/2Djmb/src/rewrite.jl:384 [inlined]
+  [5] macro expansion
+    @ ~/.julia/packages/JuMP/0tD10/src/macros.jl:264 [inlined]
+  [6] macro expansion
+    @ ~/.julia/packages/JuMP/0tD10/src/macros/@constraint.jl:171 [inlined]
+  [7] (::PCFM.var"#burgers_constraints_IC_Mass_Flux!##2#burgers_constraints_IC_Mass_Flux!##3"{Array{VariableRef, 3}, Array{Float32, 4}, Model})(i::Int64, s::Int64)
+    @ PCFM ~/.julia/packages/JuMP/0tD10/src/Containers/macro.jl:559
+  [8] collect(itr::Base.Generator{JuMP.Containers.VectorizedProductIterator{Tuple{Base.OneTo{Int64}, Base.OneTo{Int64}}}, JuMP.Containers.var"#container##0#container##1"{PCFM.var"#burgers_constraints_IC_Mass_Flux!##2#burgers_constraints_IC_Mass_Flux!##3"{Array{VariableRef, 3}, Array{Float32, 4}, Model}}})
+    @ Base ./array.jl:783
+  [9] map
+    @ ./abstractarray.jl:3402 [inlined]
+ [10] container
+    @ ~/.julia/packages/JuMP/0tD10/src/Containers/container.jl:85 [inlined]
+ [11] container
+    @ ~/.julia/packages/JuMP/0tD10/src/Containers/container.jl:71 [inlined]
+ [12] container
+    @ ~/.julia/packages/JuMP/0tD10/src/Containers/container.jl:75 [inlined]
+ [13] macro expansion
+    @ ~/.julia/packages/JuMP/0tD10/src/macros.jl:402 [inlined]
+ [14] burgers_constraints_IC_Mass_Flux!(model::Model, u::Array{VariableRef, 3}, u0::Array{Float32, 4}, nt::Int64, n_samples::Int64, grid_points::Int64, grid_spacing::Float32, dt::Float32, params::@NamedTuple{k::Int64, eps::Float32})
+    @ PCFM /orcd/home/002/txenakis/projects/18337/PCFM.jl/src/constraints.jl:368
+ [15] sample_pcfm(ffm::FFM{NeuralOperators.FourierNeuralOperator{Chain{@NamedTuple{positional_embedding::NoOpLayer, lifting::Chain{@NamedTuple{layer_1::Conv{typeof(NNlib.gelu_tanh), Int64, Int64, Tuple{Int64, Int64}, Tuple{Int64, Int64}, NTuple{4, Int64}, Tuple{Int64, Int64}, Int64, Nothing, Nothing, Static.True, Static.False}, layer_2::Conv{typeof(identity), Int64, Int64, Tuple{Int64, Int64}, Tuple{Int64, Int64}, NTuple{4, Int64}, Tuple{Int64, Int64}, Int64, Nothing, Nothing, Static.True, Static.False}}, Nothing}, fno_blocks::Chain{@NamedTuple{layer_1::NeuralOperators.OperatorKernel{Parallel{NeuralOperators.Fix1{typeof(NeuralOperators.add_act), typeof(NNlib.gelu_tanh)}, @NamedTuple{layer_1::Chain{@NamedTuple{layer_1::Parallel{NeuralOperators.Fix1{typeof(NeuralOperators.add_act), typeof(NNlib.gelu_tanh)}, @NamedTuple{layer_1::Conv{typeof(identity), Int64, Int64, Tuple{Int64, Int64}, Tuple{Int64, Int64}, NTuple{4, Int64}, Tuple{Int64, Int64}, Int64, Nothing, Nothing, Static.False, Static.False}, layer_2::Chain{@NamedTuple{stabilizer::WrappedFunction{Base.Broadcast.BroadcastFunction{typeof(tanh)}}, conv_layer::NeuralOperators.OperatorConv{NeuralOperators.FourierTransform{ComplexF32, Tuple{Int64, Int64}}, typeof(glorot_uniform)}}, Nothing}}, Nothing}, layer_2::Chain{@NamedTuple{layer_1::Conv{typeof(identity), Int64, Int64, Tuple{Int64, Int64}, Tuple{Int64, Int64}, NTuple{4, Int64}, Tuple{Int64, Int64}, Int64, Nothing, Nothing, Static.True, Static.False}, layer_2::Conv{typeof(identity), Int64, Int64, Tuple{Int64, Int64}, Tuple{Int64, Int64}, NTuple{4, Int64}, Tuple{Int64, Int64}, Int64, Nothing, Nothing, Static.True, Static.False}}, Nothing}}, Nothing}, layer_2::NeuralOperators.SoftGating{Scale{Static.False, typeof(identity), Tuple{Int64, Int64, Int64}, typeof(glorot_uniform), typeof(zeros32)}}}, Nothing}}, layer_2::NeuralOperators.OperatorKernel{Parallel{NeuralOperators.Fix1{typeof(NeuralOperators.add_act), typeof(NNlib.gelu_tanh)}, @NamedTuple{layer_1::Chain{@NamedTuple{layer_1::Parallel{NeuralOperators.Fix1{typeof(NeuralOperators.add_act), typeof(NNlib.gelu_tanh)}, @NamedTuple{layer_1::Conv{typeof(identity), Int64, Int64, Tuple{Int64, Int64}, Tuple{Int64, Int64}, NTuple{4, Int64}, Tuple{Int64, Int64}, Int64, Nothing, Nothing, Static.False, Static.False}, layer_2::Chain{@NamedTuple{stabilizer::WrappedFunction{Base.Broadcast.BroadcastFunction{typeof(tanh)}}, conv_layer::NeuralOperators.OperatorConv{NeuralOperators.FourierTransform{ComplexF32, Tuple{Int64, Int64}}, typeof(glorot_uniform)}}, Nothing}}, Nothing}, layer_2::Chain{@NamedTuple{layer_1::Conv{typeof(identity), Int64, Int64, Tuple{Int64, Int64}, Tuple{Int64, Int64}, NTuple{4, Int64}, Tuple{Int64, Int64}, Int64, Nothing, Nothing, Static.True, Static.False}, layer_2::Conv{typeof(identity), Int64, Int64, Tuple{Int64, Int64}, Tuple{Int64, Int64}, NTuple{4, Int64}, Tuple{Int64, Int64}, Int64, Nothing, Nothing, Static.True, Static.False}}, Nothing}}, Nothing}, layer_2::NeuralOperators.SoftGating{Scale{Static.False, typeof(identity), Tuple{Int64, Int64, Int64}, typeof(glorot_uniform), typeof(zeros32)}}}, Nothing}}, layer_3::NeuralOperators.OperatorKernel{Parallel{NeuralOperators.Fix1{typeof(NeuralOperators.add_act), typeof(NNlib.gelu_tanh)}, @NamedTuple{layer_1::Chain{@NamedTuple{layer_1::Parallel{NeuralOperators.Fix1{typeof(NeuralOperators.add_act), typeof(NNlib.gelu_tanh)}, @NamedTuple{layer_1::Conv{typeof(identity), Int64, Int64, Tuple{Int64, Int64}, Tuple{Int64, Int64}, NTuple{4, Int64}, Tuple{Int64, Int64}, Int64, Nothing, Nothing, Static.False, Static.False}, layer_2::Chain{@NamedTuple{stabilizer::WrappedFunction{Base.Broadcast.BroadcastFunction{typeof(tanh)}}, conv_layer::NeuralOperators.OperatorConv{NeuralOperators.FourierTransform{ComplexF32, Tuple{Int64, Int64}}, typeof(glorot_uniform)}}, Nothing}}, Nothing}, layer_2::Chain{@NamedTuple{layer_1::Conv{typeof(identity), Int64, Int64, Tuple{Int64, Int64}, Tuple{Int64, Int64}, NTuple{4, Int64}, Tuple{Int64, Int64}, Int64, Nothing, Nothing, Static.True, Static.False}, layer_2::Conv{typeof(identity), Int64, Int64, Tuple{Int64, Int64}, Tuple{Int64, Int64}, NTuple{4, Int64}, Tuple{Int64, Int64}, Int64, Nothing, Nothing, Static.True, Static.False}}, Nothing}}, Nothing}, layer_2::NeuralOperators.SoftGating{Scale{Static.False, typeof(identity), Tuple{Int64, Int64, Int64}, typeof(glorot_uniform), typeof(zeros32)}}}, Nothing}}, layer_4::NeuralOperators.OperatorKernel{Parallel{NeuralOperators.Fix1{typeof(NeuralOperators.add_act), typeof(NNlib.gelu_tanh)}, @NamedTuple{layer_1::Chain{@NamedTuple{layer_1::Parallel{NeuralOperators.Fix1{typeof(NeuralOperators.add_act), typeof(NNlib.gelu_tanh)}, @NamedTuple{layer_1::Conv{typeof(identity), Int64, Int64, Tuple{Int64, Int64}, Tuple{Int64, Int64}, NTuple{4, Int64}, Tuple{Int64, Int64}, Int64, Nothing, Nothing, Static.False, Static.False}, layer_2::Chain{@NamedTuple{stabilizer::WrappedFunction{Base.Broadcast.BroadcastFunction{typeof(tanh)}}, conv_layer::NeuralOperators.OperatorConv{NeuralOperators.FourierTransform{ComplexF32, Tuple{Int64, Int64}}, typeof(glorot_uniform)}}, Nothing}}, Nothing}, layer_2::Chain{@NamedTuple{layer_1::Conv{typeof(identity), Int64, Int64, Tuple{Int64, Int64}, Tuple{Int64, Int64}, NTuple{4, Int64}, Tuple{Int64, Int64}, Int64, Nothing, Nothing, Static.True, Static.False}, layer_2::Conv{typeof(identity), Int64, Int64, Tuple{Int64, Int64}, Tuple{Int64, Int64}, NTuple{4, Int64}, Tuple{Int64, Int64}, Int64, Nothing, Nothing, Static.True, Static.False}}, Nothing}}, Nothing}, layer_2::NeuralOperators.SoftGating{Scale{Static.False, typeof(identity), Tuple{Int64, Int64, Int64}, typeof(glorot_uniform), typeof(zeros32)}}}, Nothing}}}, Nothing}, projection::Chain{@NamedTuple{layer_1::Conv{typeof(NNlib.gelu_tanh), Int64, Int64, Tuple{Int64, Int64}, Tuple{Int64, Int64}, NTuple{4, Int64}, Tuple{Int64, Int64}, Int64, Nothing, Nothing, Static.True, Static.False}, layer_2::Conv{typeof(identity), Int64, Int64, Tuple{Int64, Int64}, Tuple{Int64, Int64}, NTuple{4, Int64}, Tuple{Int64, Int64}, Int64, Nothing, Nothing, Static.True, Static.False}}, Nothing}}, Nothing}}, @NamedTuple{positional_embedding::@NamedTuple{}, lifting::@NamedTuple{layer_1::@NamedTuple{weight::CuArray{Float32, 4, CUDA.DeviceMemory}, bias::CuArray{Float32, 1, CUDA.DeviceMemory}}, layer_2::@NamedTuple{weight::CuArray{Float32, 4, CUDA.DeviceMemory}, bias::CuArray{Float32, 1, CUDA.DeviceMemory}}}, fno_blocks::@NamedTuple{layer_1::@NamedTuple{layer_1::@NamedTuple{layer_1::@NamedTuple{layer_1::@NamedTuple{weight::CuArray{Float32, 4, CUDA.DeviceMemory}}, layer_2::@NamedTuple{stabilizer::@NamedTuple{}, conv_layer::@NamedTuple{weight::CuArray{ComplexF32, 3, CUDA.DeviceMemory}}}}, layer_2::@NamedTuple{layer_1::@NamedTuple{weight::CuArray{Float32, 4, CUDA.DeviceMemory}, bias::CuArray{Float32, 1, CUDA.DeviceMemory}}, layer_2::@NamedTuple{weight::CuArray{Float32, 4, CUDA.DeviceMemory}, bias::CuArray{Float32, 1, CUDA.DeviceMemory}}}}, layer_2::@NamedTuple{weight::CuArray{Float32, 3, CUDA.DeviceMemory}}}, layer_2::@NamedTuple{layer_1::@NamedTuple{layer_1::@NamedTuple{layer_1::@NamedTuple{weight::CuArray{Float32, 4, CUDA.DeviceMemory}}, layer_2::@NamedTuple{stabilizer::@NamedTuple{}, conv_layer::@NamedTuple{weight::CuArray{ComplexF32, 3, CUDA.DeviceMemory}}}}, layer_2::@NamedTuple{layer_1::@NamedTuple{weight::CuArray{Float32, 4, CUDA.DeviceMemory}, bias::CuArray{Float32, 1, CUDA.DeviceMemory}}, layer_2::@NamedTuple{weight::CuArray{Float32, 4, CUDA.DeviceMemory}, bias::CuArray{Float32, 1, CUDA.DeviceMemory}}}}, layer_2::@NamedTuple{weight::CuArray{Float32, 3, CUDA.DeviceMemory}}}, layer_3::@NamedTuple{layer_1::@NamedTuple{layer_1::@NamedTuple{layer_1::@NamedTuple{weight::CuArray{Float32, 4, CUDA.DeviceMemory}}, layer_2::@NamedTuple{stabilizer::@NamedTuple{}, conv_layer::@NamedTuple{weight::CuArray{ComplexF32, 3, CUDA.DeviceMemory}}}}, layer_2::@NamedTuple{layer_1::@NamedTuple{weight::CuArray{Float32, 4, CUDA.DeviceMemory}, bias::CuArray{Float32, 1, CUDA.DeviceMemory}}, layer_2::@NamedTuple{weight::CuArray{Float32, 4, CUDA.DeviceMemory}, bias::CuArray{Float32, 1, CUDA.DeviceMemory}}}}, layer_2::@NamedTuple{weight::CuArray{Float32, 3, CUDA.DeviceMemory}}}, layer_4::@NamedTuple{layer_1::@NamedTuple{layer_1::@NamedTuple{layer_1::@NamedTuple{weight::CuArray{Float32, 4, CUDA.DeviceMemory}}, layer_2::@NamedTuple{stabilizer::@NamedTuple{}, conv_layer::@NamedTuple{weight::CuArray{ComplexF32, 3, CUDA.DeviceMemory}}}}, layer_2::@NamedTuple{layer_1::@NamedTuple{weight::CuArray{Float32, 4, CUDA.DeviceMemory}, bias::CuArray{Float32, 1, CUDA.DeviceMemory}}, layer_2::@NamedTuple{weight::CuArray{Float32, 4, CUDA.DeviceMemory}, bias::CuArray{Float32, 1, CUDA.DeviceMemory}}}}, layer_2::@NamedTuple{weight::CuArray{Float32, 3, CUDA.DeviceMemory}}}}, projection::@NamedTuple{layer_1::@NamedTuple{weight::CuArray{Float32, 4, CUDA.DeviceMemory}, bias::CuArray{Float32, 1, CUDA.DeviceMemory}}, layer_2::@NamedTuple{weight::CuArray{Float32, 4, CUDA.DeviceMemory}, bias::CuArray{Float32, 1, CUDA.DeviceMemory}}}}, @NamedTuple{positional_embedding::@NamedTuple{}, lifting::@NamedTuple{layer_1::@NamedTuple{}, layer_2::@NamedTuple{}}, fno_blocks::@NamedTuple{layer_1::@NamedTuple{layer_1::@NamedTuple{layer_1::@NamedTuple{layer_1::@NamedTuple{}, layer_2::@NamedTuple{stabilizer::@NamedTuple{}, conv_layer::@NamedTuple{}}}, layer_2::@NamedTuple{layer_1::@NamedTuple{}, layer_2::@NamedTuple{}}}, layer_2::@NamedTuple{}}, layer_2::@NamedTuple{layer_1::@NamedTuple{layer_1::@NamedTuple{layer_1::@NamedTuple{}, layer_2::@NamedTuple{stabilizer::@NamedTuple{}, conv_layer::@NamedTuple{}}}, layer_2::@NamedTuple{layer_1::@NamedTuple{}, layer_2::@NamedTuple{}}}, layer_2::@NamedTuple{}}, layer_3::@NamedTuple{layer_1::@NamedTuple{layer_1::@NamedTuple{layer_1::@NamedTuple{}, layer_2::@NamedTuple{stabilizer::@NamedTuple{}, conv_layer::@NamedTuple{}}}, layer_2::@NamedTuple{layer_1::@NamedTuple{}, layer_2::@NamedTuple{}}}, layer_2::@NamedTuple{}}, layer_4::@NamedTuple{layer_1::@NamedTuple{layer_1::@NamedTuple{layer_1::@NamedTuple{}, layer_2::@NamedTuple{stabilizer::@NamedTuple{}, conv_layer::@NamedTuple{}}}, layer_2::@NamedTuple{layer_1::@NamedTuple{}, layer_2::@NamedTuple{}}}, layer_2::@NamedTuple{}}}, projection::@NamedTuple{layer_1::@NamedTuple{}, layer_2::@NamedTuple{}}}}, tstate::@NamedTuple{parameters::@NamedTuple{positional_embedding::@NamedTuple{}, lifting::@NamedTuple{layer_1::@NamedTuple{weight::CuArray{Float32, 4, CUDA.DeviceMemory}, bias::CuArray{Float32, 1, CUDA.DeviceMemory}}, layer_2::@NamedTuple{weight::CuArray{Float32, 4, CUDA.DeviceMemory}, bias::CuArray{Float32, 1, CUDA.DeviceMemory}}}, fno_blocks::@NamedTuple{layer_1::@NamedTuple{layer_1::@NamedTuple{layer_1::@NamedTuple{layer_1::@NamedTuple{weight::CuArray{Float32, 4, CUDA.DeviceMemory}}, layer_2::@NamedTuple{stabilizer::@NamedTuple{}, conv_layer::@NamedTuple{weight::CuArray{ComplexF32, 3, CUDA.DeviceMemory}}}}, layer_2::@NamedTuple{layer_1::@NamedTuple{weight::CuArray{Float32, 4, CUDA.DeviceMemory}, bias::CuArray{Float32, 1, CUDA.DeviceMemory}}, layer_2::@NamedTuple{weight::CuArray{Float32, 4, CUDA.DeviceMemory}, bias::CuArray{Float32, 1, CUDA.DeviceMemory}}}}, layer_2::@NamedTuple{weight::CuArray{Float32, 3, CUDA.DeviceMemory}}}, layer_2::@NamedTuple{layer_1::@NamedTuple{layer_1::@NamedTuple{layer_1::@NamedTuple{weight::CuArray{Float32, 4, CUDA.DeviceMemory}}, layer_2::@NamedTuple{stabilizer::@NamedTuple{}, conv_layer::@NamedTuple{weight::CuArray{ComplexF32, 3, CUDA.DeviceMemory}}}}, layer_2::@NamedTuple{layer_1::@NamedTuple{weight::CuArray{Float32, 4, CUDA.DeviceMemory}, bias::CuArray{Float32, 1, CUDA.DeviceMemory}}, layer_2::@NamedTuple{weight::CuArray{Float32, 4, CUDA.DeviceMemory}, bias::CuArray{Float32, 1, CUDA.DeviceMemory}}}}, layer_2::@NamedTuple{weight::CuArray{Float32, 3, CUDA.DeviceMemory}}}, layer_3::@NamedTuple{layer_1::@NamedTuple{layer_1::@NamedTuple{layer_1::@NamedTuple{weight::CuArray{Float32, 4, CUDA.DeviceMemory}}, layer_2::@NamedTuple{stabilizer::@NamedTuple{}, conv_layer::@NamedTuple{weight::CuArray{ComplexF32, 3, CUDA.DeviceMemory}}}}, layer_2::@NamedTuple{layer_1::@NamedTuple{weight::CuArray{Float32, 4, CUDA.DeviceMemory}, bias::CuArray{Float32, 1, CUDA.DeviceMemory}}, layer_2::@NamedTuple{weight::CuArray{Float32, 4, CUDA.DeviceMemory}, bias::CuArray{Float32, 1, CUDA.DeviceMemory}}}}, layer_2::@NamedTuple{weight::CuArray{Float32, 3, CUDA.DeviceMemory}}}, layer_4::@NamedTuple{layer_1::@NamedTuple{layer_1::@NamedTuple{layer_1::@NamedTuple{weight::CuArray{Float32, 4, CUDA.DeviceMemory}}, layer_2::@NamedTuple{stabilizer::@NamedTuple{}, conv_layer::@NamedTuple{weight::CuArray{ComplexF32, 3, CUDA.DeviceMemory}}}}, layer_2::@NamedTuple{layer_1::@NamedTuple{weight::CuArray{Float32, 4, CUDA.DeviceMemory}, bias::CuArray{Float32, 1, CUDA.DeviceMemory}}, layer_2::@NamedTuple{weight::CuArray{Float32, 4, CUDA.DeviceMemory}, bias::CuArray{Float32, 1, CUDA.DeviceMemory}}}}, layer_2::@NamedTuple{weight::CuArray{Float32, 3, CUDA.DeviceMemory}}}}, projection::@NamedTuple{layer_1::@NamedTuple{weight::CuArray{Float32, 4, CUDA.DeviceMemory}, bias::CuArray{Float32, 1, CUDA.DeviceMemory}}, layer_2::@NamedTuple{weight::CuArray{Float32, 4, CUDA.DeviceMemory}, bias::CuArray{Float32, 1, CUDA.DeviceMemory}}}}, states::@NamedTuple{positional_embedding::@NamedTuple{}, lifting::@NamedTuple{layer_1::@NamedTuple{}, layer_2::@NamedTuple{}}, fno_blocks::@NamedTuple{layer_1::@NamedTuple{layer_1::@NamedTuple{layer_1::@NamedTuple{layer_1::@NamedTuple{}, layer_2::@NamedTuple{stabilizer::@NamedTuple{}, conv_layer::@NamedTuple{}}}, layer_2::@NamedTuple{layer_1::@NamedTuple{}, layer_2::@NamedTuple{}}}, layer_2::@NamedTuple{}}, layer_2::@NamedTuple{layer_1::@NamedTuple{layer_1::@NamedTuple{layer_1::@NamedTuple{}, layer_2::@NamedTuple{stabilizer::@NamedTuple{}, conv_layer::@NamedTuple{}}}, layer_2::@NamedTuple{layer_1::@NamedTuple{}, layer_2::@NamedTuple{}}}, layer_2::@NamedTuple{}}, layer_3::@NamedTuple{layer_1::@NamedTuple{layer_1::@NamedTuple{layer_1::@NamedTuple{}, layer_2::@NamedTuple{stabilizer::@NamedTuple{}, conv_layer::@NamedTuple{}}}, layer_2::@NamedTuple{layer_1::@NamedTuple{}, layer_2::@NamedTuple{}}}, layer_2::@NamedTuple{}}, layer_4::@NamedTuple{layer_1::@NamedTuple{layer_1::@NamedTuple{layer_1::@NamedTuple{}, layer_2::@NamedTuple{stabilizer::@NamedTuple{}, conv_layer::@NamedTuple{}}}, layer_2::@NamedTuple{layer_1::@NamedTuple{}, layer_2::@NamedTuple{}}}, layer_2::@NamedTuple{}}}, projection::@NamedTuple{layer_1::@NamedTuple{}, layer_2::@NamedTuple{}}}}, n_samples::Int64, n_steps::Int64, H!::typeof(burgers_constraints_IC_Mass_Flux!); constraint_parameters::@NamedTuple{k::Int64, eps::Float32}, domain::@NamedTuple{x_start::Float32, x_end::Float32, t_start::Float32, t_end::Float32}, IC_func::Function, backend::CPU, mode::String, optimizer::Type, use_compiled::Bool, compiled_funcs::Nothing, verbose::Bool, initial_vals::Array{Float32, 4})
+    @ PCFM /orcd/home/002/txenakis/projects/18337/PCFM.jl/src/sampling.jl:285
+ [16] macro expansion
+    @ ./timing.jl:697 [inlined]
+ [17] top-level scope
+    @ /orcd/home/002/txenakis/projects/18337/PCFM.jl/examples/infer_burgers_IC.jl:188
+ [18] include(mod::Module, _path::String)
+    @ Base ./Base.jl:306
+ [19] exec_options(opts::Base.JLOptions)
+    @ Base ./client.jl:317
+ [20] _start()
+    @ Base ./client.jl:550
+in expression starting at /orcd/home/002/txenakis/projects/18337/PCFM.jl/examples/infer_burgers_IC.jl:164
+============================================================
+Burgers Equation — Functional Flow Matching
+============================================================
+
+[1/3] Creating FFM model...
+  Model created successfully
+
+[2/3] Loading checkpoint from: /orcd/home/002/txenakis/projects/18337/PCFM.jl/examples/checkpoints/ffm_burgers_checkpoint.jld2
+  Loaded trained parameters and states
+
+[3/3] Generating samples...
+backend = CUDABackend(false, false)
+
+------------------------
+------Sampling PCFM------
+Modelling: exa
+Optimizer: MadNLPMOI.Optimizer
+Backend: CUDABackend(false, false)
+------------------------
+
+PCFM step: 0/100
+PCFM step: 10/100
+PCFM step: 20/100
+PCFM step: 30/100
+PCFM step: 40/100
+PCFM step: 50/100
+PCFM step: 60/100
+PCFM step: 70/100
+PCFM step: 80/100
+PCFM step: 90/100
+186.904494 seconds (559.49 M allocations: 29.922 GiB, 5.98% gc time, 1 lock conflict, 67.88% compilation time: <1% of which was recompilation)
+
+------------------------
+------Sampling PCFM------
+Modelling: exa
+Optimizer: MadNLPMOI.Optimizer
+Backend: CPU(false)
+------------------------
+
+PCFM step: 0/100
+PCFM step: 10/100
+PCFM step: 20/100
+PCFM step: 30/100
+PCFM step: 40/100
+PCFM step: 50/100
+PCFM step: 60/100
+PCFM step: 70/100
+PCFM step: 80/100
+PCFM step: 90/100
+1952.166813 seconds (192.96 M allocations: 36.753 GiB, 0.46% gc time, 1.58% compilation time)
+
+------------------------
+------Sampling PCFM------
+Modelling: jump
+Optimizer: MadNLPMOI.Optimizer
+Backend: CPU(false)
+------------------------
+
+PCFM step: 0/100
