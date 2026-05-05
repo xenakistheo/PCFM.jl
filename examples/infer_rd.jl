@@ -247,7 +247,9 @@ JLD2.save("samples_rd.jld2",
     "samples_exa_gpu",     samples_exa_gpu,
     "samples_exa_cpu",     samples_exa_cpu,
     "samples_jump_madnlp", samples_jump_madnlp,
-    "samples_ffm",         samples_ffm)
+    "samples_ffm",         samples_ffm,
+    "u0_fixed",            u0_fixed,
+    "rd_params",           rd_params)
 
 # Load samples
 # data = JLD2.load("samples_rd.jld2")
