@@ -366,13 +366,13 @@ function burgers_constraints_IC_Mass_Flux!(model::Model, u, u0, nt, n_samples, g
 
     # 1. Initial condition: u(x, 0) = u_IC(x)
     @constraint(model, [i in 1:nx, s in 1:n_samples],
-        u[i, 1, s] == u0[i, s]
+        u[i, 1, s] == u0[i, 1, 1, s]
     )
 
     # 2. Constant mass: ∫u(x,t)dx = ∫u(x,0)dx
     @constraint(model, [t in 1:nt, s in 1:n_samples],
         sum(u[i, t, s] for i in 1:nx) * dx ==
-        sum(u0[i, s] for i in 1:nx) * dx
+        sum(u0[i, 1, 1, s] for i in 1:nx) * dx
     )
 
     # 3. k local Godunov/Euler updates
