@@ -33,5 +33,6 @@ export generate_diffusion_data
 export load_burgers_batch, load_rd_batch, load_ns_batch
 # Constraints
 export heat_constraints!, rd_constraints!, burgers_constraints!, ns_constraints!
+export ns_proj!
 
 end # module PCFM

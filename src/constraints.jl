@@ -111,7 +111,7 @@ function rd_constraints!(model::Model, u, u0, nt, n_samples, grid_points, grid_s
     # u has shape (nx, nt, n_samples)
 
     # 1. Initial condition
-    @constraint(model, [i in 1:nx, s in 1:n_samples], u[i, 1, s] == u0[i, 1, 1, s])
+    @constraint(model, [i in 1:nx, s in 1:n_samples], u[i, 1, s] == u0[i, s])
 
     # 2. Mass evolution (trapezoidal rule)
     @constraint(model, [t in 2:nt, s in 1:n_samples],
@@ -187,6 +187,39 @@ function rd_constraints!(core::ExaCore, u_flat, u0_flat, nt, n_samples, grid_poi
 
     return nothing
 end
+
+"""
+    ns_proj!(x_1, u_0_ic_mat, nt, n_samples, grid_points, grid_spacing, dt, params=nothing)
+
+Analytical projection onto the 2D NS constraint set (IC + global mass conservation).
+
+Works in-place on `x_1` of shape `(nx, ny, nt, 1, n_samples)`. Both `x_1` and
+`u_0_ic_mat` must be on the same device.
+
+- IC: sets the t=1 slice to `u_0_ic_mat` exactly.
+- Mass conservation: for each t≥2, subtracts the uniform deficit
+  `(Σ u[:,:,t,s] - M0[s]) / (nx*ny)` from every spatial point.
+"""
+function ns_proj!(x_1, u_0_ic_mat, nt, _n_samples, grid_points, _grid_spacing, _dt, _params=nothing)
+    nx, ny = grid_points
+
+    # u_0_ic_mat: (nx, ny, n_samples) on device
+    # x_1:        (nx, ny, nt, 1, n_samples) on device
+
+    # 1. IC: fix t=1 slice for all samples
+    x_1[:, :, 1, 1, :] .= u_0_ic_mat
+
+    # 2. Mass conservation for t≥2: subtract uniform deficit from each spatial point
+    M0 = sum(u_0_ic_mat; dims=(1, 2))           # (1, 1, n_samples)
+    for t in 2:nt
+        mass_t  = sum(x_1[:, :, t, 1, :]; dims=(1, 2))   # (1, 1, n_samples)
+        deficit = (mass_t .- M0) ./ Float32(nx * ny)
+        x_1[:, :, t, 1, :] .-= deficit
+    end
+
+    return x_1
+end
+
 
 function burgers_constraints!(model::Model, u, u0, nt, n_samples, grid_points, grid_spacing, dt, params=(;))
     nx  = grid_points[1]
