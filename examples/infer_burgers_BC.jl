@@ -6,6 +6,8 @@ Run train_burgers.jl first to produce the checkpoint.
 
 This is one of two versions of burgers-inference. 
 Constraints outlined by D.6 
+
+Note: Script does not use Reactant
 """
 
 using PCFM

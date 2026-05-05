@@ -1,13 +1,8 @@
 """
-Example script for training and sampling from a Functional Flow Matching model
+Example script for sampling from a Functional Flow Matching model
 on the 1D heat (diffusion) equation.
 
-This script demonstrates:
-1. Creating an FFM model
-2. Generating training data
-3. Compiling functions with Reactant
-4. Training the model
-5. Generating unconstrained and physics-constrained samples
+Note: Script does not use Reactant
 """
 
 #S

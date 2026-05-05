@@ -3,6 +3,8 @@ Load a trained FFM checkpoint and benchmark Reaction-Diffusion equation samples
 using physics-constrained flow matching (PCFM), without Reactant.
 
 Run train_rd.jl first to produce the checkpoint.
+
+Note: Script does not use Reactant
 """
 
 using PCFM
