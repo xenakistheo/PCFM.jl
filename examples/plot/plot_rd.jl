@@ -11,12 +11,11 @@ include(joinpath(@__DIR__, "..", "..", "utils", "plotUtils.jl"))
 using HDF5
 
 test_data_path = joinpath(@__DIR__, "..", "..", "datasets", "data", "RD_neumann_test_nIC30_nBC30_nx64.h5")
-ref_u, ref_ic, ref_bc = h5open(test_data_path, "r") do f
+u_reference, ref_ic, ref_bc = h5open(test_data_path, "r") do f
     permutedims(read(f["u"]), (2, 1, 3, 4)),  # (nx=64, nt=100, n_bc=30, n_ic=30)
     read(f["ic"]),                             # (nx=64, n_ic=30)
     read(f["bc"])                              # (2,     n_bc=30)
 end
-ref_u
 
 
 
@@ -25,14 +24,16 @@ ref_u
 data_path = joinpath(@__DIR__, "..", "..", "datasets", "samples", "samples_rd.jld2")
 data = JLD2.load(data_path)
 
+data
 
 samples_exa_gpu     = data["samples_exa_gpu"]
 samples_exa_cpu     = data["samples_exa_cpu"]
 samples_jump_madnlp = data["samples_jump_madnlp"]
+samples_jump_ipopt = data["samples_jump_ipopt"]
 samples_ffm         = data["samples_ffm"]
 u0_fixed            = data["u0_fixed"]
 rd_params           = data["rd_params"]
-
+# u_reference
 
 batch_size   = 32
 nx           = 64          # Spatial resolution
@@ -53,19 +54,19 @@ T = range(t_range[1], t_range[2]; length = nt)
 
 
 ##### Simulated solution
-K = 2
+K = 3
 
-fig_samples = plot_sample(K, [ref_u, samples_exa_gpu, samples_jump_madnlp, samples_ffm],
-    ["Reference", "ExaModels", "JuMP", "FFM"]; suptitle="Heat Eq. Samples")
+fig_samples = plot_sample(K, [u_reference, samples_exa_gpu, samples_exa_cpu, samples_jump_madnlp, samples_jump_ipopt, samples_ffm],
+    ["Reference", "Exa - MadNLP (GPU)", "Exa - MadNLP", "JuMP - MadNLP", "JuMP - Ipopt", "FFM"]; suptitle="Heat Eq. Samples")
 
 # save("plots/samples_rd.png", fig_samples)
 
 
-##### Deviation from Analytic
-fig_samples_deviation = plot_sample(K, [samples_exa_gpu .- u_analytic, samples_jump_madnlp .- u_analytic, samples_ffm .- u_analytic],
-    ["ExaModels", "JuMP", "FFM"]; suptitle="Deviation from analytic solution - Heat Eq.")
+# ##### Deviation from Analytic
+# fig_samples_deviation = plot_sample(K, [samples_exa_gpu .- u_analytic, samples_jump_madnlp .- u_analytic, samples_ffm .- u_analytic],
+#     ["ExaModels", "JuMP", "FFM"]; suptitle="Deviation from analytic solution - Heat Eq.")
 
-# save("plots/samples_heat_deviation.png", fig_samples)
+# # save("plots/samples_heat_deviation.png", fig_samples)
 
 
 
@@ -97,15 +98,19 @@ function mass_evolution_violation_rd(u, params)
 end
 
 fig_constraint_ic = plot_constraint_violation(K,
-    [samples_exa_gpu, samples_exa_cpu, samples_jump_madnlp, samples_ffm],
+    [samples_exa_gpu, samples_exa_cpu, samples_jump_madnlp, samples_jump_ipopt, samples_ffm],
     ic_violation_rd,
-    ["ExaGPU", "ExaCPU", "JuMP", "FFM"];
+    ["Exa - MadNLP (GPU)", "Exa - MadNLP", "JuMP - MadNLP", "JuMP - Ipopt", "FFM"];
     constraint_params=(u0_fixed, nx),
     suptitle="IC Constraint Violation - RD")
 
+# save("plots/ic_constraint_rd.png", fig_constraint_ic)
+
 fig_constraint_mass = plot_constraint_violation(K,
-    [samples_exa_gpu, samples_exa_cpu, samples_jump_madnlp, samples_ffm],
+    [samples_exa_gpu, samples_exa_cpu, samples_jump_madnlp, samples_jump_ipopt, samples_ffm],
     mass_evolution_violation_rd,
-    ["ExaGPU", "ExaCPU", "JuMP", "FFM"];
+    ["Exa - MadNLP (GPU)", "Exa - MadNLP", "JuMP - MadNLP", "JuMP - Ipopt", "FFM"];
     constraint_params=(nx, nt, dx, dt, rd_params.rho, rd_params.nu),
     suptitle="Mass Evolution Constraint Violation - RD")
+
+# save("plots/mass_constraint_rd.png", fig_constraint_mass)
