@@ -32,6 +32,6 @@ export train_ffm!, sample_ffm, sample_pcfm
 export generate_diffusion_data
 export load_burgers_batch, load_rd_batch, load_ns_batch
 # Constraints
-export heat_constraints!, rd_constraints!, burgers_constraints_BC_Mass!, ns_constraints!
+export heat_constraints!, rd_constraints!, rd_constraints_2!, burgers_constraints_BC_Mass!, burgers_constraints_IC_Mass_Flux!, ns_constraints!
 
 end # module PCFM
