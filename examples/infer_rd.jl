@@ -36,7 +36,7 @@ nx           = 64
 nt           = 100
 emb_channels = 32
 
-weight_file = joinpath(@__DIR__, "checkpoints", "ffm_rd_checkpoint.jld2")
+weight_file = joinpath(@__DIR__, "checkpoints", "ffm_rd_checkpoint_nx64.jld2")
 
 t_range = (0.0f0, 1.0f0)
 
@@ -209,6 +209,18 @@ begin
                        verbose = true,
                        mode = "jump",
                        optimizer = MadNLP.Optimizer,
+                       initial_vals = starting_noise)
+
+    @info "JuMP, Ipopt"
+    samples_jump_Ipopt = sample_pcfm(ffm, (parameters=ps, states=st),
+                       n_samples, 100, rd_constraints_2!;
+                       domain = rd_domain,
+                       IC_func = IC_func_rd,
+                       constraint_parameters = rd_params,
+                       backend = CPU(),
+                       verbose = true,
+                       mode = "jump",
+                       optimizer = Ipopt.Optimizer,
                        initial_vals = starting_noise)
 
     @info "FFM"
