@@ -32,7 +32,7 @@ Random.seed!(42)
 # Configuration
 # ---------------------------------------------------------------------------
 batch_size   = 32
-nx           = 128
+nx           = 64
 nt           = 100
 emb_channels = 32
 
@@ -118,7 +118,7 @@ starting_noise = randn(Float32, nx, nt, 1, n_samples)
 
 
 begin
-    @info "ExaModels, MadNLP, GPU" - Error: Kernel Invocation uses too much parameter memory
+    @info "ExaModels, MadNLP, GPU"
     @btime sample_pcfm($ffm, (parameters=$ps, states=$st),
                        $n_samples, 100, rd_constraints_2!;
                        domain = rd_domain,

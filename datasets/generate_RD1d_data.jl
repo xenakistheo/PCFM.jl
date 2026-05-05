@@ -8,7 +8,7 @@ using Random
 
 const rho_RD = 0.01
 const nu_RD  = 0.005
-const Nx_RD  = 128
+const Nx_RD  = 64
 const xL_RD, xR_RD = 0.0, 1.0
 const dt_save = 0.01
 const ini_time = 0.0
