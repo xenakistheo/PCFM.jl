@@ -23,7 +23,6 @@ using BenchmarkTools
 using Random
 using HDF5
 
-include(joinpath(@__DIR__, "..", "optimisation", "plotUtils.jl"))
 
 backend = CUDABackend()
 dev_gpu = cu
