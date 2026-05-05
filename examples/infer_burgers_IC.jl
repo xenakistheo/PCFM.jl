@@ -104,10 +104,10 @@ starting_noise = randn(Float32, nx, nt, 1, n_samples)
 begin
     @info "ExaModels, MadNLP, GPU"
     @btime sample_pcfm($ffm, (parameters=$ps, states=$st),
-                       $n_samples, 100, burgers_constraints_BC_Mass!;
+                       $n_samples, 100, burgers_constraints_IC_Mass_Flux!;
                        domain = burgers_domain,
                        IC_func = IC_func_burgers,
-                       constraint_parameters = burgers_params,
+                       constraint_parameters = burgers_ic_flux_params,
                        backend = backend,
                        verbose = false,
                        mode = "exa",
@@ -116,10 +116,10 @@ begin
 
     @info "ExaModels, MadNLP, CPU"
     @btime sample_pcfm($ffm, (parameters=$ps, states=$st),
-                       $n_samples, 100, burgers_constraints_BC_Mass!;
+                       $n_samples, 100, burgers_constraints_IC_Mass_Flux!;
                        domain = burgers_domain,
                        IC_func = IC_func_burgers,
-                       constraint_parameters = burgers_params,
+                       constraint_parameters = burgers_ic_flux_params,
                        backend = CPU(),
                        verbose = false,
                        mode = "exa",
@@ -128,10 +128,10 @@ begin
 
     @info "JuMP, MadNLP"
     @btime sample_pcfm($ffm, (parameters=$ps, states=$st),
-                       $n_samples, 100, burgers_constraints_BC_Mass!;
+                       $n_samples, 100, burgers_constraints_IC_Mass_Flux!;
                        domain = burgers_domain,
                        IC_func = IC_func_burgers,
-                       constraint_parameters = burgers_params,
+                       constraint_parameters = burgers_ic_flux_params,
                        backend = CPU(),
                        verbose = false,
                        mode = "jump",
@@ -141,10 +141,10 @@ begin
 
     @info "JuMP, Ipopt"
     @btime sample_pcfm($ffm, (parameters=$ps, states=$st),
-                       $n_samples, 100, burgers_constraints_BC_Mass!;
+                       $n_samples, 100, burgers_constraints_IC_Mass_Flux!;
                        domain = burgers_domain,
                        IC_func = IC_func_burgers,
-                       constraint_parameters = burgers_params,
+                       constraint_parameters = burgers_ic_flux_params,
                        backend = CPU(),
                        verbose = false,
                        mode = "jump",
@@ -226,29 +226,29 @@ end
 ##################
 # Plot solutions
 
-X = x_grid
-T = range(t_range[1], t_range[2]; length=nt)
-K = 1
+# X = x_grid
+# T = range(t_range[1], t_range[2]; length=nt)
+# K = 1
 
-fig_samples = plot_sample(K,
-    [ref_samples, samples_exa_gpu, samples_exa_cpu, samples_jump_madnlp, samples_ffm],
-    ["Reference", "ExaGPU", "ExaCPU", "JuMP", "FFM"])
-save("burgers_samples.png", fig_samples)
+# fig_samples = plot_sample(K,
+#     [ref_samples, samples_exa_gpu, samples_exa_cpu, samples_jump_madnlp, samples_ffm],
+#     ["Reference", "ExaGPU", "ExaCPU", "JuMP", "FFM"])
+# save("burgers_samples.png", fig_samples)
 
-function ic_violation(u, params)
-    nx, nt = params[1], params[2]
-    return [sum(abs(u[i, j] - u[i, 1]) for i in 1:nx) for j in 1:nt]
-end
+# function ic_violation(u, params)
+#     nx, nt = params[1], params[2]
+#     return [sum(abs(u[i, j] - u[i, 1]) for i in 1:nx) for j in 1:nt]
+# end
 
-fig_constraint = plot_constraint_violation(K,
-    [samples_exa_gpu, samples_exa_cpu, samples_jump_madnlp, samples_ffm],
-    ic_violation,
-    ["ExaGPU", "ExaCPU", "JuMP", "FFM"];
-    constraint_params=(nx, nt, dx, dt))
-save("burgers_constraint_violation.png", fig_constraint)
+# fig_constraint = plot_constraint_violation(K,
+#     [samples_exa_gpu, samples_exa_cpu, samples_jump_madnlp, samples_ffm],
+#     ic_violation,
+#     ["ExaGPU", "ExaCPU", "JuMP", "FFM"];
+#     constraint_params=(nx, nt, dx, dt))
+# save("burgers_constraint_violation.png", fig_constraint)
 
 # Save samples
-JLD2.save("samples_burgers.jld2",
+JLD2.save("samples_burgers_IC.jld2",
     "ref_samples",         ref_samples,
     "samples_exa_gpu",     samples_exa_gpu,
     "samples_exa_cpu",     samples_exa_cpu,
@@ -256,7 +256,7 @@ JLD2.save("samples_burgers.jld2",
     "samples_ffm",         samples_ffm)
 
 # Load samples
-# data = JLD2.load("samples_burgers.jld2")
+# data = JLD2.load("samples_burgers_IC.jld2")
 # ref_samples         = data["ref_samples"]
 # samples_exa_gpu     = data["samples_exa_gpu"]
 # samples_exa_cpu     = data["samples_exa_cpu"]
