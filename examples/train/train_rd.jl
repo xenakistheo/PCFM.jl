@@ -26,7 +26,7 @@ weight_file = joinpath(@__DIR__, "..", "checkpoints", "ffm_rd_checkpoint.jld2")
 # Configuration
 # ---------------------------------------------------------------------------
 batch_size    = 32
-nx            = 128      # Nx spatial points (cell-centred)
+nx            = 64       # Nx spatial points (cell-centred)
 nt            = 100      # nt time snapshots
 emb_channels  = 32
 n_epochs      = 1000
