@@ -1,0 +1,28 @@
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1777955605.717849 2645308 service.cc:154] XLA service 0x595c200 initialized for platform CUDA (this does not guarantee that XLA will be used). Devices:
+I0000 00:00:1777955605.717889 2645308 service.cc:170]   StreamExecutor [0]: NVIDIA L40S, Compute Capability 8.9 (Driver: 13.2.0[590.48.1]; Runtime: 13.2.0; Toolkit: 13.1.0; DNN: 9.20.0)
+I0000 00:00:1777955605.720687 2645308 se_gpu_pjrt_client.cc:1540] Using BFC allocator.
+I0000 00:00:1777955605.720717 2645308 gpu_helpers.cc:141] XLA backend allocating 35750805504 bytes on device 0 for BFCAllocator.
+I0000 00:00:1777955605.720750 2645308 gpu_helpers.cc:183] XLA backend will use up to 11916935168 bytes on device 0 for CollectiveBFCAllocator.
+I0000 00:00:1777955605.742773 2645308 cuda_dnn.cc:461] Loaded cuDNN version 92000
+GKS: cannot open display - headless operation mode active
+Precompiling packages...
+  44398.7 ms  ✓ Plots (serial)
+  1 dependency successfully precompiled in 44 seconds
+Precompiling packages...
+   3105.1 ms  ✓ FileIOExt (serial)
+  1 dependency successfully precompiled in 3 seconds
+============================================================
+Reaction-Diffusion Equation — Train FFM
+============================================================
+
+[1/4] Loading training batch from /orcd/home/002/txenakis/projects/18337/PCFM.jl/examples/train/../../datasets/data/RD_neumann_train_nIC80_nBC80.h5 ...
+  Data shape: (64, 100, 1, 32)  — (nx, nt, 1, batch_size)
+
+[2/4] Creating FFM model...
+  Model created successfully
+
+[3/4] Loading checkpoint from: /orcd/home/002/txenakis/projects/18337/PCFM.jl/examples/train/../checkpoints/ffm_rd_checkpoint.jld2
+  Loaded parameters, states, and loss history
+
+Done!
