@@ -101,102 +101,114 @@ const burgers_ic_flux_params = (k=5, eps=1f-6)
 starting_noise = randn(Float32, nx, nt, 1, n_samples)
 
 # Benchmarks
-begin
-    @info "ExaModels, MadNLP, GPU"
-    @btime sample_pcfm($ffm, (parameters=$ps, states=$st),
-                       $n_samples, 100, burgers_constraints_IC_Mass_Flux!;
-                       domain = burgers_domain,
-                       IC_func = IC_func_burgers,
-                       constraint_parameters = burgers_ic_flux_params,
-                       backend = backend,
-                       verbose = false,
-                       mode = "exa",
-                       initial_vals = $starting_noise)
-    flush(stdout)
+# begin
+    # @info "ExaModels, MadNLP, GPU"
+    # @btime sample_pcfm($ffm, (parameters=$ps, states=$st),
+    #                    $n_samples, 100, burgers_constraints_IC_Mass_Flux!;
+    #                    domain = burgers_domain,
+    #                    IC_func = IC_func_burgers,
+    #                    constraint_parameters = burgers_ic_flux_params,
+    #                    backend = backend,
+    #                    verbose = false,
+    #                    mode = "exa",
+    #                    initial_vals = $starting_noise)
+    # flush(stdout)
 
-    @info "ExaModels, MadNLP, CPU"
-    @btime sample_pcfm($ffm, (parameters=$ps, states=$st),
-                       $n_samples, 100, burgers_constraints_IC_Mass_Flux!;
-                       domain = burgers_domain,
-                       IC_func = IC_func_burgers,
-                       constraint_parameters = burgers_ic_flux_params,
-                       backend = CPU(),
-                       verbose = false,
-                       mode = "exa",
-                       initial_vals = $starting_noise)
-    flush(stdout)
+    # @info "ExaModels, MadNLP, CPU"
+    # @btime sample_pcfm($ffm, (parameters=$ps, states=$st),
+    #                    $n_samples, 100, burgers_constraints_IC_Mass_Flux!;
+    #                    domain = burgers_domain,
+    #                    IC_func = IC_func_burgers,
+    #                    constraint_parameters = burgers_ic_flux_params,
+    #                    backend = CPU(),
+    #                    verbose = true,
+    #                    mode = "exa",
+    #                    initial_vals = $starting_noise)
+    # # flush(stdout)
 
-    @info "JuMP, MadNLP"
-    @btime sample_pcfm($ffm, (parameters=$ps, states=$st),
-                       $n_samples, 100, burgers_constraints_IC_Mass_Flux!;
-                       domain = burgers_domain,
-                       IC_func = IC_func_burgers,
-                       constraint_parameters = burgers_ic_flux_params,
-                       backend = CPU(),
-                       verbose = false,
-                       mode = "jump",
-                       optimizer = MadNLP.Optimizer,
-                       initial_vals = $starting_noise)
-    flush(stdout)
+    # @info "JuMP, MadNLP"
+    # @btime sample_pcfm($ffm, (parameters=$ps, states=$st),
+    #                    $n_samples, 100, burgers_constraints_IC_Mass_Flux!;
+    #                    domain = burgers_domain,
+    #                    IC_func = IC_func_burgers,
+    #                    constraint_parameters = burgers_ic_flux_params,
+    #                    backend = CPU(),
+    #                    verbose = true,
+    #                    mode = "jump",
+    #                    optimizer = MadNLP.Optimizer,
+    #                    initial_vals = $starting_noise)
+    # # flush(stdout)
 
-    @info "JuMP, Ipopt"
-    @btime sample_pcfm($ffm, (parameters=$ps, states=$st),
-                       $n_samples, 100, burgers_constraints_IC_Mass_Flux!;
-                       domain = burgers_domain,
-                       IC_func = IC_func_burgers,
-                       constraint_parameters = burgers_ic_flux_params,
-                       backend = CPU(),
-                       verbose = false,
-                       mode = "jump",
-                       optimizer = Ipopt.Optimizer,
-                       initial_vals = $starting_noise)
-    flush(stdout)
+    # @info "JuMP, Ipopt"
+    # @btime sample_pcfm($ffm, (parameters=$ps, states=$st),
+    #                    $n_samples, 100, burgers_constraints_IC_Mass_Flux!;
+    #                    domain = burgers_domain,
+    #                    IC_func = IC_func_burgers,
+    #                    constraint_parameters = burgers_ic_flux_params,
+    #                    backend = CPU(),
+    #                    verbose = true,
+    #                    mode = "jump",
+    #                    optimizer = Ipopt.Optimizer,
+    #                    initial_vals = $starting_noise)
+    # # flush(stdout)
 
-    @info "FFM"
-    @btime sample_ffm($ffm, (parameters=$ps, states=$st), $n_samples, 100;
-        verbose = false,
-        initial_vals = $starting_noise)
-    flush(stdout)
-end
+    # @info "FFM"
+    # @btime sample_ffm($ffm, (parameters=$ps, states=$st), $n_samples, 100;
+    #     verbose = false,
+    #     initial_vals = $starting_noise)
+    # flush(stdout)
+# end
 
 # Samples
 begin
     @info "ExaModels, MadNLP, GPU"
-    samples_exa_gpu = sample_pcfm(ffm, (parameters=ps, states=st),
+    @time samples_exa_gpu = sample_pcfm(ffm, (parameters=ps, states=st),
                        n_samples, 100, burgers_constraints_IC_Mass_Flux!;
                        domain = burgers_domain,
                        IC_func = IC_func_burgers,
                        constraint_parameters = burgers_ic_flux_params,
                        backend = backend,
-                       verbose = false,
+                       verbose = true,
                        mode = "exa",
                        initial_vals = starting_noise)
 
     @info "ExaModels, MadNLP, CPU"
-    samples_exa_cpu = sample_pcfm(ffm, (parameters=ps, states=st),
+    @time samples_exa_cpu = sample_pcfm(ffm, (parameters=ps, states=st),
                        n_samples, 100, burgers_constraints_IC_Mass_Flux!;
                        domain = burgers_domain,
                        IC_func = IC_func_burgers,
                        constraint_parameters = burgers_ic_flux_params,
                        backend = CPU(),
-                       verbose = false,
+                       verbose = true,
                        mode = "exa",
                        initial_vals = starting_noise)
 
     @info "JuMP, MadNLP"
-    samples_jump_madnlp = sample_pcfm(ffm, (parameters=ps, states=st),
+    @time samples_jump_madnlp = sample_pcfm(ffm, (parameters=ps, states=st),
                        n_samples, 100, burgers_constraints_IC_Mass_Flux!;
                        domain = burgers_domain,
                        IC_func = IC_func_burgers,
                        constraint_parameters = burgers_ic_flux_params,
                        backend = CPU(),
-                       verbose = false,
+                       verbose = true,
                        mode = "jump",
                        optimizer = MadNLP.Optimizer,
                        initial_vals = starting_noise)
 
+    @info "JuMP, Ipopt"
+    @time samples_jump_ipopt = sample_pcfm(ffm, (parameters=ps, states=st),
+                       n_samples, 100, burgers_constraints_IC_Mass_Flux!;
+                       domain = burgers_domain,
+                       IC_func = IC_func_burgers,
+                       constraint_parameters = burgers_ic_flux_params,
+                       backend = CPU(),
+                       verbose = true,
+                       mode = "jump",
+                       optimizer = Ipopt.Optimizer,
+                       initial_vals = starting_noise)
+
     @info "FFM"
-    samples_ffm = sample_ffm(ffm, (parameters=ps, states=st), n_samples, 100;
+    @time samples_ffm = sample_ffm(ffm, (parameters=ps, states=st), n_samples, 100;
         verbose = false,
         initial_vals = starting_noise)
 end
