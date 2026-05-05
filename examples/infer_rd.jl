@@ -212,7 +212,7 @@ begin
                        initial_vals = starting_noise)
 
     @info "JuMP, Ipopt"
-    samples_jump_Ipopt = sample_pcfm(ffm, (parameters=ps, states=st),
+    samples_jump_ipopt = sample_pcfm(ffm, (parameters=ps, states=st),
                        n_samples, 100, rd_constraints_2!;
                        domain = rd_domain,
                        IC_func = IC_func_rd,
@@ -259,6 +259,7 @@ JLD2.save("samples_rd.jld2",
     "samples_exa_gpu",     samples_exa_gpu,
     "samples_exa_cpu",     samples_exa_cpu,
     "samples_jump_madnlp", samples_jump_madnlp,
+    "samples_jump_ipopt", samples_jump_ipopt,
     "samples_ffm",         samples_ffm,
     "u0_fixed",            u0_fixed,
     "rd_params",           rd_params)
