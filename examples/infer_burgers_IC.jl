@@ -5,7 +5,7 @@ using physics-constrained flow matching (PCFM), without Reactant.
 Run train_burgers.jl first to produce the checkpoint.
 
 This is one of two versions of burgers-inference. 
-Constraints outlined by D.6 
+Constraints outlined by D.7 - IC/Mass/Flux Constraints
 
 Note: Script does not use Reactant
 """
@@ -23,7 +23,6 @@ using BenchmarkTools
 using Random
 using HDF5
 
-include(joinpath(@__DIR__, "..", "optimisation", "plotUtils.jl"))
 
 backend = CUDABackend()
 dev_gpu = cu
@@ -49,12 +48,11 @@ x_grid = range(0.0f0, 1.0f0; length=nx)
 dx     = Float32(x_grid[2] - x_grid[1])
 dt     = 1.0f0 / (nt - 1)
 
-# Initial condition: viscous Burgers sigmoid 
-#TODO Make p_loc vary for each sample. Need to change IC_func_burgers
+# Initial condition: viscous Burgers sigmoid - NOT USED 
 const p_loc  = 0.5f0
 const eps_ic = 0.02f0
 IC_func_burgers = x -> 1.0f0 / (1.0f0 + exp((x - p_loc) / eps_ic))
-
+u0_ic = Float32.(IC_func_burgers.(x_grid)) # Not Used!!!!!
 
 # ---------------------------------------------------------------------------
 println("=" ^ 60)
@@ -99,7 +97,7 @@ const burgers_params = (left_bc=left_bc_vals,)
 
 @show backend
 
-starting_noise = randn(Float32, nx, nt, 1, n_samples);
+starting_noise = randn(Float32, nx, nt, 1, n_samples)
 
 # Benchmarks
 begin
@@ -225,9 +223,31 @@ h5open(test_data_file, "r") do f
 end
 
 ##################
+# Plot solutions
+
+X = x_grid
+T = range(t_range[1], t_range[2]; length=nt)
+K = 1
+
+fig_samples = plot_sample(K,
+    [ref_samples, samples_exa_gpu, samples_exa_cpu, samples_jump_madnlp, samples_ffm],
+    ["Reference", "ExaGPU", "ExaCPU", "JuMP", "FFM"])
+save("burgers_samples.png", fig_samples)
+
+function ic_violation(u, params)
+    nx, nt = params[1], params[2]
+    return [sum(abs(u[i, j] - u[i, 1]) for i in 1:nx) for j in 1:nt]
+end
+
+fig_constraint = plot_constraint_violation(K,
+    [samples_exa_gpu, samples_exa_cpu, samples_jump_madnlp, samples_ffm],
+    ic_violation,
+    ["ExaGPU", "ExaCPU", "JuMP", "FFM"];
+    constraint_params=(nx, nt, dx, dt))
+save("burgers_constraint_violation.png", fig_constraint)
 
 # Save samples
-JLD2.save("samples_burgers_BC.jld2",
+JLD2.save("samples_burgers.jld2",
     "ref_samples",         ref_samples,
     "samples_exa_gpu",     samples_exa_gpu,
     "samples_exa_cpu",     samples_exa_cpu,
@@ -235,7 +255,7 @@ JLD2.save("samples_burgers_BC.jld2",
     "samples_ffm",         samples_ffm)
 
 # Load samples
-# data = JLD2.load("samples_burgers_BC.jld2")
+# data = JLD2.load("samples_burgers.jld2")
 # ref_samples         = data["ref_samples"]
 # samples_exa_gpu     = data["samples_exa_gpu"]
 # samples_exa_cpu     = data["samples_exa_cpu"]
