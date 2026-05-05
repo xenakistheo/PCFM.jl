@@ -94,6 +94,7 @@ left_bc_vals = rand(Float32, n_samples)
 
 const burgers_domain = (x_start=0f0, x_end=1f0, t_start=0f0, t_end=1f0)
 const burgers_params = (left_bc=left_bc_vals,)
+const burgers_ic_flux_params = (k=5, eps=1f-6)
 
 @show backend
 
@@ -162,10 +163,10 @@ end
 begin
     @info "ExaModels, MadNLP, GPU"
     samples_exa_gpu = sample_pcfm(ffm, (parameters=ps, states=st),
-                       n_samples, 100, burgers_constraints_BC_Mass!;
+                       n_samples, 100, burgers_constraints_IC_Mass_Flux!;
                        domain = burgers_domain,
                        IC_func = IC_func_burgers,
-                       constraint_parameters = burgers_params,
+                       constraint_parameters = burgers_ic_flux_params,
                        backend = backend,
                        verbose = false,
                        mode = "exa",
@@ -173,10 +174,10 @@ begin
 
     @info "ExaModels, MadNLP, CPU"
     samples_exa_cpu = sample_pcfm(ffm, (parameters=ps, states=st),
-                       n_samples, 100, burgers_constraints_BC_Mass!;
+                       n_samples, 100, burgers_constraints_IC_Mass_Flux!;
                        domain = burgers_domain,
                        IC_func = IC_func_burgers,
-                       constraint_parameters = burgers_params,
+                       constraint_parameters = burgers_ic_flux_params,
                        backend = CPU(),
                        verbose = false,
                        mode = "exa",
@@ -184,10 +185,10 @@ begin
 
     @info "JuMP, MadNLP"
     samples_jump_madnlp = sample_pcfm(ffm, (parameters=ps, states=st),
-                       n_samples, 100, burgers_constraints_BC_Mass!;
+                       n_samples, 100, burgers_constraints_IC_Mass_Flux!;
                        domain = burgers_domain,
                        IC_func = IC_func_burgers,
-                       constraint_parameters = burgers_params,
+                       constraint_parameters = burgers_ic_flux_params,
                        backend = CPU(),
                        verbose = false,
                        mode = "jump",
