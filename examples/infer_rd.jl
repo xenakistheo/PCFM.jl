@@ -19,7 +19,7 @@ using Ipopt
 using BenchmarkTools
 using Random
 
-include(joinpath(@__DIR__, "..", "optimisation", "plotUtils.jl"))
+# include(joinpath(@__DIR__, "..", "optimisation", "plotUtils.jl"))
 
 backend = CUDABackend()
 dev_gpu = cu
@@ -184,7 +184,7 @@ begin
                        IC_func = IC_func_rd,
                        constraint_parameters = rd_params,
                        backend = backend,
-                       verbose = false,
+                       verbose = true,
                        mode = "exa",
                        initial_vals = starting_noise)
 
@@ -195,7 +195,7 @@ begin
                        IC_func = IC_func_rd,
                        constraint_parameters = rd_params,
                        backend = CPU(),
-                       verbose = false,
+                       verbose = true,
                        mode = "exa",
                        initial_vals = starting_noise)
 
@@ -206,7 +206,7 @@ begin
                        IC_func = IC_func_rd,
                        constraint_parameters = rd_params,
                        backend = CPU(),
-                       verbose = false,
+                       verbose = true,
                        mode = "jump",
                        optimizer = MadNLP.Optimizer,
                        initial_vals = starting_noise)
