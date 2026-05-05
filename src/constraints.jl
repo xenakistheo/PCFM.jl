@@ -188,6 +188,84 @@ function rd_constraints!(core::ExaCore, u_flat, u0_flat, nt, n_samples, grid_poi
     return nothing
 end
 
+function rd_constraints_2!(model::Model, u, u0, nt, n_samples, grid_points, grid_spacing, dt, params=(;))
+    nx  = grid_points[1]
+    dx = grid_spacing[1]
+    rho = get(params, :rho, 0.01)
+    nu  = get(params, :nu, 0.005)
+
+    # 1. Initial condition
+    @constraint(model, [i in 1:nx, s in 1:n_samples], u[i, 1, s] == u0[i, 1, 1, s])
+
+    # 2. Mass evolution (trapezoidal rule, 1st-order boundary flux)
+    @constraint(model, [t in 2:nt, s in 1:n_samples],
+        sum(u[i, t, s] for i in 1:nx) * dx
+        - sum(u[i, t-1, s] for i in 1:nx) * dx
+        - 0.5*dt*rho*(
+            sum(u[i, t,   s] * (1 - u[i, t,   s]) for i in 1:nx) * dx
+            + sum(u[i, t-1, s] * (1 - u[i, t-1, s]) for i in 1:nx) * dx
+        )
+        - 0.5*dt*(
+            (
+                -nu*(u[2,    t,   s] - u[1,  t,   s]) / dx
+              - -nu*(u[nx,   t,   s] - u[nx-1, t,   s]) / dx
+            )
+            + (
+                -nu*(u[2,    t-1, s] - u[1,  t-1, s]) / dx
+              - -nu*(u[nx,   t-1, s] - u[nx-1, t-1, s]) / dx
+            )
+        ) == 0.0)
+end
+
+
+function rd_constraints_2!(core::ExaCore, u_flat, u0_flat, nt, n_samples, grid_points, grid_spacing, dt, params=(;); backend=CPU())
+    nx  = grid_points[1]
+    dx = grid_spacing[1]
+    rho = get(params, :rho, 0.01)
+    nu  = get(params, :nu, 0.005)
+
+    idx(i, t, s) = i + (t-1)*nx + (s-1)*nx*nt
+
+    # 1. Initial condition
+    u0_param = parameter(core, u0_flat)
+
+    constraint(core,
+        (u_flat[idx(i, 1, s)] - u0_param[i, s]
+         for i in 1:nx, s in 1:n_samples);
+        lcon = KernelAbstractions.adapt(backend, zeros(nx * n_samples)),
+        ucon = KernelAbstractions.adapt(backend, zeros(nx * n_samples))
+    )
+
+    # 2. Mass evolution (trapezoidal rule, 1st-order boundary flux)
+    ts_pairs = [(t, s) for t in 2:nt for s in 1:n_samples]
+    constraint(core,
+        (
+            sum(u_flat[idx(i, d[1],   d[2])] for i in 1:nx) * dx
+            - sum(u_flat[idx(i, d[1]-1, d[2])] for i in 1:nx) * dx
+            - 0.5*dt*rho*(
+                sum(u_flat[idx(i, d[1],   d[2])] * (1 - u_flat[idx(i, d[1],   d[2])]) for i in 1:nx) * dx
+                + sum(u_flat[idx(i, d[1]-1, d[2])] * (1 - u_flat[idx(i, d[1]-1, d[2])]) for i in 1:nx) * dx
+            )
+            - 0.5*dt*(
+                (
+                    -nu*(u_flat[idx(2,  d[1],   d[2])] - u_flat[idx(1,    d[1],   d[2])]) / dx
+                  - -nu*(u_flat[idx(nx, d[1],   d[2])] - u_flat[idx(nx-1, d[1],   d[2])]) / dx
+                )
+                + (
+                    -nu*(u_flat[idx(2,  d[1]-1, d[2])] - u_flat[idx(1,    d[1]-1, d[2])]) / dx
+                  - -nu*(u_flat[idx(nx, d[1]-1, d[2])] - u_flat[idx(nx-1, d[1]-1, d[2])]) / dx
+                )
+            )
+            for d in ts_pairs
+        );
+        lcon = KernelAbstractions.adapt(backend, zeros((nt-1) * n_samples)),
+        ucon = KernelAbstractions.adapt(backend, zeros((nt-1) * n_samples))
+    )
+
+    return nothing
+end
+
+
 function burgers_constraints_BC_Mass!(model::Model, u, u0, nt, n_samples, grid_points, grid_spacing, dt, params=(;))
     nx  = grid_points[1]
     dx = grid_spacing[1]
