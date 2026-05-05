@@ -21,7 +21,6 @@ using Ipopt
 using BenchmarkTools
 #using Reactant
 
-include(joinpath(@__DIR__, "..", "optimisation", "plotUtils.jl"))
 
 
 backend = CUDABackend()
@@ -268,7 +267,7 @@ begin
     # ExaModels, MadNLP, GPU
     @info "ExaModels, MadNLP, GPU"
     @btime sample_pcfm(ffm, (parameters = $ps, states = $st),
-                    $n_samples, 100, heat_constraints!;
+                    $n_samples, 100, heat_constraints_IC_Mass_PDE_Energy!;
                     backend=backend,
                     verbose = true,
                     mode="exa", 
@@ -281,7 +280,7 @@ begin
     # # ExaModels, MadNLP, CPU
     @info "ExaModels, MadNLP, CPU"
     @btime sample_pcfm(ffm, (parameters = $ps, states = $st),
-                    $n_samples, 100, heat_constraints!;
+                    $n_samples, 100, heat_constraints_IC_Mass_PDE_Energy!;
                     backend=CPU(),
                     verbose = true,
                     mode="exa",
@@ -293,7 +292,7 @@ begin
     # #JuMP, MadNLP
     @info "JuMP, MadNLP"
     @btime sample_pcfm(ffm, (parameters = $ps, states = $st),
-                    $n_samples, 100, heat_constraints!;
+                    $n_samples, 100, heat_constraints_IC_Mass_PDE_Energy!;
                     backend=CPU(),
                     verbose = true,
                     mode="jump",
@@ -306,7 +305,7 @@ begin
     # #JuMP, Ipopt
     @info "JuMP, Ipopt"
     @btime sample_pcfm($ffm, (parameters = $ps, states = $st),
-                    $n_samples, 100, heat_constraints!;
+                    $n_samples, 100, heat_constraints_IC_Mass_PDE_Energy!;
                     backend=CPU(),
                     verbose = true,
                     mode="jump",
@@ -328,7 +327,7 @@ begin
         # ExaModels, MadNLP, GPU
     @info "ExaModels, MadNLP, GPU"
     samples_exa_gpu = sample_pcfm(ffm, (parameters = ps, states = st),
-                    n_samples, 2, heat_constraints!;
+                    n_samples, 100, heat_constraints_IC_Mass_PDE_Energy!;
                     backend=backend,
                     verbose = false,
                     mode="exa", 
@@ -341,7 +340,7 @@ begin
     # # ExaModels, MadNLP, CPU
     @info "ExaModels, MadNLP, CPU"
     samples_exa_cpu = sample_pcfm(ffm, (parameters = ps, states = st),
-                    n_samples, 2, heat_constraints!;
+                    n_samples, 100, heat_constraints_IC_Mass_PDE_Energy!;
                     backend=CPU(),
                     verbose = false,
                     mode="exa", 
@@ -353,7 +352,7 @@ begin
     # #JuMP, MadNLP
     @info "JuMP, MadNLP"
     samples_jump_madnlp = sample_pcfm(ffm, (parameters = ps, states = st),
-                    n_samples, 2, heat_constraints!;
+                    n_samples, 100, heat_constraints_IC_Mass_PDE_Energy!;
                     backend=CPU(),
                     verbose = false,
                     mode="jump",
