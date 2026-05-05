@@ -17,9 +17,9 @@ Random.seed!(1234)
 # ---------------------------------------------------------------------------
 # Paths
 # ---------------------------------------------------------------------------
-data_dir    = joinpath(@__DIR__, "..", "datasets", "data")
+data_dir    = joinpath(@__DIR__, "..", "..", "datasets", "data")
 train_file  = joinpath(data_dir, "ns_nw100_nf100_s64_t50_mu0.001.h5")
-weight_file = joinpath(@__DIR__, "checkpoints", "ffm_ns_checkpoint.jld2")
+weight_file = joinpath(@__DIR__, "..", "checkpoints", "ffm_ns_checkpoint.jld2")
 
 # ---------------------------------------------------------------------------
 # Configuration

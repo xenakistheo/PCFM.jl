@@ -26,7 +26,7 @@ emb_channels  = 32
 n_epochs      = 1000
 force_retrain = false
 
-weight_file = joinpath(@__DIR__, "checkpoints", "ffm_diffusion_checkpoint.jld2")
+weight_file = joinpath(@__DIR__, "..", "checkpoints", "ffm_diffusion_checkpoint.jld2")
 
 # Data generation parameters
 visc_range = (1.0f0, 5.0f0)
