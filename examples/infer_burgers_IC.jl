@@ -262,6 +262,7 @@ end
 
 # Save samples
 JLD2.save("samples_burgers_IC.jld2",
+    "left_bc_vals", left_bc_vals,
     "ref_samples",         ref_samples,
     "samples_exa_gpu",     samples_exa_gpu,
     "samples_exa_cpu",     samples_exa_cpu,
