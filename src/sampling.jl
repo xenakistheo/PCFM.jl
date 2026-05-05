@@ -256,7 +256,7 @@ function sample_pcfm(ffm::FFM, tstate, n_samples, n_steps, H!;
 
     # Euler integration from t=0 to t=1
     for step in 0:(n_steps - 1)
-        if verbose && step % 10 == 0
+        if verbose && step % 5 == 0
             println("PCFM step: $step/$n_steps")
         end
 
