@@ -329,7 +329,7 @@ starting_noise = randn(Float32, nx, nt, 1, n_samples);
     @time samples_exa_gpu = sample_pcfm(ffm, (parameters = ps, states = st),
                     n_samples, 100, heat_constraints_IC_Mass_PDE_Energy!;
                     backend=backend,
-                    verbose = false,
+                    verbose = true,
                     mode="exa", 
                     constraint_parameters = constraint_params,
                     initial_vals=starting_noise);
@@ -342,7 +342,7 @@ starting_noise = randn(Float32, nx, nt, 1, n_samples);
     @time samples_exa_cpu = sample_pcfm(ffm, (parameters = ps, states = st),
                     n_samples, 100, heat_constraints_IC_Mass_PDE_Energy!;
                     backend=CPU(),
-                    verbose = false,
+                    verbose = true,
                     mode="exa", 
                     constraint_parameters = constraint_params,
                     initial_vals=starting_noise);
@@ -354,7 +354,7 @@ starting_noise = randn(Float32, nx, nt, 1, n_samples);
     @time samples_jump_madnlp = sample_pcfm(ffm, (parameters = ps, states = st),
                     n_samples, 100, heat_constraints_IC_Mass_PDE_Energy!;
                     backend=CPU(),
-                    verbose = false,
+                    verbose = true,
                     mode="jump",
                     optimizer=MadNLP.Optimizer, 
                     constraint_parameters = constraint_params,
@@ -364,7 +364,7 @@ starting_noise = randn(Float32, nx, nt, 1, n_samples);
     @time samples_jump_ipopt = sample_pcfm(ffm, (parameters = ps, states = st),
                     n_samples, 100, heat_constraints_IC_Mass_PDE_Energy!;
                     backend=CPU(),
-                    verbose = false,
+                    verbose = true,
                     mode="jump",
                     optimizer=Ipopt.Optimizer, 
                     constraint_parameters = constraint_params,
