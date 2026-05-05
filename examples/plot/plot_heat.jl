@@ -1,11 +1,13 @@
 
 using JLD2
 using CairoMakie
-include(joinpath(@__DIR__, "..", "utils", "plotUtils.jl"))
+include(joinpath(@__DIR__, "..", "..", "utils", "plotUtils.jl"))
 
 
 # Load samples
-data = JLD2.load("datasets/samples/samples_heat.jld2")
+data_path = joinpath(@__DIR__, "..", "..", "datasets", "samples", "samples_heat.jld2")
+data = JLD2.load(data_path)
+
 samples_exa_gpu     = data["samples_exa_gpu"]
 samples_exa_cpu     = data["samples_exa_cpu"]
 samples_jump_madnlp = data["samples_jump_madnlp"]
