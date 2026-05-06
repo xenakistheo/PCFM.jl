@@ -2,7 +2,7 @@
 Training script for Functional Flow Matching on the 2D Navier-Stokes equation
 (vorticity form, pseudo-spectral Crank-Nicolson solver).
 
-Data: vorticity fields of shape (s, s, t) = (64, 64, 50).
+Data: vorticity fields of shape (s, s, t) = (32, 32, 50).
 FFM input format after loading: (s, s, t, 1, batch).
 """
 
@@ -18,21 +18,21 @@ Random.seed!(1234)
 # Paths
 # ---------------------------------------------------------------------------
 data_dir    = joinpath(@__DIR__, "..", "..", "datasets", "data")
-train_file  = joinpath(data_dir, "ns_nw100_nf100_s64_t50_mu0.001.h5")
-weight_file = joinpath(@__DIR__, "..", "checkpoints", "ffm_ns_checkpoint.jld2")
+train_file  = joinpath(data_dir, "ns_nw100_nf100_s32_t50_mu0.001.h5")
+weight_file = joinpath(@__DIR__, "..", "checkpoints", "ffm_ns_s32_checkpoint.jld2")
 
 # ---------------------------------------------------------------------------
 # Configuration
 # ---------------------------------------------------------------------------
 batch_size    = 16
-s             = 64    # spatial grid size (s × s)
+s             = 32    # spatial grid size (s × s)
 nt            = 50    # number of recorded time snapshots
 emb_channels  = 32
 n_epochs      = 1000
 force_retrain = false
 
 # Fourier modes: (s_modes, s_modes, t_modes) — keep well below s/2 and nt/2
-ns_modes = (12, 12, 16)
+ns_modes = (8, 8, 12)
 
 println("=" ^ 60)
 println("2D Navier-Stokes — Functional Flow Matching")
@@ -40,7 +40,7 @@ println("=" ^ 60)
 
 # 1. Check dataset
 if !isfile(train_file)
-    error("Training data not found at $train_file.\nRun examples/generate_ns_data.jl first.")
+    error("Training data not found at $train_file.\nRun datasets/generate_ns_data.jl first.")
 end
 println("\n[1/5] Dataset found: $train_file")
 
