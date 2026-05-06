@@ -114,3 +114,7 @@ fig_constraint_mass = plot_constraint_violation(K,
     suptitle="Mass Evolution Constraint Violation - RD")
 
 # save("plots/mass_constraint_rd.png", fig_constraint_mass)
+
+samples_exa_gpu # nx, nt, 1, n_samples = 64, 100, 1, 32
+# Constraint over time 
+mass_evolution_violation_rd(samples_exa_gpu[:, :, 1, 1], (nx, nt, dx, dt, rd_params.rho, rd_params.nu))
