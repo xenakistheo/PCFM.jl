@@ -5,7 +5,6 @@ include(joinpath(@__DIR__, "..", "..", "utils", "plotUtils.jl"))
 
 
 
-
 ###
 # Load Test Set
 using HDF5
@@ -22,9 +21,16 @@ end
 ###
 # Load samples
 data_path = joinpath(@__DIR__, "..", "..", "datasets", "samples", "samples_rd.jld2")
-data = JLD2.load(data_path)
+data_path2 = joinpath(@__DIR__, "..", "..", "datasets", "samples", "alaina_results_rd.jld2")
 
+data = JLD2.load(data_path)
+data2 = JLD2.load(data_path2)
+results = data2["results"]
 data
+
+
+samples_LBFGS = results[1].samples  # (nx, nt, 1, n_samples)
+samples_IPNewton = results[2].samples  # (nx, nt, 1, n_samples)
 
 samples_exa_gpu     = data["samples_exa_gpu"]
 samples_exa_cpu     = data["samples_exa_cpu"]
@@ -97,23 +103,53 @@ function mass_evolution_violation_rd(u, params)
     return residuals
 end
 
-fig_constraint_ic = plot_constraint_violation(K,
-    [samples_exa_gpu, samples_exa_cpu, samples_jump_madnlp, samples_jump_ipopt, samples_ffm],
-    ic_violation_rd,
-    ["Exa - MadNLP (GPU)", "Exa - MadNLP", "JuMP - MadNLP", "JuMP - Ipopt", "FFM"];
-    constraint_params=(u0_fixed, nx),
-    suptitle="IC Constraint Violation - RD")
+# fig_constraint_ic = plot_constraint_violation(K,
+#     [samples_exa_gpu, samples_exa_cpu, samples_jump_madnlp, samples_jump_ipopt, samples_ffm],
+#     ic_violation_rd,
+#     ["Exa - MadNLP (GPU)", "Exa - MadNLP", "JuMP - MadNLP", "JuMP - Ipopt", "FFM"];
+#     constraint_params=(u0_fixed, nx),
+#     suptitle="IC Constraint Violation - RD")
 
 # save("plots/ic_constraint_rd.png", fig_constraint_ic)
 
-fig_constraint_mass = plot_constraint_violation(K,
-    [samples_exa_gpu, samples_exa_cpu, samples_jump_madnlp, samples_jump_ipopt, samples_ffm],
-    mass_evolution_violation_rd,
-    ["Exa - MadNLP (GPU)", "Exa - MadNLP", "JuMP - MadNLP", "JuMP - Ipopt", "FFM"];
-    constraint_params=(nx, nt, dx, dt, rd_params.rho, rd_params.nu),
-    suptitle="Mass Evolution Constraint Violation - RD")
+mass_params = (nx, nt, dx, dt, rd_params.rho, rd_params.nu)
 
-# save("plots/mass_constraint_rd.png", fig_constraint_mass)
+# Plot 1: solver-based methods
+let sols   = [samples_exa_gpu, samples_exa_cpu, samples_jump_madnlp],
+    labels = ["Exa - MadNLP (GPU)", "Exa - MadNLP", "JuMP - MadNLP"]
+    global fig_mass_solvers = Figure(size = (1200, 350))
+    Label(fig_mass_solvers[0, :], "Mass Evolution Violation — RD (Solver Methods)", fontsize = 20, font = :bold)
+    axes = []
+    for (j, (sol, label)) in enumerate(zip(sols, labels))
+        ax = Axis(fig_mass_solvers[1, j]; title = label, xlabel = "Time step", ylabel = "Residual",
+                  width = Fixed(300))
+        lines!(ax, mass_evolution_violation_rd(sol[:, :, 1, K], mass_params))
+        hlines!(ax, [0.0f0]; color = :gray, linestyle = :dash, linewidth = 1)
+        push!(axes, ax)
+    end
+    linkaxes!(axes...)
+    resize_to_layout!(fig_mass_solvers)
+end
+
+# Plot 2: gradient-based methods
+let sols   = [samples_LBFGS, samples_IPNewton],
+    labels = ["LBFGS", "IPNewton"]
+    global fig_mass_grad = Figure(size = (800, 350))
+    Label(fig_mass_grad[0, :], "Mass Evolution Violation — RD (Gradient Methods)", fontsize = 20, font = :bold)
+    axes = []
+    for (j, (sol, label)) in enumerate(zip(sols, labels))
+        ax = Axis(fig_mass_grad[1, j]; title = label, xlabel = "Time step", ylabel = "Residual",
+                  width = Fixed(300))
+        lines!(ax, mass_evolution_violation_rd(sol[:, :, 1, K], mass_params))
+        hlines!(ax, [0.0f0]; color = :gray, linestyle = :dash, linewidth = 1)
+        push!(axes, ax)
+    end
+    linkaxes!(axes...)
+    resize_to_layout!(fig_mass_grad)
+end
+
+save("examples/plot/finalPlots/mass_constraint_rd_solvers.png", fig_mass_solvers)
+save("examples/plot/finalPlots/mass_constraint_rd_grad.png", fig_mass_grad)
 
 samples_exa_gpu # nx, nt, 1, n_samples = 64, 100, 1, 32
 # Constraint over time 
