@@ -446,3 +446,142 @@ function burgers_constraints_IC_Mass_Flux!(core::ExaCore, u_flat, u0_flat, nt, n
 
     return nothing
 end
+
+
+function heat_constraints_IC_Mass_PDE_Energy!(
+    model::Model, u, u0, nt, n_samples, grid_points, grid_spacing, dt, params=(;)
+)
+    nx = grid_points[1]
+    dx = grid_spacing[1]
+
+    κ = get(params, :kappa, 0.01)
+    k = get(params, :k, nt - 1)
+    k_eff = min(k, nt - 1)
+
+    # --------------------------------------------------
+    # 1. Initial condition: u(x,0) = u_IC(x)
+    # --------------------------------------------------
+    @constraint(model, [i in 1:nx, s in 1:n_samples],
+        u[i, 1, s] == u0[i, 1, 1, s]
+    )
+
+    # --------------------------------------------------
+    # 2. Constant mass:
+    #    ∫ u(x,t) dx = ∫ u(x,0) dx
+    # --------------------------------------------------
+    @constraint(model, [t in 1:nt, s in 1:n_samples],
+        sum(u[i, t, s] for i in 1:nx) * dx ==
+        sum(u0[i, 1, 1, s] for i in 1:nx) * dx
+    )
+
+    # --------------------------------------------------
+    # 3. Local heat equation residual:
+    #    (u[i,t+1]-u[i,t])/dt = κ*(u[i+1,t]-2u[i,t]+u[i-1,t])/dx^2
+    # --------------------------------------------------
+    @constraint(model, [t in 1:k_eff, i in 2:nx-1, s in 1:n_samples],
+        (u[i, t+1, s] - u[i, t, s]) / dt -
+        κ * (u[i+1, t, s] - 2*u[i, t, s] + u[i-1, t, s]) / dx^2
+        == 0.0
+    )
+
+    # --------------------------------------------------
+    # 4. Energy dissipation:
+    #    ||u^{t+1}||² - ||u^t||² + 2κdt ||u_x^t||² = 0
+    # --------------------------------------------------
+    @NLconstraint(model, [t in 1:k_eff, s in 1:n_samples],
+        sum(u[i, t+1, s]^2 for i in 1:nx) * dx
+        - sum(u[i, t, s]^2 for i in 1:nx) * dx
+        + 2 * κ * dt *
+          sum(((u[i+1, t, s] - u[i, t, s]) / dx)^2 for i in 1:nx-1) * dx
+        == 0.0
+    )
+
+    return nothing
+end
+
+function heat_constraints_IC_Mass_PDE_Energy!(
+    core::ExaCore, u_flat, u0_flat, nt, n_samples,
+    grid_points, grid_spacing, dt, params=(;); backend=CPU()
+)
+    nx = grid_points[1]
+    dx = grid_spacing[1]
+
+    κ = get(params, :kappa, 0.01)
+    k = get(params, :k, nt - 1)
+    k_eff = min(k, nt - 1)
+
+    idx(i, t, s) = i + (t-1)*nx + (s-1)*nx*nt
+
+    u0_param = parameter(core, u0_flat)
+
+    # --------------------------------------------------
+    # 1. Initial condition: u(i,1,s) = u0(i,s)
+    # --------------------------------------------------
+    constraint(core,
+        (
+            u_flat[idx(i, 1, s)] - u0_param[i, s]
+            for i in 1:nx, s in 1:n_samples
+        );
+        lcon = KernelAbstractions.adapt(backend, zeros(nx * n_samples)),
+        ucon = KernelAbstractions.adapt(backend, zeros(nx * n_samples))
+    )
+
+    # --------------------------------------------------
+    # 2. Constant mass:
+    #    ∑ u[i,t,s] dx = ∑ u0[i,s] dx
+    # --------------------------------------------------
+    ts_pairs = [(t, s) for t in 1:nt for s in 1:n_samples]
+
+    constraint(core,
+        (
+            sum(u_flat[idx(i, d[1], d[2])] for i in 1:nx) * dx
+            - sum(u0_param[i, d[2]] for i in 1:nx) * dx
+            for d in ts_pairs
+        );
+        lcon = KernelAbstractions.adapt(backend, zeros(nt * n_samples)),
+        ucon = KernelAbstractions.adapt(backend, zeros(nt * n_samples))
+    )
+
+    # --------------------------------------------------
+    # 3. Local heat equation residual:
+    #    (u[i,t+1]-u[i,t])/dt - κDxx(u[i,t]) = 0
+    # --------------------------------------------------
+    tis_pairs = [(t, i, s) for t in 1:k_eff for i in 2:nx-1 for s in 1:n_samples]
+
+    constraint(core,
+        (
+            (u_flat[idx(d[2], d[1]+1, d[3])] - u_flat[idx(d[2], d[1], d[3])]) / dt
+            - κ * (
+                u_flat[idx(d[2]+1, d[1], d[3])]
+                - 2*u_flat[idx(d[2], d[1], d[3])]
+                + u_flat[idx(d[2]-1, d[1], d[3])]
+            ) / dx^2
+            for d in tis_pairs
+        );
+        lcon = KernelAbstractions.adapt(backend, zeros(k_eff * (nx-2) * n_samples)),
+        ucon = KernelAbstractions.adapt(backend, zeros(k_eff * (nx-2) * n_samples))
+    )
+
+    # --------------------------------------------------
+    # 4. Energy dissipation:
+    #    ||u^{t+1}||² - ||u^t||² + 2κdt ||u_x^t||² = 0
+    # --------------------------------------------------
+    ts_pairs_energy = [(t, s) for t in 1:k_eff for s in 1:n_samples]
+
+    constraint(core,
+        (
+            sum(u_flat[idx(i, d[1]+1, d[2])]^2 for i in 1:nx) * dx
+            - sum(u_flat[idx(i, d[1], d[2])]^2 for i in 1:nx) * dx
+            + 2 * κ * dt *
+              sum(
+                  ((u_flat[idx(i+1, d[1], d[2])] - u_flat[idx(i, d[1], d[2])]) / dx)^2
+                  for i in 1:nx-1
+              ) * dx
+            for d in ts_pairs_energy
+        );
+        lcon = KernelAbstractions.adapt(backend, zeros(k_eff * n_samples)),
+        ucon = KernelAbstractions.adapt(backend, zeros(k_eff * n_samples))
+    )
+
+    return nothing
+end
