@@ -21,7 +21,7 @@ using Ipopt
 using BenchmarkTools
 #using Reactant
 
-include(joinpath(@__DIR__, "..", "optimisation", "plotUtils.jl"))
+include(joinpath(@__DIR__, "..", "utils", "plotUtils.jl"))
 
 
 backend = CUDABackend()

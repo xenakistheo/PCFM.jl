@@ -48,6 +48,49 @@ function heat_constraints!(core::ExaCore, u_flat, u0_flat, nt, n_samples, grid_p
     return nothing
 end
 
+struct ReactantResidualModel end
+
+_as_tuple(x::Tuple) = x
+_as_tuple(x) = (x,)
+
+_flatbatch(A, B) = reshape(A, div(length(A), B), B)
+
+smooth_pos_reactant(x, eps) = 0.5f0 * (x + sqrt(x^2 + eps^2))
+smooth_neg_reactant(x, eps) = 0.5f0 * (x - sqrt(x^2 + eps^2))
+
+
+function heat_constraints!(
+    ::ReactantResidualModel,
+    u_flat,
+    u0_flat,
+    nt,
+    n_samples,
+    grid_points,
+    grid_spacing,
+    dt,
+    params = nothing;
+    backend = CPU(),
+)
+    grid_points = _as_tuple(grid_points)
+
+    nx = grid_points[1]
+
+    U = reshape(u_flat, nx, nt, n_samples)
+    u0 = reshape(u0_flat, nx, n_samples)
+
+    ic = U[:, 1, :] .- u0
+
+    m0 = sum(u0[1:nx-1, :], dims = 1)
+    mt = sum(U[1:nx-1, 2:nt, :], dims = 1)
+
+    mass = dropdims(mt .- reshape(m0, 1, 1, n_samples), dims = 1)
+
+    return vcat(
+        _flatbatch(ic, n_samples),
+        _flatbatch(mass, n_samples),
+    )
+end
+
 
 function ns_constraints!(model::Model, u, u0, nt, n_samples, grid_points, grid_spacing, dt, params=nothing)
     nx, ny  = grid_points                                                                                                                                            
@@ -100,6 +143,36 @@ function ns_constraints!(core::ExaCore, u_flat, u0_flat, nt, n_samples, grid_poi
     )
 
     return nothing
+end
+
+function ns_constraints!(
+    ::ReactantResidualModel,
+    u_flat,
+    u0_flat,
+    nt,
+    n_samples,
+    grid_points,
+    grid_spacing,
+    dt,
+    params = nothing;
+    backend = CPU(),
+)
+    nx, ny = grid_points
+
+    U = reshape(u_flat, nx, ny, nt, n_samples)
+    u0 = reshape(u0_flat, nx, ny, n_samples)
+
+    ic = U[:, :, 1, :] .- u0
+
+    m0 = sum(u0, dims = (1, 2))
+    mt = sum(U[:, :, 2:nt, :], dims = (1, 2))
+
+    mass = dropdims(mt .- reshape(m0, 1, 1, 1, n_samples), dims = (1, 2))
+
+    return vcat(
+        _flatbatch(ic, n_samples),
+        _flatbatch(mass, n_samples),
+    )
 end
 
 function rd_constraints!(model::Model, u, u0, nt, n_samples, grid_points, grid_spacing, dt, params=(;))
@@ -188,6 +261,80 @@ function rd_constraints!(core::ExaCore, u_flat, u0_flat, nt, n_samples, grid_poi
     return nothing
 end
 
+function rd_constraints!(
+    ::ReactantResidualModel,
+    u_flat,
+    u0_flat,
+    nt,
+    n_samples,
+    grid_points,
+    grid_spacing,
+    dt,
+    params = (;);
+    backend = CPU(),
+)
+    grid_points = _as_tuple(grid_points)
+    grid_spacing = _as_tuple(grid_spacing)
+
+    nx = grid_points[1]
+    dx = Float32(grid_spacing[1])
+    dt = Float32(dt)
+
+    rho = Float32(get(params, :rho, 0.01))
+    nu = Float32(get(params, :nu, 0.005))
+
+    U = reshape(u_flat, nx, nt, n_samples)
+    u0 = reshape(u0_flat, nx, n_samples)
+
+    ic = U[:, 1, :] .- u0
+
+    M_t = dropdims(sum(U[:, 2:nt, :], dims = 1), dims = 1) .* dx
+    M_prev = dropdims(sum(U[:, 1:nt-1, :], dims = 1), dims = 1) .* dx
+
+    S_t =
+        dropdims(
+            sum(U[:, 2:nt, :] .* (1f0 .- U[:, 2:nt, :]), dims = 1),
+            dims = 1,
+        ) .* dx
+
+    S_prev =
+        dropdims(
+            sum(U[:, 1:nt-1, :] .* (1f0 .- U[:, 1:nt-1, :]), dims = 1),
+            dims = 1,
+        ) .* dx
+
+    left_deriv =
+        (
+            -25f0 .* U[1, :, :] .+
+            48f0 .* U[2, :, :] .-
+            36f0 .* U[3, :, :] .+
+            16f0 .* U[4, :, :] .-
+            3f0 .* U[5, :, :]
+        ) ./ (12f0 * dx)
+
+    right_deriv =
+        (
+            25f0 .* U[nx, :, :] .-
+            48f0 .* U[nx-1, :, :] .+
+            36f0 .* U[nx-2, :, :] .-
+            16f0 .* U[nx-3, :, :] .+
+            3f0 .* U[nx-4, :, :]
+        ) ./ (12f0 * dx)
+
+    flux = -nu .* left_deriv .+ nu .* right_deriv
+
+    mass =
+        M_t .-
+        M_prev .-
+        0.5f0 * dt * rho .* (S_t .+ S_prev) .-
+        0.5f0 * dt .* (flux[2:nt, :] .+ flux[1:nt-1, :])
+
+    return vcat(
+        _flatbatch(ic, n_samples),
+        _flatbatch(mass, n_samples),
+    )
+end
+
 function burgers_constraints_BC_Mass!(model::Model, u, u0, nt, n_samples, grid_points, grid_spacing, dt, params=(;))
     nx  = grid_points[1]
     dx = grid_spacing[1]
@@ -262,7 +409,51 @@ function burgers_constraints_BC_Mass!(core::ExaCore, u_flat, u0_flat, nt, n_samp
     return nothing
 end
 
+function burgers_constraints_BC_Mass!(
+    ::ReactantResidualModel,
+    u_flat,
+    u0_flat,
+    nt,
+    n_samples,
+    grid_points,
+    grid_spacing,
+    dt,
+    params = (;);
+    backend = CPU(),
+)
+    grid_points = _as_tuple(grid_points)
+    grid_spacing = _as_tuple(grid_spacing)
 
+    nx = grid_points[1]
+    dx = Float32(grid_spacing[1])
+    dt = Float32(dt)
+
+    left_bc = Float32.(get(params, :left_bc, zeros(Float32, n_samples)))
+
+    U = reshape(u_flat, nx, nt, n_samples)
+
+    left = U[1, :, :] .- reshape(left_bc, 1, n_samples)
+    right = U[nx, :, :] .- U[nx-1, :, :]
+
+    M_t = dropdims(sum(U[:, 2:nt, :], dims = 1), dims = 1) .* dx
+    M_prev = dropdims(sum(U[:, 1:nt-1, :], dims = 1), dims = 1) .* dx
+
+    flux_t =
+        0.5f0 .* U[nx, 2:nt, :].^2 .-
+        0.5f0 .* U[1, 2:nt, :].^2
+
+    flux_prev =
+        0.5f0 .* U[nx, 1:nt-1, :].^2 .-
+        0.5f0 .* U[1, 1:nt-1, :].^2
+
+    mass = M_t .- M_prev .+ 0.5f0 * dt .* (flux_t .+ flux_prev)
+
+    return vcat(
+        _flatbatch(left, n_samples),
+        _flatbatch(right, n_samples),
+        _flatbatch(mass, n_samples),
+    )
+end
 
 smooth_pos(x, eps) = 0.5 * (x + sqrt(x^2 + eps^2))
 smooth_neg(x, eps) = 0.5 * (x - sqrt(x^2 + eps^2))
@@ -367,4 +558,55 @@ function burgers_constraints_IC_Mass_Flux!(core::ExaCore, u_flat, u0_flat, nt, n
     )
 
     return nothing
+end
+
+function burgers_constraints_IC_Mass_Flux!(
+    ::ReactantResidualModel,
+    u_flat,
+    u0_flat,
+    nt,
+    n_samples,
+    grid_points,
+    grid_spacing,
+    dt,
+    params = (;);
+    backend = CPU(),
+)
+    grid_points = _as_tuple(grid_points)
+    grid_spacing = _as_tuple(grid_spacing)
+
+    nx = grid_points[1]
+    dx = Float32(grid_spacing[1])
+    dt = Float32(dt)
+
+    k = get(params, :k, 5)
+    eps = Float32(get(params, :eps, 1f-6))
+    λ = dt / dx
+
+    U = reshape(u_flat, nx, nt, n_samples)
+    u0 = reshape(u0_flat, nx, n_samples)
+
+    ic = U[:, 1, :] .- u0
+
+    M_t = dropdims(sum(U, dims = 1), dims = 1) .* dx
+    M0 = reshape(dropdims(sum(u0, dims = 1), dims = 1), 1, n_samples) .* dx
+
+    mass = M_t .- M0
+
+    k_eff = min(k, nt - 1)
+
+    F =
+        0.5f0 .* smooth_pos_reactant.(U[1:nx-1, 1:k_eff, :], eps).^2 .+
+        0.5f0 .* smooth_neg_reactant.(U[2:nx, 1:k_eff, :], eps).^2
+
+    local_residual =
+        U[2:nx-1, 2:k_eff+1, :] .-
+        U[2:nx-1, 1:k_eff, :] .+
+        λ .* (F[2:nx-1, :, :] .- F[1:nx-2, :, :])
+
+    return vcat(
+        _flatbatch(ic, n_samples),
+        _flatbatch(mass, n_samples),
+        _flatbatch(local_residual, n_samples),
+    )
 end

@@ -14,6 +14,10 @@ using MadNLP, MadNLPGPU, ExaModels
 using JuMP
 using HDF5
 
+using Enzyme
+using NNlib
+using LinearAlgebra: I
+
 # Make training API origin explicit for downstream includes.
 const Training = Lux.Training
 
