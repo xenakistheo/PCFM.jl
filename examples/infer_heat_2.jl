@@ -263,29 +263,29 @@ end
 
 starting_noise = randn(Float32, nx, nt, 1, n_samples);
 
-# begin 
-#     # ExaModels, MadNLP, GPU
-#     @info "ExaModels, MadNLP, GPU"
-#     @btime sample_pcfm(ffm, (parameters = $ps, states = $st),
-#                     $n_samples, 100, heat_constraints_IC_Mass_PDE_Energy!;
-#                     backend=backend,
-#                     verbose = true,
-#                     mode="exa", 
-#                     constraint_parameters = constraint_params,
-#                     initial_vals=$starting_noise);
+begin 
+    # ExaModels, MadNLP, GPU
+    @info "ExaModels, MadNLP, GPU"
+    display(@benchmark sample_pcfm(ffm, (parameters = $ps, states = $st),
+                    $n_samples, 100, heat_constraints_IC_Mass_PDE_Energy!;
+                    backend=backend,
+                    verbose = true,
+                    mode="exa",
+                    constraint_parameters = constraint_params,
+                    initial_vals=$starting_noise));
 
 
 
 
-#     # # ExaModels, MadNLP, CPU
-#     @info "ExaModels, MadNLP, CPU"
-#     @btime sample_pcfm(ffm, (parameters = $ps, states = $st),
-#                     $n_samples, 100, heat_constraints_IC_Mass_PDE_Energy!;
-#                     backend=CPU(),
-#                     verbose = true,
-#                     mode="exa",
-#                     constraint_parameters = constraint_params,
-#                     initial_vals=$starting_noise);
+    # # ExaModels, MadNLP, CPU
+    @info "ExaModels, MadNLP, CPU"
+    display(@benchmark sample_pcfm(ffm, (parameters = $ps, states = $st),
+                    $n_samples, 100, heat_constraints_IC_Mass_PDE_Energy!;
+                    backend=CPU(),
+                    verbose = true,
+                    mode="exa",
+                    constraint_parameters = constraint_params,
+                    initial_vals=$starting_noise));
 
 
 
@@ -313,13 +313,13 @@ starting_noise = randn(Float32, nx, nt, 1, n_samples);
 #                     constraint_parameters = constraint_params,
 #                     initial_vals=$starting_noise);
 
-#     # FFM
-#     @info "FFM"
-#     @btime sample_ffm(ffm, (parameters = $ps, states = $st), $n_samples, 100; 
-#         verbose = false,
-#         initial_vals=$starting_noise);
+    # FFM
+    @info "FFM"
+    display(@benchmark sample_ffm(ffm, (parameters = $ps, states = $st), $n_samples, 100;
+        verbose = false,
+        initial_vals=$starting_noise));
 
-# end 
+end 
 
 
 
@@ -349,26 +349,26 @@ starting_noise = randn(Float32, nx, nt, 1, n_samples);
 
 
 
-    # #JuMP, MadNLP
-    @info "JuMP, MadNLP"
-    @time samples_jump_madnlp = sample_pcfm(ffm, (parameters = ps, states = st),
-                    n_samples, 100, heat_constraints_IC_Mass_PDE_Energy!;
-                    backend=CPU(),
-                    verbose = true,
-                    mode="jump",
-                    optimizer=MadNLP.Optimizer, 
-                    constraint_parameters = constraint_params,
-                    initial_vals=starting_noise);
+    # # #JuMP, MadNLP
+    # @info "JuMP, MadNLP"
+    # @time samples_jump_madnlp = sample_pcfm(ffm, (parameters = ps, states = st),
+    #                 n_samples, 100, heat_constraints_IC_Mass_PDE_Energy!;
+    #                 backend=CPU(),
+    #                 verbose = true,
+    #                 mode="jump",
+    #                 optimizer=MadNLP.Optimizer, 
+    #                 constraint_parameters = constraint_params,
+    #                 initial_vals=starting_noise);
 
-    @info "JuMP, Ipopt"
-    @time samples_jump_ipopt = sample_pcfm(ffm, (parameters = ps, states = st),
-                    n_samples, 100, heat_constraints_IC_Mass_PDE_Energy!;
-                    backend=CPU(),
-                    verbose = true,
-                    mode="jump",
-                    optimizer=Ipopt.Optimizer, 
-                    constraint_parameters = constraint_params,
-                    initial_vals=starting_noise);
+    # @info "JuMP, Ipopt"
+    # @time samples_jump_ipopt = sample_pcfm(ffm, (parameters = ps, states = st),
+    #                 n_samples, 100, heat_constraints_IC_Mass_PDE_Energy!;
+    #                 backend=CPU(),
+    #                 verbose = true,
+    #                 mode="jump",
+    #                 optimizer=Ipopt.Optimizer, 
+    #                 constraint_parameters = constraint_params,
+    #                 initial_vals=starting_noise);
 
     # FFM
     @info "FFM"
