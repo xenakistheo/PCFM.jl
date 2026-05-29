@@ -119,7 +119,7 @@ starting_noise = randn(Float32, nx, nt, 1, n_samples)
 
 begin
     @info "ExaModels, MadNLP, GPU"
-    @btime sample_pcfm($ffm, (parameters=$ps, states=$st),
+    display(@benchmark sample_pcfm($ffm, (parameters=$ps, states=$st),
                        $n_samples, 100, rd_constraints_2!;
                        domain = rd_domain,
                        IC_func = IC_func_rd,
@@ -127,11 +127,11 @@ begin
                        backend = backend,
                        verbose = false,
                        mode = "exa",
-                       initial_vals = $starting_noise)
+                       initial_vals = $starting_noise));
     flush(stdout)
 
     @info "ExaModels, MadNLP, CPU"
-    @btime sample_pcfm($ffm, (parameters=$ps, states=$st),
+    display(@benchmark sample_pcfm($ffm, (parameters=$ps, states=$st),
                        $n_samples, 100, rd_constraints_2!;
                        domain = rd_domain,
                        IC_func = IC_func_rd,
@@ -139,11 +139,11 @@ begin
                        backend = CPU(),
                        verbose = false,
                        mode = "exa",
-                       initial_vals = $starting_noise)
+                       initial_vals = $starting_noise));
     flush(stdout)
 
     @info "JuMP, MadNLP"
-    @btime sample_pcfm($ffm, (parameters=$ps, states=$st),
+    display(@benchmark sample_pcfm($ffm, (parameters=$ps, states=$st),
                        $n_samples, 100, rd_constraints_2!;
                        domain = rd_domain,
                        IC_func = IC_func_rd,
@@ -152,11 +152,11 @@ begin
                        verbose = false,
                        mode = "jump",
                        optimizer = MadNLP.Optimizer,
-                       initial_vals = $starting_noise)
+                       initial_vals = $starting_noise));
     flush(stdout)
 
     @info "JuMP, Ipopt"
-    @btime sample_pcfm($ffm, (parameters=$ps, states=$st),
+    display(@benchmark sample_pcfm($ffm, (parameters=$ps, states=$st),
                        $n_samples, 100, rd_constraints_2!;
                        domain = rd_domain,
                        IC_func = IC_func_rd,
@@ -165,14 +165,14 @@ begin
                        verbose = false,
                        mode = "jump",
                        optimizer = Ipopt.Optimizer,
-                       initial_vals = $starting_noise)
+                       initial_vals = $starting_noise));
     flush(stdout)
 
-    @info "FFM"
-    @btime sample_ffm($ffm, (parameters=$ps, states=$st), $n_samples, 100;
-        verbose = false,
-        initial_vals = $starting_noise)
-    flush(stdout)
+    # @info "FFM"
+    # @btime sample_ffm($ffm, (parameters=$ps, states=$st), $n_samples, 100;
+    #     verbose = false,
+    #     initial_vals = $starting_noise)
+    # flush(stdout)
 end
 
 # Samples
@@ -223,12 +223,12 @@ begin
                        optimizer = Ipopt.Optimizer,
                        initial_vals = starting_noise)
 
-    @info "FFM"
-    samples_ffm = sample_ffm(ffm, (parameters=ps, states=st), n_samples, 100;
-        verbose = false,
-        initial_vals = starting_noise)
+    # @info "FFM"
+    # samples_ffm = sample_ffm(ffm, (parameters=ps, states=st), n_samples, 100;
+    #     verbose = false,
+    #     initial_vals = starting_noise)
 end
-samples_ffm = Array(samples_ffm)
+# samples_ffm = Array(samples_ffm)
 
 ##################
 # Plot solutions
@@ -260,7 +260,7 @@ JLD2.save("samples_rd.jld2",
     "samples_exa_cpu",     samples_exa_cpu,
     "samples_jump_madnlp", samples_jump_madnlp,
     "samples_jump_ipopt", samples_jump_ipopt,
-    "samples_ffm",         samples_ffm,
+    # "samples_ffm",         samples_ffm,
     "u0_fixed",            u0_fixed,
     "rd_params",           rd_params)
 
