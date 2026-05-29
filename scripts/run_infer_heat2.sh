@@ -5,8 +5,8 @@
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=64G
 #SBATCH --time=06:00:00
-#SBATCH --output=logs/rd_%j.out
-#SBATCH --error=logs/rd_%j.err
+#SBATCH --output=logs/heat2_%j.out
+#SBATCH --error=logs/heat2_%j.err
 
 set -euo pipefail
 
@@ -25,7 +25,7 @@ echo "--------------------------------------"
 echo "Running Heat 2 inference..."
 julia --project=. examples/infer_heat_2.jl \
     > logs/heat2_infer.log 2>&1 \
-    && echo "Inference: done" || { echo "Inference: FAILED"; exit 1; }
+    && echo "Inference: done" || { echo "Infemakerence: FAILED"; exit 1; }
 
 echo "--------------------------------------"
 echo "Done: $(date)"
