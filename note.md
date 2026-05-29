@@ -33,3 +33,22 @@ test current scripts for heatequation.
 Check that constraints are being applied correctly.
 Check that training data is being generated correctly for all BVPs. 
 Find out how to train models for each BVP.
+
+
+
+# Compute
+In the original submission, the experiments performed by Theo 
+were all done on a compute node requested with 
+`salloc -p mit_normal_gpu --gres=gpu:1 --cpus-per-task=4 --mem=64G --time=03:00:00`
+
+Alaina's experiments were performed on a compute node requested with
+`XXX`
+
+
+Do this 
+`#SBATCH --gres=gpu:l40s:1`
+instead of 
+`#SBATCH --gres=gpu:1`
+
+
+CPU benchmarks were run on the mit_normal CPU partition, while GPU benchmarks were run on the mit_normal_gpu partition with one L40S GPU. Both used 4 allocated CPU cores and 64 GB RAM, with CPU threading fixed via OMP_NUM_THREADS, MKL_NUM_THREADS, OPENBLAS_NUM_THREADS, and NUMEXPR_NUM_THREADS.
