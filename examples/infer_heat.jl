@@ -124,54 +124,54 @@ starting_noise = randn(Float32, nx, nt, 1, n_samples);
 begin 
     # ExaModels, MadNLP, GPU
     @info "ExaModels, MadNLP, GPU"
-    @btime sample_pcfm(ffm, (parameters = $ps, states = $st),
+    display(@benchmark sample_pcfm(ffm, (parameters = $ps, states = $st),
                     $n_samples, 100, heat_constraints!;
                     backend=backend,
                     verbose = false,
                     mode="exa", 
-                    initial_vals=$starting_noise);
+                    initial_vals=$starting_noise));
 
 
 
 
     # # ExaModels, MadNLP, CPU
     @info "ExaModels, MadNLP, CPU"
-    @btime sample_pcfm(ffm, (parameters = $ps, states = $st),
+    display(@benchmark sample_pcfm(ffm, (parameters = $ps, states = $st),
                     $n_samples, 100, heat_constraints!;
                     backend=CPU(),
                     verbose = false,
                     mode="exa", 
-                    initial_vals=$starting_noise);
+                    initial_vals=$starting_noise));
 
 
 
     # #JuMP, MadNLP
     @info "JuMP, MadNLP"
-    @btime sample_pcfm(ffm, (parameters = $ps, states = $st),
+    display(@benchmark sample_pcfm(ffm, (parameters = $ps, states = $st),
                     $n_samples, 100, heat_constraints!;
                     backend=CPU(),
                     verbose = false,
                     mode="jump",
                     optimizer=MadNLP.Optimizer, 
-                    initial_vals=$starting_noise);
+                    initial_vals=$starting_noise));
 
 
 
     # #JuMP, Ipopt
     @info "JuMP, Ipopt"
-    @btime sample_pcfm($ffm, (parameters = $ps, states = $st),
+    display(@benchmark sample_pcfm($ffm, (parameters = $ps, states = $st),
                     $n_samples, 100, heat_constraints!;
                     backend=CPU(),
                     verbose = false,
                     mode="jump",
                     optimizer=Ipopt.Optimizer,
-                    initial_vals=$starting_noise);
+                    initial_vals=$starting_noise));
 
     # FFM
     @info "FFM"
-    @btime sample_ffm(ffm, (parameters = $ps, states = $st), $n_samples, 100; 
+    display(@benchmark sample_ffm(ffm, (parameters = $ps, states = $st), $n_samples, 100; 
         verbose = false,
-        initial_vals=$starting_noise);
+        initial_vals=$starting_noise));
 
 end 
 
@@ -211,6 +211,16 @@ begin
                     optimizer=MadNLP.Optimizer, 
                     initial_vals=starting_noise);
 
+        # #JuMP, Ipopt
+    @info "JuMP, Ipopt"
+    samples_jump_ipopt = sample_pcfm(ffm, (parameters = ps, states = st),
+                    n_samples, 100, heat_constraints!;
+                    backend=CPU(),
+                    verbose = false,
+                    mode="jump",
+                    optimizer=Ipopt.Optimizer,
+                    initial_vals=$starting_noise);
+
     # FFM
     @info "FFM"
     samples_ffm = sample_ffm(ffm, (parameters = ps, states = st), n_samples, 100; 
@@ -238,6 +248,7 @@ JLD2.save("samples_heat.jld2",
     "samples_exa_gpu",    samples_exa_gpu,
     "samples_exa_cpu",    samples_exa_cpu,
     "samples_jump_madnlp", samples_jump_madnlp,
+    "samples_jump_ipopt", samples_jump_ipopt,
     "samples_ffm",        samples_ffm,
     "u_analytic",         u_analytic)
 
@@ -246,6 +257,7 @@ JLD2.save("samples_heat.jld2",
 # samples_exa_gpu     = data["samples_exa_gpu"]
 # samples_exa_cpu     = data["samples_exa_cpu"]
 # samples_jump_madnlp = data["samples_jump_madnlp"]
+# samples_jump_ipopt = data["samples_jump_ipopt"]
 # samples_ffm         = data["samples_ffm"]
 # u_analytic          = data["u_analytic"]
 
