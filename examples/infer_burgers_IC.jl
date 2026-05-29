@@ -102,30 +102,30 @@ const burgers_ic_flux_params = (k=5, eps=1f-6)
 starting_noise = randn(Float32, nx, nt, 1, n_samples)
 
 # Benchmarks
-# begin
-    # @info "ExaModels, MadNLP, GPU"
-    # @btime sample_pcfm($ffm, (parameters=$ps, states=$st),
-    #                    $n_samples, 100, burgers_constraints_IC_Mass_Flux!;
-    #                    domain = burgers_domain,
-    #                    IC_func = IC_func_burgers,
-    #                    constraint_parameters = burgers_ic_flux_params,
-    #                    backend = backend,
-    #                    verbose = false,
-    #                    mode = "exa",
-    #                    initial_vals = $starting_noise)
-    # flush(stdout)
+begin
+    @info "ExaModels, MadNLP, GPU"
+    display(@benchmark sample_pcfm($ffm, (parameters=$ps, states=$st),
+                       $n_samples, 100, burgers_constraints_IC_Mass_Flux!;
+                       domain = burgers_domain,
+                       IC_func = IC_func_burgers,
+                       constraint_parameters = burgers_ic_flux_params,
+                       backend = backend,
+                       verbose = false,
+                       mode = "exa",
+                       initial_vals = $starting_noise));
+    flush(stdout)
 
-    # @info "ExaModels, MadNLP, CPU"
-    # @btime sample_pcfm($ffm, (parameters=$ps, states=$st),
-    #                    $n_samples, 100, burgers_constraints_IC_Mass_Flux!;
-    #                    domain = burgers_domain,
-    #                    IC_func = IC_func_burgers,
-    #                    constraint_parameters = burgers_ic_flux_params,
-    #                    backend = CPU(),
-    #                    verbose = true,
-    #                    mode = "exa",
-    #                    initial_vals = $starting_noise)
-    # # flush(stdout)
+    @info "ExaModels, MadNLP, CPU"
+    display(@benchmark sample_pcfm($ffm, (parameters=$ps, states=$st),
+                       $n_samples, 100, burgers_constraints_IC_Mass_Flux!;
+                       domain = burgers_domain,
+                       IC_func = IC_func_burgers,
+                       constraint_parameters = burgers_ic_flux_params,
+                       backend = CPU(),
+                       verbose = true,
+                       mode = "exa",
+                       initial_vals = $starting_noise));
+    # flush(stdout)
 
     # @info "JuMP, MadNLP"
     # @btime sample_pcfm($ffm, (parameters=$ps, states=$st),
@@ -158,7 +158,7 @@ starting_noise = randn(Float32, nx, nt, 1, n_samples)
     #     verbose = false,
     #     initial_vals = $starting_noise)
     # flush(stdout)
-# end
+end
 
 # Samples
 begin
