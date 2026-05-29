@@ -165,11 +165,11 @@ begin
                     optimizer=Ipopt.Optimizer,
                     initial_vals=$starting_noise));
 
-    # FFM
-    @info "FFM"
-    display(@benchmark sample_ffm(ffm, (parameters = $ps, states = $st), $n_samples, 100; 
-        verbose = false,
-        initial_vals=$starting_noise));
+    # # FFM
+    # @info "FFM"
+    # display(@benchmark sample_ffm(ffm, (parameters = $ps, states = $st), $n_samples, 100; 
+    #     verbose = false,
+    #     initial_vals=$starting_noise));
 
 end 
 
@@ -217,15 +217,15 @@ begin
                     verbose = false,
                     mode="jump",
                     optimizer=Ipopt.Optimizer,
-                    initial_vals=$starting_noise);
+                    initial_vals=starting_noise);
 
-    # FFM
-    @info "FFM"
-    samples_ffm = sample_ffm(ffm, (parameters = ps, states = st), n_samples, 100; 
-        verbose = false,
-        initial_vals=starting_noise);
+    # # FFM
+    # @info "FFM"
+    # samples_ffm = sample_ffm(ffm, (parameters = ps, states = st), n_samples, 100; 
+    #     verbose = false,
+    #     initial_vals=starting_noise);
 end 
-samples_ffm = Array(samples_ffm)
+# samples_ffm = Array(samples_ffm)
 
 
 ##################
@@ -247,7 +247,7 @@ JLD2.save("samples_heat.jld2",
     "samples_exa_cpu",    samples_exa_cpu,
     "samples_jump_madnlp", samples_jump_madnlp,
     "samples_jump_ipopt", samples_jump_ipopt,
-    "samples_ffm",        samples_ffm,
+    # "samples_ffm",        samples_ffm,
     "u_analytic",         u_analytic)
 
 # Load samples
