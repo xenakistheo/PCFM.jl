@@ -74,57 +74,13 @@ let sols   = [u_analytic, samples_exa_gpu, samples_exa_cpu, samples_jump_madnlp,
     grid   = [(1,1), (1,2), (1,3), (2,1), (2,2), (2,3)]
     global fig_samples = Figure(size = (1200, 700))
     for (sol, label, pos) in zip(sols, labels, grid)
-        ax = Axis(fig_samples[pos...]; title = label, titlesize = 22,
-                  xlabel = "Time", ylabel = "X")
+        ax = Axis(fig_samples[pos...]; title = label, titlesize = 24,
+                  xticksvisible = false, xticklabelsvisible = false,
+                  yticksvisible = false, yticklabelsvisible = false)
         heatmap!(ax, T, X, sol[:, :, 1, K]', colormap = :viridis)
     end
     resize_to_layout!(fig_samples)
 end
 
 save("examples/plot/finalPlots/samples_heat_grid.png", fig_samples)
-# save("plots/samples_heat.png", fig_samples)
 
-
-##### Deviation from Analytic
-fig_samples_deviation = plot_sample(K, [samples_exa_gpu .- u_analytic, samples_jump_madnlp .- u_analytic, samples_ffm .- u_analytic],
-    ["ExaModels", "JuMP", "FFM"]; suptitle="Deviation from analytic solution - Heat Eq.")
-
-# save("plots/samples_heat_deviation.png", fig_samples)
-
-
-
-function mass_constraint(u, params)
-    Nx, Nt = params
-    return [sum((u[i, j] - u[i,1]) for i in 1:(Nx-1)) for j in 1:Nt]
-end
-
-fig_constraint_mass = plot_constraint_violation(K, [samples_exa_gpu, samples_jump_madnlp, samples_ffm],
-    mass_constraint,
-    ["ExaModels", "JuMP", "FFM"]
-    ; constraint_params=(nx, nt, dx, dt),
-    suptitle="Mass Constraint Violation - Heat Eq.")
-
-# save("plots/mass_constraint_violation_heat.png", fig_constraint_mass)
-
-
-#TODO
-# Need to change plotting function. Instead of plotting deviation over time, 
-# for initial value constraints we want to print deviation over x. 
-
-function ic_violation(u, params)
-    nx, nt = params[1], params[2]
-    return [sum(abs(u[j, i] - u[1, i]) for i in 1:nx) for j in 1:nt]
-end
-
-fig_constraint_ic = plot_constraint_violation(K,
-    [u_analytic, samples_exa_gpu, samples_exa_cpu, samples_jump_madnlp, samples_ffm],
-    ic_violation,
-    ["analytic", "ExaGPU", "ExaCPU", "JuMP", "FFM"];
-    constraint_params=(nx, nt, dx, dt),
-    suptitle = "IC Constrain Violation - Heat Eq.")
-
-save("plots/IC_constraint_violation_heat.png", fig_constraint_ic)
-
-
-#TODO 
-# Calculate some metrics that show quantitatively how much constrains are being violated - as is being done in PCFM paper. 

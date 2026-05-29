@@ -33,8 +33,8 @@ T = range(t_range[1], t_range[2]; length = nt)
 ##### Simulated solution
 K = 1
 
-fig_samples = plot_sample(K, [samples_exa_gpu, samples_exa_cpu, samples_jump_madnlp, samples_IPNewton, samples_LBFGS],
-    ["ExaModels GPU", "ExaModels CPU", "JuMP", "IPNewton", "LBFGS"]; suptitle="Burgers Eq. Samples")
+# fig_samples = plot_sample(K, [samples_exa_gpu, samples_exa_cpu, samples_jump_madnlp, samples_IPNewton, samples_LBFGS],
+#     ["ExaModels GPU", "ExaModels CPU", "JuMP", "IPNewton", "LBFGS"]; suptitle="Burgers Eq. Samples")
 
 # save("plots/samples_burgers.png", fig_samples)
 
@@ -98,36 +98,12 @@ method_labels = ["ExaModels GPU", "ExaModels CPU", "JuMP", "IPNewton", "LBFGS"]
 grid_pos      = [(1,1), (1,2), (1,3), (2,1), (2,2)]
 
 fig_mass = Figure(size = (1200, 600))
-Label(fig_mass[0, :], "Mass Evolution Violation — Burgers Eq.", fontsize = 20, font = :bold)
 
-for (k, (sol, label, pos)) in enumerate(zip(all_samples, method_labels, grid_pos))
+for (sol, label, pos) in zip(all_samples, method_labels, grid_pos)
     ax = Axis(fig_mass[pos...]; title = label, xlabel = "Time step", ylabel = "Residual")
     lines!(ax, mass_violation(sol[:, :, 1, K], (nx, nt, dx, dt)))
     hlines!(ax, [0.0f0]; color = :gray, linestyle = :dash, linewidth = 1)
 end
 
+resize_to_layout!(fig_mass)
 save("examples/plot/finalPlots/mass_violation_burgers_grid.png", fig_mass)
-
-function plot_constraint_violation(frame, solutions, H, titles; constraint_params=nothing, suptitle=nothing)
-    f = Figure(size = (2400, 600))
-    N = size(solutions)[1]
-    @assert N == length(titles)
-
-    axes = []
-    for i in 1:N
-        ax = Axis(f[1, i], 
-                title = titles[i],
-                xlabel = "Time", 
-                ylabel = "X")
-        push!(axes, ax)
-    end 
-
-    for i in 1:N
-        lines!(axes[i], H(solutions[i][:,:,1,frame], constraint_params))
-    end
-
-    if !isnothing(suptitle)
-        Label(f[0, :], suptitle, fontsize=20, font=:bold)
-    end
-    return f
-end
