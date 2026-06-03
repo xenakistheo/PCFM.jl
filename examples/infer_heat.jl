@@ -178,7 +178,7 @@ end
 begin 
         # ExaModels, MadNLP, GPU
     @info "ExaModels, MadNLP, GPU"
-    samples_exa_gpu = sample_pcfm(ffm, (parameters = ps, states = st),
+    @time samples_exa_gpu = sample_pcfm(ffm, (parameters = ps, states = st),
                     n_samples, 100, heat_constraints!;
                     backend=backend,
                     verbose = false,
@@ -190,7 +190,7 @@ begin
 
     # # ExaModels, MadNLP, CPU
     @info "ExaModels, MadNLP, CPU"
-    samples_exa_cpu = sample_pcfm(ffm, (parameters = ps, states = st),
+    @time samples_exa_cpu = sample_pcfm(ffm, (parameters = ps, states = st),
                     n_samples, 100, heat_constraints!;
                     backend=CPU(),
                     verbose = false,
@@ -201,7 +201,7 @@ begin
 
     # #JuMP, MadNLP
     @info "JuMP, MadNLP"
-    samples_jump_madnlp = sample_pcfm(ffm, (parameters = ps, states = st),
+    @time samples_jump_madnlp = sample_pcfm(ffm, (parameters = ps, states = st),
                     n_samples, 100, heat_constraints!;
                     backend=CPU(),
                     verbose = false,
@@ -211,7 +211,7 @@ begin
 
         # #JuMP, Ipopt
     @info "JuMP, Ipopt"
-    samples_jump_ipopt = sample_pcfm(ffm, (parameters = ps, states = st),
+    @time samples_jump_ipopt = sample_pcfm(ffm, (parameters = ps, states = st),
                     n_samples, 100, heat_constraints!;
                     backend=CPU(),
                     verbose = false,

@@ -178,7 +178,7 @@ end
 # Samples
 begin
     @info "ExaModels, MadNLP, GPU"
-    samples_exa_gpu = sample_pcfm(ffm, (parameters=ps, states=st),
+    @time samples_exa_gpu = sample_pcfm(ffm, (parameters=ps, states=st),
                        n_samples, 100, rd_constraints_2!;
                        domain = rd_domain,
                        IC_func = IC_func_rd,
@@ -189,7 +189,7 @@ begin
                        initial_vals = starting_noise)
 
     @info "ExaModels, MadNLP, CPU"
-    samples_exa_cpu = sample_pcfm(ffm, (parameters=ps, states=st),
+    @time samples_exa_cpu = sample_pcfm(ffm, (parameters=ps, states=st),
                        n_samples, 100, rd_constraints_2!;
                        domain = rd_domain,
                        IC_func = IC_func_rd,
@@ -200,7 +200,7 @@ begin
                        initial_vals = starting_noise)
 
     @info "JuMP, MadNLP"
-    samples_jump_madnlp = sample_pcfm(ffm, (parameters=ps, states=st),
+    @time samples_jump_madnlp = sample_pcfm(ffm, (parameters=ps, states=st),
                        n_samples, 100, rd_constraints_2!;
                        domain = rd_domain,
                        IC_func = IC_func_rd,
@@ -212,7 +212,7 @@ begin
                        initial_vals = starting_noise)
 
     @info "JuMP, Ipopt"
-    samples_jump_ipopt = sample_pcfm(ffm, (parameters=ps, states=st),
+    @time samples_jump_ipopt = sample_pcfm(ffm, (parameters=ps, states=st),
                        n_samples, 100, rd_constraints_2!;
                        domain = rd_domain,
                        IC_func = IC_func_rd,
@@ -224,7 +224,7 @@ begin
                        initial_vals = starting_noise)
 
     # @info "FFM"
-    # samples_ffm = sample_ffm(ffm, (parameters=ps, states=st), n_samples, 100;
+    # @time samples_ffm = sample_ffm(ffm, (parameters=ps, states=st), n_samples, 100;
     #     verbose = false,
     #     initial_vals = starting_noise)
 end
