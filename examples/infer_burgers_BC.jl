@@ -238,14 +238,14 @@ end
 ##################
 
 # Save samples
-JLD2.save("samples_burgers_BC.jld2",
-    "ref_samples",         ref_samples,
-    "samples_exa_gpu",     samples_exa_gpu,
-    "samples_exa_cpu",     samples_exa_cpu,
-    "samples_jump_madnlp", samples_jump_madnlp,
-    "samples_jump_ipopt",  samples_jump_ipopt
-    # "samples_ffm",         samples_ffm
-)
+# JLD2.save("samples_burgers_BC.jld2",
+#     "ref_samples",         ref_samples,
+#     "samples_exa_gpu",     samples_exa_gpu,
+#     "samples_exa_cpu",     samples_exa_cpu,
+#     "samples_jump_madnlp", samples_jump_madnlp,
+#     "samples_jump_ipopt",  samples_jump_ipopt
+#     # "samples_ffm",         samples_ffm
+# )
 
 # Load samples
 # data = JLD2.load("samples_burgers_BC.jld2")

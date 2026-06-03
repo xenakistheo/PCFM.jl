@@ -242,13 +242,13 @@ u_analytic
 
 
 # Save samples
-JLD2.save("samples_heat.jld2",
-    "samples_exa_gpu",    samples_exa_gpu,
-    "samples_exa_cpu",    samples_exa_cpu,
-    "samples_jump_madnlp", samples_jump_madnlp,
-    "samples_jump_ipopt", samples_jump_ipopt,
-    # "samples_ffm",        samples_ffm,
-    "u_analytic",         u_analytic)
+# JLD2.save("samples_heat.jld2",
+#     "samples_exa_gpu",    samples_exa_gpu,
+#     "samples_exa_cpu",    samples_exa_cpu,
+#     "samples_jump_madnlp", samples_jump_madnlp,
+#     "samples_jump_ipopt", samples_jump_ipopt,
+#     # "samples_ffm",        samples_ffm,
+#     "u_analytic",         u_analytic)
 
 # Load samples
 # data = JLD2.load("samples_heat.jld2")
