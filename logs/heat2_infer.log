@@ -1,0 +1,264 @@
+Precompiling packages...
+  26061.8 ms  ✓ PCFM
+  1 dependency successfully precompiled in 56 seconds. 558 already precompiled.
+[ Info: ExaModels, MadNLP, GPU
+[ Info: ExaModels, MadNLP, CPU
+[ Info: FFM
+[ Info: ExaModels, MadNLP, GPU
+[ Info: ExaModels, MadNLP, CPU
+[ Info: FFM
+k = 5
+============================================================
+Heat Equation — Functional Flow Matching
+============================================================
+
+[2/5] Creating FFM model...
+  Model created successfully
+
+[3/5] Loading checkpoint from: /orcd/home/002/txenakis/projects/18337/PCFM.jl/examples/checkpoints/ffm_heat_checkpoint.jld2
+  Loaded trained parameters and states
+
+[5/5] Generating samples...
+
+------------------------
+------Sampling PCFM------
+Modelling: exa
+Optimizer: MadNLPMOI.Optimizer
+Backend: CUDABackend(false, false)
+------------------------
+
+PCFM step: 0/100
+PCFM step: 5/100
+PCFM step: 10/100
+PCFM step: 15/100
+PCFM step: 20/100
+PCFM step: 25/100
+PCFM step: 30/100
+PCFM step: 35/100
+PCFM step: 40/100
+PCFM step: 45/100
+PCFM step: 50/100
+PCFM step: 55/100
+PCFM step: 60/100
+PCFM step: 65/100
+PCFM step: 70/100
+PCFM step: 75/100
+PCFM step: 80/100
+PCFM step: 85/100
+PCFM step: 90/100
+PCFM step: 95/100
+
+------------------------
+------Sampling PCFM------
+Modelling: exa
+Optimizer: MadNLPMOI.Optimizer
+Backend: CUDABackend(false, false)
+------------------------
+
+PCFM step: 0/100
+PCFM step: 5/100
+PCFM step: 10/100
+PCFM step: 15/100
+PCFM step: 20/100
+PCFM step: 25/100
+PCFM step: 30/100
+PCFM step: 35/100
+PCFM step: 40/100
+PCFM step: 45/100
+PCFM step: 50/100
+PCFM step: 55/100
+PCFM step: 60/100
+PCFM step: 65/100
+PCFM step: 70/100
+PCFM step: 75/100
+PCFM step: 80/100
+PCFM step: 85/100
+PCFM step: 90/100
+PCFM step: 95/100
+
+------------------------
+------Sampling PCFM------
+Modelling: exa
+Optimizer: MadNLPMOI.Optimizer
+Backend: CUDABackend(false, false)
+------------------------
+
+PCFM step: 0/100
+PCFM step: 5/100
+PCFM step: 10/100
+PCFM step: 15/100
+PCFM step: 20/100
+PCFM step: 25/100
+PCFM step: 30/100
+PCFM step: 35/100
+PCFM step: 40/100
+PCFM step: 45/100
+PCFM step: 50/100
+PCFM step: 55/100
+PCFM step: 60/100
+PCFM step: 65/100
+PCFM step: 70/100
+PCFM step: 75/100
+PCFM step: 80/100
+PCFM step: 85/100
+PCFM step: 90/100
+PCFM step: 95/100
+BenchmarkTools.Trial: 1 sample with 1 evaluation per sample.
+ Single result which took 109.838 s (0.70% GC) to evaluate,
+ with a memory estimate of 2.91 GiB, over 27980247 allocations.
+
+------------------------
+------Sampling PCFM------
+Modelling: exa
+Optimizer: MadNLPMOI.Optimizer
+Backend: CPU(false)
+------------------------
+
+PCFM step: 0/100
+PCFM step: 5/100
+PCFM step: 10/100
+PCFM step: 15/100
+PCFM step: 20/100
+PCFM step: 25/100
+PCFM step: 30/100
+PCFM step: 35/100
+PCFM step: 40/100
+PCFM step: 45/100
+PCFM step: 50/100
+PCFM step: 55/100
+PCFM step: 60/100
+PCFM step: 65/100
+PCFM step: 70/100
+PCFM step: 75/100
+PCFM step: 80/100
+PCFM step: 85/100
+PCFM step: 90/100
+PCFM step: 95/100
+
+------------------------
+------Sampling PCFM------
+Modelling: exa
+Optimizer: MadNLPMOI.Optimizer
+Backend: CPU(false)
+------------------------
+
+PCFM step: 0/100
+PCFM step: 5/100
+PCFM step: 10/100
+PCFM step: 15/100
+PCFM step: 20/100
+PCFM step: 25/100
+PCFM step: 30/100
+PCFM step: 35/100
+PCFM step: 40/100
+PCFM step: 45/100
+PCFM step: 50/100
+PCFM step: 55/100
+PCFM step: 60/100
+PCFM step: 65/100
+PCFM step: 70/100
+PCFM step: 75/100
+PCFM step: 80/100
+PCFM step: 85/100
+PCFM step: 90/100
+PCFM step: 95/100
+
+------------------------
+------Sampling PCFM------
+Modelling: exa
+Optimizer: MadNLPMOI.Optimizer
+Backend: CPU(false)
+------------------------
+
+PCFM step: 0/100
+PCFM step: 5/100
+PCFM step: 10/100
+PCFM step: 15/100
+PCFM step: 20/100
+PCFM step: 25/100
+PCFM step: 30/100
+PCFM step: 35/100
+PCFM step: 40/100
+PCFM step: 45/100
+PCFM step: 50/100
+PCFM step: 55/100
+PCFM step: 60/100
+PCFM step: 65/100
+PCFM step: 70/100
+PCFM step: 75/100
+PCFM step: 80/100
+PCFM step: 85/100
+PCFM step: 90/100
+PCFM step: 95/100
+BenchmarkTools.Trial: 1 sample with 1 evaluation per sample.
+ Single result which took 3494.634 s (0.21% GC) to evaluate,
+ with a memory estimate of 39.08 GiB, over 2053392 allocations.
+BenchmarkTools.Trial: 2 samples with 1 evaluation per sample.
+ Range (min … max):  3.477 s …    3.477 s  ┊ GC (min … max): 4.90% … 4.27%
+ Time  (median):     3.477 s               ┊ GC (median):    4.58%
+ Time  (mean ± σ):   3.477 s ± 146.283 μs  ┊ GC (mean ± σ):  4.58% ± 0.45%
+
+  █                                                        █  
+  █▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁█ ▁
+  3.48 s         Histogram: frequency by time         3.48 s <
+
+ Memory estimate: 25.65 MiB, allocs estimate: 682778.
+
+------------------------
+------Sampling PCFM------
+Modelling: exa
+Optimizer: MadNLPMOI.Optimizer
+Backend: CUDABackend(false, false)
+------------------------
+
+PCFM step: 0/100
+PCFM step: 5/100
+PCFM step: 10/100
+PCFM step: 15/100
+PCFM step: 20/100
+PCFM step: 25/100
+PCFM step: 30/100
+PCFM step: 35/100
+PCFM step: 40/100
+PCFM step: 45/100
+PCFM step: 50/100
+PCFM step: 55/100
+PCFM step: 60/100
+PCFM step: 65/100
+PCFM step: 70/100
+PCFM step: 75/100
+PCFM step: 80/100
+PCFM step: 85/100
+PCFM step: 90/100
+PCFM step: 95/100
+112.387029 seconds (27.69 M allocations: 2.916 GiB, 0.81% gc time, 0.03% compilation time)
+
+------------------------
+------Sampling PCFM------
+Modelling: exa
+Optimizer: MadNLPMOI.Optimizer
+Backend: CPU(false)
+------------------------
+
+PCFM step: 0/100
+PCFM step: 5/100
+PCFM step: 10/100
+PCFM step: 15/100
+PCFM step: 20/100
+PCFM step: 25/100
+PCFM step: 30/100
+PCFM step: 35/100
+PCFM step: 40/100
+PCFM step: 45/100
+PCFM step: 50/100
+PCFM step: 55/100
+PCFM step: 60/100
+PCFM step: 65/100
+PCFM step: 70/100
+PCFM step: 75/100
+PCFM step: 80/100
+PCFM step: 85/100
+PCFM step: 90/100
+PCFM step: 95/100
+3484.700526 seconds (2.05 M allocations: 39.076 GiB, 0.21% gc time, 0.00% compilation time)
+  3.181344 seconds (682.92 k allocations: 25.662 MiB, 5.81% gc time, 0.12% compilation time)

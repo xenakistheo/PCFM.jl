@@ -1,0 +1,179 @@
+============================================================
+Burgers Equation — Functional Flow Matching
+============================================================
+
+[1/3] Creating FFM model...
+  Model created successfully
+
+[2/3] Loading checkpoint from: /orcd/home/002/txenakis/projects/18337/PCFM.jl/examples/checkpoints/ffm_burgers_checkpoint.jld2
+  Loaded trained parameters and states
+
+[3/3] Generating samples...
+backend = CUDABackend(false, false)
+
+------------------------
+------Sampling PCFM------
+Modelling: exa
+Optimizer: MadNLPMOI.Optimizer
+Backend: CUDABackend(false, false)
+------------------------
+
+
+------------------------
+------Sampling PCFM------
+Modelling: exa
+Optimizer: MadNLPMOI.Optimizer
+Backend: CUDABackend(false, false)
+------------------------
+
+
+------------------------
+------Sampling PCFM------
+Modelling: exa
+Optimizer: MadNLPMOI.Optimizer
+Backend: CUDABackend(false, false)
+------------------------
+
+BenchmarkTools.Trial: 1 sample with 1 evaluation per sample.
+ Single result which took 155.396 s (0.49% GC) to evaluate,
+ with a memory estimate of 1.40 GiB, over 16075886 allocations.
+
+------------------------
+------Sampling PCFM------
+Modelling: exa
+Optimizer: MadNLPMOI.Optimizer
+Backend: CPU(false)
+------------------------
+
+
+------------------------
+------Sampling PCFM------
+Modelling: exa
+Optimizer: MadNLPMOI.Optimizer
+Backend: CPU(false)
+------------------------
+
+
+------------------------
+------Sampling PCFM------
+Modelling: exa
+Optimizer: MadNLPMOI.Optimizer
+Backend: CPU(false)
+------------------------
+
+BenchmarkTools.Trial: 1 sample with 1 evaluation per sample.
+ Single result which took 122.940 s (3.96% GC) to evaluate,
+ with a memory estimate of 11.26 GiB, over 894841 allocations.
+
+------------------------
+------Sampling PCFM------
+Modelling: jump
+Optimizer: MadNLPMOI.Optimizer
+Backend: CPU(false)
+------------------------
+
+
+------------------------
+------Sampling PCFM------
+Modelling: jump
+Optimizer: MadNLPMOI.Optimizer
+Backend: CPU(false)
+------------------------
+
+
+------------------------
+------Sampling PCFM------
+Modelling: jump
+Optimizer: MadNLPMOI.Optimizer
+Backend: CPU(false)
+------------------------
+
+BenchmarkTools.Trial: 1 sample with 1 evaluation per sample.
+ Single result which took 505.965 s (21.66% GC) to evaluate,
+ with a memory estimate of 147.93 GiB, over 1711987646 allocations.
+
+******************************************************************************
+This program contains Ipopt, a library for large-scale nonlinear optimization.
+ Ipopt is released as open source code under the Eclipse Public License (EPL).
+         For more information visit https://github.com/coin-or/Ipopt
+******************************************************************************
+
+
+------------------------
+------Sampling PCFM------
+Modelling: jump
+Optimizer: IpoptMathOptInterfaceExt.Optimizer
+Backend: CPU(false)
+------------------------
+
+
+------------------------
+------Sampling PCFM------
+Modelling: jump
+Optimizer: IpoptMathOptInterfaceExt.Optimizer
+Backend: CPU(false)
+------------------------
+
+
+------------------------
+------Sampling PCFM------
+Modelling: jump
+Optimizer: IpoptMathOptInterfaceExt.Optimizer
+Backend: CPU(false)
+------------------------
+
+BenchmarkTools.Trial: 1 sample with 1 evaluation per sample.
+ Single result which took 1311.453 s (8.59% GC) to evaluate,
+ with a memory estimate of 108.22 GiB, over 1646628836 allocations.
+BenchmarkTools.Trial: 2 samples with 1 evaluation per sample.
+ Range (min … max):  3.820 s …  3.822 s  ┊ GC (min … max): 4.99% … 5.11%
+ Time  (median):     3.821 s             ┊ GC (median):    5.05%
+ Time  (mean ± σ):   3.821 s ± 1.419 ms  ┊ GC (mean ± σ):  5.05% ± 0.09%
+
+  █                                                      █  
+  █▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁█ ▁
+  3.82 s        Histogram: frequency by time        3.82 s <
+
+ Memory estimate: 25.63 MiB, allocs estimate: 681476.
+[ Info: ExaModels, MadNLP, GPU
+[ Info: ExaModels, MadNLP, CPU
+[ Info: JuMP, MadNLP
+[ Info: JuMP, Ipopt
+[ Info: FFM
+[ Info: ExaModels, MadNLP, GPU
+[ Info: ExaModels, MadNLP, CPU
+[ Info: JuMP, MadNLP
+[ Info: JuMP, Ipopt
+[ Info: Reference IC: p_loc = 0.4822 (index 16 / 30)
+
+------------------------
+------Sampling PCFM------
+Modelling: exa
+Optimizer: MadNLPMOI.Optimizer
+Backend: CUDABackend(false, false)
+------------------------
+
+
+------------------------
+------Sampling PCFM------
+Modelling: exa
+Optimizer: MadNLPMOI.Optimizer
+Backend: CPU(false)
+------------------------
+
+
+------------------------
+------Sampling PCFM------
+Modelling: jump
+Optimizer: MadNLPMOI.Optimizer
+Backend: CPU(false)
+------------------------
+
+
+------------------------
+------Sampling PCFM------
+Modelling: jump
+Optimizer: IpoptMathOptInterfaceExt.Optimizer
+Backend: CPU(false)
+------------------------
+

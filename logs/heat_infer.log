@@ -1,0 +1,166 @@
+
+******************************************************************************
+This program contains Ipopt, a library for large-scale nonlinear optimization.
+ Ipopt is released as open source code under the Eclipse Public License (EPL).
+         For more information visit https://github.com/coin-or/Ipopt
+******************************************************************************
+
+[ Info: ExaModels, MadNLP, GPU
+[ Info: ExaModels, MadNLP, CPU
+[ Info: JuMP, MadNLP
+[ Info: JuMP, Ipopt
+[ Info: ExaModels, MadNLP, GPU
+[ Info: ExaModels, MadNLP, CPU
+[ Info: JuMP, MadNLP
+[ Info: JuMP, Ipopt
+============================================================
+Heat Equation — Functional Flow Matching
+============================================================
+
+[2/5] Creating FFM model...
+  Model created successfully
+
+[3/5] Loading checkpoint from: /orcd/home/002/txenakis/projects/18337/PCFM.jl/examples/checkpoints/ffm_heat_checkpoint.jld2
+  Loaded trained parameters and states
+
+[5/5] Generating samples...
+
+------------------------
+------Sampling PCFM------
+Modelling: exa
+Optimizer: MadNLPMOI.Optimizer
+Backend: CUDABackend(false, false)
+------------------------
+
+
+------------------------
+------Sampling PCFM------
+Modelling: exa
+Optimizer: MadNLPMOI.Optimizer
+Backend: CUDABackend(false, false)
+------------------------
+
+
+------------------------
+------Sampling PCFM------
+Modelling: exa
+Optimizer: MadNLPMOI.Optimizer
+Backend: CUDABackend(false, false)
+------------------------
+
+BenchmarkTools.Trial: 1 sample with 1 evaluation per sample.
+ Single result which took 11.533 s (2.70% GC) to evaluate,
+ with a memory estimate of 393.15 MiB, over 5177143 allocations.
+
+------------------------
+------Sampling PCFM------
+Modelling: exa
+Optimizer: MadNLPMOI.Optimizer
+Backend: CPU(false)
+------------------------
+
+
+------------------------
+------Sampling PCFM------
+Modelling: exa
+Optimizer: MadNLPMOI.Optimizer
+Backend: CPU(false)
+------------------------
+
+
+------------------------
+------Sampling PCFM------
+Modelling: exa
+Optimizer: MadNLPMOI.Optimizer
+Backend: CPU(false)
+------------------------
+
+BenchmarkTools.Trial: 1 sample with 1 evaluation per sample.
+ Single result which took 14.426 s (9.26% GC) to evaluate,
+ with a memory estimate of 2.62 GiB, over 754411 allocations.
+
+------------------------
+------Sampling PCFM------
+Modelling: jump
+Optimizer: MadNLPMOI.Optimizer
+Backend: CPU(false)
+------------------------
+
+
+------------------------
+------Sampling PCFM------
+Modelling: jump
+Optimizer: MadNLPMOI.Optimizer
+Backend: CPU(false)
+------------------------
+
+
+------------------------
+------Sampling PCFM------
+Modelling: jump
+Optimizer: MadNLPMOI.Optimizer
+Backend: CPU(false)
+------------------------
+
+BenchmarkTools.Trial: 1 sample with 1 evaluation per sample.
+ Single result which took 139.299 s (30.81% GC) to evaluate,
+ with a memory estimate of 111.64 GiB, over 1619922105 allocations.
+
+------------------------
+------Sampling PCFM------
+Modelling: jump
+Optimizer: IpoptMathOptInterfaceExt.Optimizer
+Backend: CPU(false)
+------------------------
+
+
+------------------------
+------Sampling PCFM------
+Modelling: jump
+Optimizer: IpoptMathOptInterfaceExt.Optimizer
+Backend: CPU(false)
+------------------------
+
+
+------------------------
+------Sampling PCFM------
+Modelling: jump
+Optimizer: IpoptMathOptInterfaceExt.Optimizer
+Backend: CPU(false)
+------------------------
+
+BenchmarkTools.Trial: 1 sample with 1 evaluation per sample.
+ Single result which took 185.008 s (23.28% GC) to evaluate,
+ with a memory estimate of 94.15 GiB, over 1555891150 allocations.
+
+------------------------
+------Sampling PCFM------
+Modelling: exa
+Optimizer: MadNLPMOI.Optimizer
+Backend: CUDABackend(false, false)
+------------------------
+
+
+------------------------
+------Sampling PCFM------
+Modelling: exa
+Optimizer: MadNLPMOI.Optimizer
+Backend: CPU(false)
+------------------------
+
+
+------------------------
+------Sampling PCFM------
+Modelling: jump
+Optimizer: MadNLPMOI.Optimizer
+Backend: CPU(false)
+------------------------
+
+
+------------------------
+------Sampling PCFM------
+Modelling: jump
+Optimizer: IpoptMathOptInterfaceExt.Optimizer
+Backend: CPU(false)
+------------------------
+
