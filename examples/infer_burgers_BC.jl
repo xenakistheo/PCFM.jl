@@ -162,7 +162,7 @@ end
 # Samples
 begin
     @info "ExaModels, MadNLP, GPU"
-    samples_exa_gpu = sample_pcfm(ffm, (parameters=ps, states=st),
+    @time samples_exa_gpu = sample_pcfm(ffm, (parameters=ps, states=st),
                        n_samples, 100, burgers_constraints_BC_Mass!;
                        domain = burgers_domain,
                        IC_func = IC_func_burgers,
@@ -173,7 +173,7 @@ begin
                        initial_vals = starting_noise)
 
     @info "ExaModels, MadNLP, CPU"
-    samples_exa_cpu = sample_pcfm(ffm, (parameters=ps, states=st),
+    @time samples_exa_cpu = sample_pcfm(ffm, (parameters=ps, states=st),
                        n_samples, 100, burgers_constraints_BC_Mass!;
                        domain = burgers_domain,
                        IC_func = IC_func_burgers,
@@ -184,7 +184,7 @@ begin
                        initial_vals = starting_noise)
 
     @info "JuMP, MadNLP"
-    samples_jump_madnlp = sample_pcfm(ffm, (parameters=ps, states=st),
+    @time samples_jump_madnlp = sample_pcfm(ffm, (parameters=ps, states=st),
                        n_samples, 100, burgers_constraints_BC_Mass!;
                        domain = burgers_domain,
                        IC_func = IC_func_burgers,
@@ -196,7 +196,7 @@ begin
                        initial_vals = starting_noise)
 
     @info "JuMP, Ipopt"
-    samples_jump_ipopt = sample_pcfm(ffm, (parameters=ps, states=st),
+    @time samples_jump_ipopt = sample_pcfm(ffm, (parameters=ps, states=st),
                        n_samples, 100, burgers_constraints_BC_Mass!;
                        domain = burgers_domain,
                        IC_func = IC_func_burgers,
@@ -238,14 +238,14 @@ end
 ##################
 
 # Save samples
-JLD2.save("samples_burgers_BC.jld2",
-    "ref_samples",         ref_samples,
-    "samples_exa_gpu",     samples_exa_gpu,
-    "samples_exa_cpu",     samples_exa_cpu,
-    "samples_jump_madnlp", samples_jump_madnlp,
-    "samples_jump_ipopt",  samples_jump_ipopt
-    # "samples_ffm",         samples_ffm
-)
+# JLD2.save("samples_burgers_BC.jld2",
+#     "ref_samples",         ref_samples,
+#     "samples_exa_gpu",     samples_exa_gpu,
+#     "samples_exa_cpu",     samples_exa_cpu,
+#     "samples_jump_madnlp", samples_jump_madnlp,
+#     "samples_jump_ipopt",  samples_jump_ipopt
+#     # "samples_ffm",         samples_ffm
+# )
 
 # Load samples
 # data = JLD2.load("samples_burgers_BC.jld2")

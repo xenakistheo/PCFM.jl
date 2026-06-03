@@ -313,17 +313,17 @@ begin
 #                     constraint_parameters = constraint_params,
 #                     initial_vals=$starting_noise);
 
-    # FFM
-    @info "FFM"
-    display(@benchmark sample_ffm(ffm, (parameters = $ps, states = $st), $n_samples, 100;
-        verbose = false,
-        initial_vals=$starting_noise));
+    # # FFM
+    # @info "FFM"
+    # display(@benchmark sample_ffm(ffm, (parameters = $ps, states = $st), $n_samples, 100;
+    #     verbose = false,
+    #     initial_vals=$starting_noise));
 
 end 
 
 
 
-# begin 
+begin 
         # ExaModels, MadNLP, GPU
     @info "ExaModels, MadNLP, GPU"
     @time samples_exa_gpu = sample_pcfm(ffm, (parameters = ps, states = st),
@@ -371,12 +371,12 @@ end
     #                 initial_vals=starting_noise);
 
     # FFM
-    @info "FFM"
-    @time samples_ffm = sample_ffm(ffm, (parameters = ps, states = st), n_samples, 100; 
-        verbose = false,
-        initial_vals=starting_noise);
-# end 
-samples_ffm = Array(samples_ffm)
+    # @info "FFM"
+    # @time samples_ffm = sample_ffm(ffm, (parameters = ps, states = st), n_samples, 100; 
+    #     verbose = false,
+    #     initial_vals=starting_noise);
+end 
+# samples_ffm = Array(samples_ffm)
 
 
 ##################
@@ -393,13 +393,13 @@ u_analytic
 
 
 # Save samples
-JLD2.save("samples_heat_2.jld2",
-    "samples_exa_gpu",    samples_exa_gpu,
-    "samples_exa_cpu",    samples_exa_cpu)
-    # "samples_jump_madnlp", samples_jump_madnlp,
-    # "samples_jump_ipopt", samples_jump_ipopt,
-    # "samples_ffm",        samples_ffm,
-    # "u_analytic",         u_analytic)
+# JLD2.save("samples_heat_2.jld2",
+#     "samples_exa_gpu",    samples_exa_gpu,
+#     "samples_exa_cpu",    samples_exa_cpu)
+#     # "samples_jump_madnlp", samples_jump_madnlp,
+#     # "samples_jump_ipopt", samples_jump_ipopt,
+#     # "samples_ffm",        samples_ffm,
+#     # "u_analytic",         u_analytic)
 
 # Load samples
 # data = JLD2.load("samples_heat_2.jld2")
