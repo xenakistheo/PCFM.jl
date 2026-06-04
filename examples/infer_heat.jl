@@ -105,10 +105,6 @@ st = st |> device
 # 5. Generate samples
 # ---------------------------------------------------------------------------
 println("\n[5/5] Generating samples...")
-n_samples = 32
-# sample_compiled_funcs = (n_samples == batch_size) ? compiled_funcs : PCFM.compile_functions(ffm, n_samples)
-tstate_inf = (parameters = ps, states = st)
-
 
 
 
