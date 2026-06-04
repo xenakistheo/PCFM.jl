@@ -28,12 +28,14 @@ ffm = FFM(nx=nx, nt=nt, emb_channels=emb_channels,
           hidden_channels=64, proj_channels=256,
           n_layers=4, modes=(32,32), device=cpu_device())
 
-weight_file = "heat_eq_weights.jld2"
+weight_file = "examples/checkpoints/ffm_diffusion_checkpoint.jld2"
+
 if isfile(weight_file)
     println("\n[3] Loading saved weights …")
     saved = JLD2.load(weight_file)
     ps, st = saved["parameters"], saved["states"]
 else
+    @warn "No saved weights found at $weight_file. Training from scratch."
     println("\n[3] Training …")
     compiled_funcs = PCFM.compile_functions(ffm, batch_size)
     losses, tstate = train_ffm!(ffm, u_data;
@@ -93,14 +95,10 @@ for (i, (label, solver)) in enumerate(solvers)
     println("\n[$(i+3)] $label …")
     t0 = time()
 
-    if solver === NoOpSolver()
-        # Unconstrained
-        samples = sample_pcfm(ffm.model, ps, st_inf, nx, nt, emb_channels, n_samples, n_steps, solver, cdata, verbose=false)
-        # samples = sample_ffm(ffm, (ps, st_inf), n_samples, n_steps; verbose=false)
-    else
-        samples = sample_pcfm(ffm.model, ps, st_inf, nx, nt, emb_channels,
-            n_samples, n_steps, solver, cdata; verbose=false)
-    end
+    
+    samples = sample_pcfm(ffm.model, ps, st_inf, nx, nt, emb_channels,
+        n_samples, n_steps, solver, cdata; verbose=false)
+    
 
     dt = time() - t0
     println("  $(round(dt; digits=1)) s")
