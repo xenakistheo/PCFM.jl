@@ -40,6 +40,10 @@ nx           = 101
 nt           = 101
 emb_channels = 32
 
+# Output path
+SAMPLES_PATH = length(ARGS) >= 3 ? ARGS[3] : "samples_burgers_IC.jld2"
+
+# Checkpoint path
 weight_file = joinpath(@__DIR__, "checkpoints", "ffm_burgers_checkpoint.jld2")
 
 t_range = (0.0f0, 1.0f0)
@@ -93,11 +97,15 @@ tstate_inf = (parameters = ps, states = st)
 # Per-sample left BC drawn from training distribution U[0,1]
 left_bc_vals = rand(Float32, n_samples)
 
-### Change for scaling study
-CONSTRAINT_FUNC = burgers_constraints_IC_Mass_Flux!
-# CONSTRAINT_FUNC = burgers_constraints_IC_Mass!
-# CONSTRAINT_FUNC = burgers_constraints_IC!
-godunov_flux_k = 5 #Default is 5. 
+constraint_name = length(ARGS) >= 1 ? ARGS[1] : "IC_Mass_Flux"
+CONSTRAINT_FUNC = if constraint_name == "IC"
+    burgers_constraints_IC!
+elseif constraint_name == "IC_Mass"
+    burgers_constraints_IC_Mass!
+else
+    burgers_constraints_IC_Mass_Flux!
+end
+godunov_flux_k = length(ARGS) >= 2 ? parse(Int, ARGS[2]) : 5
 
 const burgers_domain = (x_start=0f0, x_end=1f0, t_start=0f0, t_end=1f0)
 const burgers_params = (left_bc=left_bc_vals,)
@@ -269,14 +277,14 @@ end
 # save("burgers_constraint_violation.png", fig_constraint)
 
 # Save samples
-# JLD2.save("samples_burgers_IC.jld2",
-#     "left_bc_vals", left_bc_vals,
-#     "ref_samples",         ref_samples,
-#     "samples_exa_gpu",     samples_exa_gpu,
-#     "samples_exa_cpu",     samples_exa_cpu)
-#     # "samples_jump_madnlp", samples_jump_madnlp,
-#     # "samples_jump_ipopt", samples_jump_ipopt,
-#     # "samples_ffm",         samples_ffm)
+JLD2.save(SAMPLES_PATH,
+    "left_bc_vals", left_bc_vals,
+    "ref_samples",         ref_samples,
+    "samples_exa_gpu",     samples_exa_gpu,
+    "samples_exa_cpu",     samples_exa_cpu)
+    # "samples_jump_madnlp", samples_jump_madnlp,
+    # "samples_jump_ipopt", samples_jump_ipopt,
+    # "samples_ffm",         samples_ffm)
 
 # Load samples
 # data = JLD2.load("samples_burgers_IC.jld2")
