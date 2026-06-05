@@ -23,7 +23,6 @@ include("./model.jl")
 include("./training.jl")
 include("./sampling.jl")
 include("./constraints.jl")
-include("./constraints_BurgerIC_scaling.jl")
 
 # Export main functions
 export FFM
