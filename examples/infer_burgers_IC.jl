@@ -93,9 +93,17 @@ tstate_inf = (parameters = ps, states = st)
 # Per-sample left BC drawn from training distribution U[0,1]
 left_bc_vals = rand(Float32, n_samples)
 
+### Change for scaling study
+CONSTRAINT_FUNC = burgers_constraints_IC_Mass_Flux!
+# CONSTRAINT_FUNC = burgers_constraints_IC_Mass!
+# CONSTRAINT_FUNC = burgers_constraints_IC!
+godunov_flux_k = 5 #Default is 5. 
+
 const burgers_domain = (x_start=0f0, x_end=1f0, t_start=0f0, t_end=1f0)
 const burgers_params = (left_bc=left_bc_vals,)
-const burgers_ic_flux_params = (k=5, eps=1f-6)
+const burgers_ic_flux_params = (k=godunov_flux_k, eps=1f-6) #Change k here. 
+
+
 
 @show backend
 
@@ -105,7 +113,7 @@ starting_noise = randn(Float32, nx, nt, 1, n_samples)
 begin
     @info "ExaModels, MadNLP, GPU"
     display(@benchmark sample_pcfm($ffm, (parameters=$ps, states=$st),
-                       $n_samples, 100, burgers_constraints_IC_Mass_Flux!;
+                       $n_samples, 100, CONSTRAINT_FUNC;
                        domain = burgers_domain,
                        IC_func = IC_func_burgers,
                        constraint_parameters = burgers_ic_flux_params,
@@ -117,7 +125,7 @@ begin
 
     @info "ExaModels, MadNLP, CPU"
     display(@benchmark sample_pcfm($ffm, (parameters=$ps, states=$st),
-                       $n_samples, 100, burgers_constraints_IC_Mass_Flux!;
+                       $n_samples, 100, CONSTRAINT_FUNC;
                        domain = burgers_domain,
                        IC_func = IC_func_burgers,
                        constraint_parameters = burgers_ic_flux_params,
@@ -129,7 +137,7 @@ begin
 
     # @info "JuMP, MadNLP"
     # @btime sample_pcfm($ffm, (parameters=$ps, states=$st),
-    #                    $n_samples, 100, burgers_constraints_IC_Mass_Flux!;
+    #                    $n_samples, 100, CONSTRAINT_FUNC;
     #                    domain = burgers_domain,
     #                    IC_func = IC_func_burgers,
     #                    constraint_parameters = burgers_ic_flux_params,
@@ -142,7 +150,7 @@ begin
 
     # @info "JuMP, Ipopt"
     # @btime sample_pcfm($ffm, (parameters=$ps, states=$st),
-    #                    $n_samples, 100, burgers_constraints_IC_Mass_Flux!;
+    #                    $n_samples, 100, CONSTRAINT_FUNC;
     #                    domain = burgers_domain,
     #                    IC_func = IC_func_burgers,
     #                    constraint_parameters = burgers_ic_flux_params,
@@ -164,7 +172,7 @@ end
 begin
     @info "ExaModels, MadNLP, GPU"
     @time samples_exa_gpu = sample_pcfm(ffm, (parameters=ps, states=st),
-                       n_samples, 100, burgers_constraints_IC_Mass_Flux!;
+                       n_samples, 100, CONSTRAINT_FUNC;
                        domain = burgers_domain,
                        IC_func = IC_func_burgers,
                        constraint_parameters = burgers_ic_flux_params,
@@ -175,7 +183,7 @@ begin
 
     @info "ExaModels, MadNLP, CPU"
     @time samples_exa_cpu = sample_pcfm(ffm, (parameters=ps, states=st),
-                       n_samples, 100, burgers_constraints_IC_Mass_Flux!;
+                       n_samples, 100, CONSTRAINT_FUNC;
                        domain = burgers_domain,
                        IC_func = IC_func_burgers,
                        constraint_parameters = burgers_ic_flux_params,
@@ -186,7 +194,7 @@ begin
 
     # @info "JuMP, MadNLP"
     # @time samples_jump_madnlp = sample_pcfm(ffm, (parameters=ps, states=st),
-    #                    n_samples, 100, burgers_constraints_IC_Mass_Flux!;
+    #                    n_samples, 100, CONSTRAINT_FUNC;
     #                    domain = burgers_domain,
     #                    IC_func = IC_func_burgers,
     #                    constraint_parameters = burgers_ic_flux_params,
@@ -198,7 +206,7 @@ begin
 
     # @info "JuMP, Ipopt"
     # @time samples_jump_ipopt = sample_pcfm(ffm, (parameters=ps, states=st),
-    #                    n_samples, 100, burgers_constraints_IC_Mass_Flux!;
+    #                    n_samples, 100, CONSTRAINT_FUNC;
     #                    domain = burgers_domain,
     #                    IC_func = IC_func_burgers,
     #                    constraint_parameters = burgers_ic_flux_params,
