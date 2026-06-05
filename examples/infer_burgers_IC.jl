@@ -129,7 +129,7 @@ begin
                        verbose = false,
                        mode = "exa",
                        initial_vals = $starting_noise));
-    flush(stdout)
+    # flush(stdout)
 
     @info "ExaModels, MadNLP, CPU"
     display(@benchmark sample_pcfm($ffm, (parameters=$ps, states=$st),
@@ -143,30 +143,30 @@ begin
                        initial_vals = $starting_noise));
     # flush(stdout)
 
-    # @info "JuMP, MadNLP"
-    # @btime sample_pcfm($ffm, (parameters=$ps, states=$st),
-    #                    $n_samples, 100, CONSTRAINT_FUNC;
-    #                    domain = burgers_domain,
-    #                    IC_func = IC_func_burgers,
-    #                    constraint_parameters = burgers_ic_flux_params,
-    #                    backend = CPU(),
-    #                    verbose = true,
-    #                    mode = "jump",
-    #                    optimizer = MadNLP.Optimizer,
-    #                    initial_vals = $starting_noise)
+    @info "JuMP, MadNLP"
+    display(@benchmark sample_pcfm($ffm, (parameters=$ps, states=$st),
+                       $n_samples, 100, CONSTRAINT_FUNC;
+                       domain = burgers_domain,
+                       IC_func = IC_func_burgers,
+                       constraint_parameters = burgers_ic_flux_params,
+                       backend = CPU(),
+                       verbose = true,
+                       mode = "jump",
+                       optimizer = MadNLP.Optimizer,
+                       initial_vals = $starting_noise));
     # # flush(stdout)
 
-    # @info "JuMP, Ipopt"
-    # @btime sample_pcfm($ffm, (parameters=$ps, states=$st),
-    #                    $n_samples, 100, CONSTRAINT_FUNC;
-    #                    domain = burgers_domain,
-    #                    IC_func = IC_func_burgers,
-    #                    constraint_parameters = burgers_ic_flux_params,
-    #                    backend = CPU(),
-    #                    verbose = true,
-    #                    mode = "jump",
-    #                    optimizer = Ipopt.Optimizer,
-    #                    initial_vals = $starting_noise)
+    @info "JuMP, Ipopt"
+    display(@benchmark sample_pcfm($ffm, (parameters=$ps, states=$st),
+                       $n_samples, 100, CONSTRAINT_FUNC;
+                       domain = burgers_domain,
+                       IC_func = IC_func_burgers,
+                       constraint_parameters = burgers_ic_flux_params,
+                       backend = CPU(),
+                       verbose = true,
+                       mode = "jump",
+                       optimizer = Ipopt.Optimizer,
+                       initial_vals = $starting_noise));
     # # flush(stdout)
 
     # @info "FFM"
@@ -187,7 +187,7 @@ begin
                        backend = backend,
                        verbose = true,
                        mode = "exa",
-                       initial_vals = starting_noise)
+                       initial_vals = starting_noise);
 
     @info "ExaModels, MadNLP, CPU"
     @time samples_exa_cpu = sample_pcfm(ffm, (parameters=ps, states=st),
@@ -198,31 +198,31 @@ begin
                        backend = CPU(),
                        verbose = true,
                        mode = "exa",
-                       initial_vals = starting_noise)
+                       initial_vals = starting_noise);
 
-    # @info "JuMP, MadNLP"
-    # @time samples_jump_madnlp = sample_pcfm(ffm, (parameters=ps, states=st),
-    #                    n_samples, 100, CONSTRAINT_FUNC;
-    #                    domain = burgers_domain,
-    #                    IC_func = IC_func_burgers,
-    #                    constraint_parameters = burgers_ic_flux_params,
-    #                    backend = CPU(),
-    #                    verbose = true,
-    #                    mode = "jump",
-    #                    optimizer = MadNLP.Optimizer,
-    #                    initial_vals = starting_noise)
+    @info "JuMP, MadNLP"
+    @time samples_jump_madnlp = sample_pcfm(ffm, (parameters=ps, states=st),
+                       n_samples, 100, CONSTRAINT_FUNC;
+                       domain = burgers_domain,
+                       IC_func = IC_func_burgers,
+                       constraint_parameters = burgers_ic_flux_params,
+                       backend = CPU(),
+                       verbose = true,
+                       mode = "jump",
+                       optimizer = MadNLP.Optimizer,
+                       initial_vals = starting_noise);
 
-    # @info "JuMP, Ipopt"
-    # @time samples_jump_ipopt = sample_pcfm(ffm, (parameters=ps, states=st),
-    #                    n_samples, 100, CONSTRAINT_FUNC;
-    #                    domain = burgers_domain,
-    #                    IC_func = IC_func_burgers,
-    #                    constraint_parameters = burgers_ic_flux_params,
-    #                    backend = CPU(),
-    #                    verbose = true,
-    #                    mode = "jump",
-    #                    optimizer = Ipopt.Optimizer,
-    #                    initial_vals = starting_noise)
+    @info "JuMP, Ipopt"
+    @time samples_jump_ipopt = sample_pcfm(ffm, (parameters=ps, states=st),
+                       n_samples, 100, CONSTRAINT_FUNC;
+                       domain = burgers_domain,
+                       IC_func = IC_func_burgers,
+                       constraint_parameters = burgers_ic_flux_params,
+                       backend = CPU(),
+                       verbose = true,
+                       mode = "jump",
+                       optimizer = Ipopt.Optimizer,
+                       initial_vals = starting_noise);
 
     # @info "FFM"
     # @time samples_ffm = sample_ffm(ffm, (parameters=ps, states=st), n_samples, 100;
@@ -281,11 +281,11 @@ JLD2.save(SAMPLES_PATH,
     "left_bc_vals", left_bc_vals,
     "ref_samples",         ref_samples,
     "samples_exa_gpu",     samples_exa_gpu,
-    "samples_exa_cpu",     samples_exa_cpu)
-    # "samples_jump_madnlp", samples_jump_madnlp,
-    # "samples_jump_ipopt", samples_jump_ipopt,
+    "samples_exa_cpu",     samples_exa_cpu,
+    "samples_jump_madnlp", samples_jump_madnlp,
+    "samples_jump_ipopt", samples_jump_ipopt
     # "samples_ffm",         samples_ffm)
-
+)
 # Load samples
 # data = JLD2.load("samples_burgers_IC.jld2")
 # ref_samples         = data["ref_samples"]
