@@ -1,0 +1,234 @@
+============================================================
+Burgers Equation — Functional Flow Matching
+============================================================
+
+[1/3] Creating FFM model...
+  Model created successfully
+
+[2/3] Loading checkpoint from: /orcd/home/002/txenakis/projects/18337/PCFM.jl/examples/checkpoints/ffm_burgers_checkpoint.jld2
+  Loaded trained parameters and states
+
+[3/3] Generating samples...
+backend = CUDABackend(false, false)
+
+------------------------
+------Sampling PCFM------
+Modelling: exa
+Optimizer: MadNLPMOI.Optimizer
+Backend: CUDABackend(false, false)
+------------------------
+
+
+------------------------
+------Sampling PCFM------
+Modelling: exa
+Optimizer: MadNLPMOI.Optimizer
+Backend: CUDABackend(false, false)
+------------------------
+
+
+------------------------
+------Sampling PCFM------
+Modelling: exa
+Optimizer: MadNLPMOI.Optimizer
+Backend: CUDABackend(false, false)
+------------------------
+
+BenchmarkTools.Trial: 1 sample with 1 evaluation per sample.
+ Single result which took 154.266 s (0.51% GC) to evaluate,
+ with a memory estimate of 1.40 GiB, over 16507596 allocations.
+
+------------------------
+------Sampling PCFM------
+Modelling: exa
+Optimizer: MadNLPMOI.Optimizer
+Backend: CPU(false)
+------------------------
+
+
+------------------------
+------Sampling PCFM------
+Modelling: exa
+Optimizer: MadNLPMOI.Optimizer
+Backend: CPU(false)
+------------------------
+
+
+------------------------
+------Sampling PCFM------
+Modelling: exa
+Optimizer: MadNLPMOI.Optimizer
+Backend: CPU(false)
+------------------------
+
+BenchmarkTools.Trial: 1 sample with 1 evaluation per sample.
+ Single result which took 109.156 s (3.70% GC) to evaluate,
+ with a memory estimate of 11.26 GiB, over 895076 allocations.
+
+------------------------
+------Sampling PCFM------
+Modelling: jump
+Optimizer: MadNLPMOI.Optimizer
+Backend: CPU(false)
+------------------------
+
+
+------------------------
+------Sampling PCFM------
+Modelling: jump
+Optimizer: MadNLPMOI.Optimizer
+Backend: CPU(false)
+------------------------
+
+
+------------------------
+------Sampling PCFM------
+Modelling: jump
+Optimizer: MadNLPMOI.Optimizer
+Backend: CPU(false)
+------------------------
+
+BenchmarkTools.Trial: 1 sample with 1 evaluation per sample.
+ Single result which took 420.408 s (20.66% GC) to evaluate,
+ with a memory estimate of 147.93 GiB, over 1711987574 allocations.
+
+******************************************************************************
+This program contains Ipopt, a library for large-scale nonlinear optimization.
+ Ipopt is released as open source code under the Eclipse Public License (EPL).
+         For more information visit https://github.com/coin-or/Ipopt
+******************************************************************************
+
+
+------------------------
+------Sampling PCFM------
+Modelling: jump
+Optimizer: IpoptMathOptInterfaceExt.Optimizer
+Backend: CPU(false)
+------------------------
+
+
+------------------------
+------Sampling PCFM------
+Modelling: jump
+Optimizer: IpoptMathOptInterfaceExt.Optimizer
+Backend: CPU(false)
+------------------------
+
+
+------------------------
+------Sampling PCFM------
+Modelling: jump
+Optimizer: IpoptMathOptInterfaceExt.Optimizer
+Backend: CPU(false)
+------------------------
+
+BenchmarkTools.Trial: 1 sample with 1 evaluation per sample.
+ Single result which took 1140.748 s (7.93% GC) to evaluate,
+ with a memory estimate of 108.22 GiB, over 1646628800 allocations.
+BenchmarkTools.Trial: 2 samples with 1 evaluation per sample.
+ Range (min … max):  3.854 s …  3.856 s  ┊ GC (min … max): 3.38% … 3.25%
+ Time  (median):     3.855 s             ┊ GC (median):    3.32%
+ Time  (mean ± σ):   3.855 s ± 1.759 ms  ┊ GC (mean ± σ):  3.32% ± 0.09%
+
+  █                                                      █  
+  █▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁█ ▁
+  3.85 s        Histogram: frequency by time        3.86 s <
+
+ Memory estimate: 25.63 MiB, allocs estimate: 681476.
+Precompiling packages...
+   8094.0 ms  ✓ Reactant_jll
+   9165.2 ms  ✓ CUDA_Runtime_jll
+   5843.9 ms  ✓ CUDNN_jll
+   5836.8 ms  ✓ CUDA_Compiler_jll
+   5875.1 ms  ✓ CUDSS_jll
+  34312.6 ms  ✓ CUDA
+  10919.4 ms  ✓ ExaModels → ExaModelsCUDA
+  11158.7 ms  ✓ Atomix → AtomixCUDAExt
+  11623.7 ms  ✓ ArrayInterface → ArrayInterfaceCUDAExt
+  11625.1 ms  ✓ LinearOperators → LinearOperatorsCUDAExt
+  11643.9 ms  ✓ WeightInitializers → CUDAExt
+  11799.2 ms  ✓ CUDA → SpecialFunctionsExt
+  11814.0 ms  ✓ CUDA → ChainRulesCoreExt
+  11958.3 ms  ✓ MLDataDevices → CUDAExt
+  12048.5 ms  ✓ CUDA → EnzymeCoreExt
+  12906.5 ms  ✓ NNlib → NNlibCUDAExt
+  13634.5 ms  ✓ LuxLib → CUDAExt
+   5487.0 ms  ✓ CUDSS
+   5093.7 ms  ✓ LuxLib → CUDAForwardDiffExt
+   8046.0 ms  ✓ cuDNN
+   5108.2 ms  ✓ ArrayInterface → ArrayInterfaceCUDSSExt
+   7602.5 ms  ✓ MadNLPGPU
+   5131.7 ms  ✓ MLDataDevices → cuDNNExt
+   5475.6 ms  ✓ LuxLib → cuDNNExt
+   5671.6 ms  ✓ NNlib → NNlibCUDACUDNNExt
+ 110201.2 ms  ✓ Reactant
+  17933.6 ms  ✓ Reactant → ReactantSpecialFunctionsExt
+  17792.2 ms  ✓ MLDataDevices → ReactantExt
+  18586.6 ms  ✓ Reactant → ReactantSparseArraysExt
+  18604.7 ms  ✓ Reactant → ReactantDatesExt
+  18927.2 ms  ✓ Reactant → ReactantOffsetArraysExt
+  19981.3 ms  ✓ Reactant → ReactantStatisticsExt
+  19953.6 ms  ✓ Reactant → ReactantStructArraysExt
+  19805.8 ms  ✓ LuxCore → ReactantExt
+  20124.1 ms  ✓ Reactant → ReactantStaticArraysExt
+  20033.2 ms  ✓ Reactant → ReactantAbstractFFTsExt
+  20067.3 ms  ✓ Reactant → ReactantLogExpFunctionsExt
+  20128.2 ms  ✓ Reactant → ReactantFillArraysExt
+  20111.1 ms  ✓ Reactant → ReactantArrayInterfaceExt
+  20298.5 ms  ✓ Reactant → ReactantRandom123Ext
+  20501.2 ms  ✓ Reactant → ReactantKernelAbstractionsExt
+  21939.6 ms  ✓ Optimisers → OptimisersReactantExt
+   9521.8 ms  ✓ WeightInitializers → ReactantExt
+   9744.4 ms  ✓ LuxLib → ReactantExt
+   7895.2 ms  ✓ Reactant → ReactantFFTWExt
+   8056.8 ms  ✓ Reactant → ReactantNNlibExt
+  11281.9 ms  ✓ Lux → ReactantExt
+  44665.6 ms  ✓ Reactant → ReactantCUDAExt
+  50193.5 ms  ✓ PCFM
+  49 dependencies successfully precompiled in 213 seconds. 510 already precompiled.
+[ Info: ExaModels, MadNLP, GPU
+[ Info: ExaModels, MadNLP, CPU
+[ Info: JuMP, MadNLP
+[ Info: JuMP, Ipopt
+[ Info: FFM
+[ Info: ExaModels, MadNLP, GPU
+[ Info: ExaModels, MadNLP, CPU
+[ Info: JuMP, MadNLP
+[ Info: JuMP, Ipopt
+[ Info: Reference IC: p_loc = 0.4822 (index 16 / 30)
+
+------------------------
+------Sampling PCFM------
+Modelling: exa
+Optimizer: MadNLPMOI.Optimizer
+Backend: CUDABackend(false, false)
+------------------------
+
+153.997365 seconds (16.70 M allocations: 1.403 GiB, 0.47% gc time, 0.00% compilation time)
+
+------------------------
+------Sampling PCFM------
+Modelling: exa
+Optimizer: MadNLPMOI.Optimizer
+Backend: CPU(false)
+------------------------
+
+107.766109 seconds (898.08 k allocations: 11.257 GiB, 2.89% gc time, 0.00% compilation time)
+
+------------------------
+------Sampling PCFM------
+Modelling: jump
+Optimizer: MadNLPMOI.Optimizer
+Backend: CPU(false)
+------------------------
+
+436.404853 seconds (1.71 G allocations: 147.931 GiB, 20.94% gc time, 0.00% compilation time)
+
+------------------------
+------Sampling PCFM------
+Modelling: jump
+Optimizer: IpoptMathOptInterfaceExt.Optimizer
+Backend: CPU(false)
+------------------------
+
+1134.076085 seconds (1.65 G allocations: 108.216 GiB, 7.81% gc time)
