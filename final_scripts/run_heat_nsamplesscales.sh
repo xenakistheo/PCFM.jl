@@ -24,7 +24,8 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-LOG="logs/heat_infer_nsamples${NSAMPLES}${RUN:+-$RUN}.log"
+SAMPLES_PATH="samples_heat_nsamples${NSAMPLES}${RUN:+_run$RUN}.jld2"
+LOG="logs/heat_infer_nsamples${NSAMPLES}${RUN:+_run$RUN}.log"
 
 cd "$SLURM_SUBMIT_DIR"
 
@@ -37,10 +38,11 @@ echo "Start:       $(date)"
 echo "Project dir: $SLURM_SUBMIT_DIR"
 echo "N samples:   $NSAMPLES"
 echo "Run:         ${RUN:-default}"
+echo "Samples out: $SAMPLES_PATH"
 echo "--------------------------------------"
 
 echo "Running Heat inference..."
-julia --project=. examples/infer_heat.jl "$NSAMPLES" "samples_heat_nsamples${NSAMPLES}.jld2" \
+julia --project=. examples/infer_heat.jl "$NSAMPLES" "$SAMPLES_PATH" \
     > "$LOG" 2>&1 \
     && echo "Inference: done" || { echo "Inference: FAILED"; exit 1; }
 
