@@ -11,7 +11,6 @@ using Lux
 using CUDA
 using cuDNN
 using JLD2, Functors
-using BenchmarkTools
 using Random
 using HDF5
 
@@ -71,24 +70,6 @@ constraint_data = make_constraint_data(u_0_ic_2d, (s, s), nt, n_samples; dx=dx)
 
 println("\n[3/3] Generating samples...")
 
-# ---------------------------------------------------------------------------
-# Benchmarks
-# ---------------------------------------------------------------------------
-begin
-    @info "NS Vorticity LBFGS"
-    display(@benchmark sample_pcfm($ffm, (parameters=$ps, states=$st),
-                        $n_samples, 100,
-                        NSVorticityLBFGSSolver(),
-                        $constraint_data;
-                        verbose=false))
-
-    @info "NS Vorticity IPNewton"
-    display(@benchmark sample_pcfm($ffm, (parameters=$ps, states=$st),
-                        $n_samples, 100,
-                        NSVorticityIPNewtonSolver(),
-                        $constraint_data;
-                        verbose=false))
-end
 
 # ---------------------------------------------------------------------------
 # Samples

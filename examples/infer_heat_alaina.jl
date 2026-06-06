@@ -9,7 +9,6 @@ using Lux
 using CUDA
 using cuDNN
 using JLD2, Functors
-using BenchmarkTools
 using Random
 
 Random.seed!(1234)
@@ -66,24 +65,6 @@ constraint_data = make_constraint_data(u_0_ic, nx, nt, n_samples; dx=dx)
 
 println("\n[3/3] Generating samples...")
 
-# ---------------------------------------------------------------------------
-# Benchmarks
-# ---------------------------------------------------------------------------
-begin
-    @info "IPNewton IC+Mass projection"
-    display(@benchmark sample_pcfm($ffm, (parameters=$ps, states=$st),
-                        $n_samples, 100,
-                        IPMassProjectionSolver(),
-                        $constraint_data;
-                        verbose=false))
-
-    @info "LBFGS IC+Mass projection"
-    display(@benchmark sample_pcfm($ffm, (parameters=$ps, states=$st),
-                        $n_samples, 100,
-                        PenaltyLBFGSMassProjectionSolver(),
-                        $constraint_data;
-                        verbose=false))
-end
 
 # ---------------------------------------------------------------------------
 # Samples

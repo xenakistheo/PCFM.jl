@@ -14,7 +14,6 @@ using Lux
 using CUDA
 using cuDNN
 using JLD2, Functors
-using BenchmarkTools
 using Random
 
 Random.seed!(42)
@@ -99,24 +98,6 @@ constraint_data = make_constraint_data(u0_fixed, nx, nt, n_samples;
 
 println("\n[3/3] Generating samples...")
 
-# ---------------------------------------------------------------------------
-# Benchmarks
-# ---------------------------------------------------------------------------
-begin
-    @info "RD LBFGS (rho=$rd_rho)"
-    display(@benchmark sample_pcfm($ffm, (parameters=$ps, states=$st),
-                        $n_samples, 100,
-                        RDSolver(rho=$rd_rho),
-                        $constraint_data;
-                        verbose=false))
-
-    @info "RD IPNewton (rho=$rd_rho)"
-    display(@benchmark sample_pcfm($ffm, (parameters=$ps, states=$st),
-                        $n_samples, 100,
-                        RDIPNewtonSolver(rho=$rd_rho),
-                        $constraint_data;
-                        verbose=false))
-end
 
 # ---------------------------------------------------------------------------
 # Samples

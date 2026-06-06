@@ -14,7 +14,6 @@ using Lux
 using CUDA
 using cuDNN
 using JLD2, Functors
-using BenchmarkTools
 using Random
 using HDF5
 
@@ -75,24 +74,6 @@ constraint_data = make_constraint_data(u_0_ic, nx, nt, n_samples; dx=dx)
 
 println("\n[3/3] Generating samples...")
 
-# ---------------------------------------------------------------------------
-# Benchmarks
-# ---------------------------------------------------------------------------
-begin
-    @info "BurgersBCMass LBFGS"
-    display(@benchmark sample_pcfm($ffm, (parameters=$ps, states=$st),
-                        $n_samples, 100,
-                        BurgersBCMassSolver(),
-                        $constraint_data;
-                        verbose=false))
-
-    @info "BurgersBCMass IPNewton"
-    display(@benchmark sample_pcfm($ffm, (parameters=$ps, states=$st),
-                        $n_samples, 100,
-                        BurgersBCMassIPSolver(),
-                        $constraint_data;
-                        verbose=false))
-end
 
 # ---------------------------------------------------------------------------
 # Samples
