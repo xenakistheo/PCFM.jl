@@ -66,6 +66,7 @@ export RDIPNewtonSolver
 export NSVorticityIPNewtonSolver
 export BurgersBCMassSolver, BurgersBCMassIPSolver
 export BurgersICFluxSolver, BurgersICFluxIPSolver
+export HeatICPDEEnergySolver, HeatICPDEEnergyIPSolver
 
 export solve_projection, make_constraint_data
 

@@ -792,6 +792,138 @@ end
 #     return Z_proj
 # end
 
+# ════════════════════════════════════════════════════════════
+#  Heat Equation: IC + Mass + PDE Residual + Energy Dissipation
+#
+#  Sequential projection: freeze u_k, project u_{k+1} onto:
+#    (a) PDE interior residual (explicit Euler):
+#        u_{k+1}[i] = u_k[i] + dt*κ*(u_k[i+1]-2u_k[i]+u_k[i-1])/dx²
+#        for i in 2:nx-1
+#    (b) Mass conservation: ∫ u_{k+1} dx = M₀
+#    (c) Energy dissipation: ‖u_{k+1}‖²·dx = ‖u_k‖²·dx - 2κ dt ∫(∂u_k/∂x)² dx
+#
+#  Constraints (a)–(c) together give nx equations for nx unknowns per step.
+# ════════════════════════════════════════════════════════════
+
+struct HeatICPDEEnergySolver{T} <: AbstractProjectionSolver
+    penalty::T
+    kappa::Float32
+end
+HeatICPDEEnergySolver(; penalty=1.0f4, kappa=0.01f0) = HeatICPDEEnergySolver(penalty, Float32(kappa))
+
+function solve_projection(solver::HeatICPDEEnergySolver, Z_hat, cdata)
+    nx, nt, nc, nb = size(Z_hat)
+    dx_f   = Float64(cdata.dx)
+    dt_f   = Float64(cdata.dt_physics)
+    κ      = Float64(solver.kappa)
+    λ      = Float64(solver.penalty)
+    M0     = Float64(cdata.M0)
+    Z_proj = copy(Z_hat)
+
+    for b in 1:nb, c in 1:nc
+        Z_proj[:, 1, c, b] .= cdata.u_0_ic_vec
+
+        for k in 1:(nt - 1)
+            u_k = Float64.(Z_proj[:, k, c, b])
+
+            # PDE explicit Euler target for interior points
+            u_target = copy(u_k)
+            for i in 2:(nx - 1)
+                u_target[i] = u_k[i] + dt_f * κ * (u_k[i+1] - 2*u_k[i] + u_k[i-1]) / dx_f^2
+            end
+
+            # Energy target: E_{k+1} = E_k - 2κ dt ∫(∂u_k/∂x)² dx
+            E_k = sum(abs2, u_k) * dx_f
+            diffusion_k = sum(((u_k[i+1] - u_k[i]) / dx_f)^2 for i in 1:(nx - 1)) * dx_f
+            E_target = E_k - 2.0 * κ * dt_f * diffusion_k
+
+            function penalised_loss(u_next, p)
+                u_hat_next = p[1]
+                obj = sum(abs2, u_next .- u_hat_next)
+                for i in 2:(nx - 1)
+                    obj += λ * (u_next[i] - u_target[i])^2
+                end
+                obj += λ * (sum(u_next) * dx_f - M0)^2
+                obj += λ * (sum(abs2, u_next) * dx_f - E_target)^2
+                return obj
+            end
+
+            opt_func = OptimizationFunction(penalised_loss, AutoForwardDiff())
+            u_hat_next = Float64.(Z_proj[:, k+1, c, b])
+            u0 = copy(u_hat_next)
+            prob = OptimizationProblem(opt_func, u0, (u_hat_next,))
+            sol = solve(prob, OptimizationOptimJL.LBFGS())
+            Z_proj[:, k+1, c, b] .= Float32.(sol.u)
+        end
+    end
+    return Z_proj
+end
+
+struct HeatICPDEEnergyIPSolver <: AbstractProjectionSolver
+    kappa::Float32
+end
+HeatICPDEEnergyIPSolver(; kappa=0.01f0) = HeatICPDEEnergyIPSolver(Float32(kappa))
+
+function _heat_pde_ip_loss(u_next, p)
+    u_hat_next = p[1]
+    return sum(abs2, u_next .- u_hat_next)
+end
+
+function _heat_pde_ip_cons!(res, u_next, p)
+    u_target_int = p[2]   # (nx-2,) interior PDE targets
+    dx_f         = p[3]
+    M0           = p[4]
+    E_target     = p[5]
+    n_int = length(u_target_int)
+    for i in 1:n_int
+        res[i] = u_next[i + 1] - u_target_int[i]
+    end
+    res[n_int + 1] = sum(u_next) * dx_f - M0
+    res[n_int + 2] = sum(abs2, u_next) * dx_f - E_target
+    return nothing
+end
+
+function solve_projection(solver::HeatICPDEEnergyIPSolver, Z_hat, cdata)
+    nx, nt, nc, nb = size(Z_hat)
+    dx_f   = Float64(cdata.dx)
+    dt_f   = Float64(cdata.dt_physics)
+    κ      = Float64(solver.kappa)
+    M0     = Float64(cdata.M0)
+    Z_proj = copy(Z_hat)
+
+    n_int  = nx - 2
+    n_cons = n_int + 2   # PDE interior + mass + energy
+
+    ad_type  = DifferentiationInterface.SecondOrder(AutoForwardDiff(), AutoForwardDiff())
+    opt_func = OptimizationFunction(_heat_pde_ip_loss, ad_type; cons = _heat_pde_ip_cons!)
+
+    for b in 1:nb, c in 1:nc
+        Z_proj[:, 1, c, b] .= cdata.u_0_ic_vec
+
+        for k in 1:(nt - 1)
+            u_k = Float64.(Z_proj[:, k, c, b])
+
+            u_target_int = zeros(Float64, n_int)
+            for i in 2:(nx - 1)
+                u_target_int[i - 1] = u_k[i] + dt_f * κ * (u_k[i+1] - 2*u_k[i] + u_k[i-1]) / dx_f^2
+            end
+
+            E_k = sum(abs2, u_k) * dx_f
+            diffusion_k = sum(((u_k[i+1] - u_k[i]) / dx_f)^2 for i in 1:(nx - 1)) * dx_f
+            E_target = E_k - 2.0 * κ * dt_f * diffusion_k
+
+            u_hat_next = Float64.(Z_proj[:, k+1, c, b])
+            u0 = copy(u_hat_next)
+            p  = (u_hat_next, u_target_int, dx_f, M0, E_target)
+            prob = OptimizationProblem(opt_func, u0, p;
+                lcons = zeros(n_cons), ucons = zeros(n_cons))
+            sol = solve(prob, OptimizationOptimJL.IPNewton())
+            Z_proj[:, k+1, c, b] .= Float32.(sol.u)
+        end
+    end
+    return Z_proj
+end
+
 #  Constraint data factory
 #
 #  Returns BOTH old field names (u_0_ic_vec, u_0_ic_matrix)
