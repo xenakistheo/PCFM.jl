@@ -100,7 +100,6 @@ begin
                        verbose = false,
                        mode = "exa",
                        initial_vals = $starting_noise));
-    flush(stdout)
 
     @info "ExaModels, MadNLP, CPU"
     display(@benchmark sample_pcfm_2d($ffm, (parameters=$ps, states=$st),
@@ -111,7 +110,6 @@ begin
                        verbose = false,
                        mode = "exa",
                        initial_vals = $starting_noise));
-    flush(stdout)
 end
 
 # Samples

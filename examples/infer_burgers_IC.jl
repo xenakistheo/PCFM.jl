@@ -9,8 +9,6 @@ Constraints outlined by D.7 - IC/Mass/Flux Constraints
 
 Note: Script does not use Reactant
 """
-# @show "Show: starting script"
-@info "Info: starting script"
 using PCFM
 using ExaModels, MadNLP, MadNLPGPU
 using Lux
@@ -131,42 +129,42 @@ begin
                        initial_vals = $starting_noise));
     # flush(stdout)
 
-    @info "ExaModels, MadNLP, CPU"
-    display(@benchmark sample_pcfm($ffm, (parameters=$ps, states=$st),
-                       $n_samples, 100, CONSTRAINT_FUNC;
-                       domain = burgers_domain,
-                       IC_func = IC_func_burgers,
-                       constraint_parameters = burgers_ic_flux_params,
-                       backend = CPU(),
-                       verbose = true,
-                       mode = "exa",
-                       initial_vals = $starting_noise));
-    # flush(stdout)
-
-    @info "JuMP, MadNLP"
-    display(@benchmark sample_pcfm($ffm, (parameters=$ps, states=$st),
-                       $n_samples, 100, CONSTRAINT_FUNC;
-                       domain = burgers_domain,
-                       IC_func = IC_func_burgers,
-                       constraint_parameters = burgers_ic_flux_params,
-                       backend = CPU(),
-                       verbose = true,
-                       mode = "jump",
-                       optimizer = MadNLP.Optimizer,
-                       initial_vals = $starting_noise));
+    # @info "ExaModels, MadNLP, CPU"
+    # display(@benchmark sample_pcfm($ffm, (parameters=$ps, states=$st),
+    #                    $n_samples, 100, CONSTRAINT_FUNC;
+    #                    domain = burgers_domain,
+    #                    IC_func = IC_func_burgers,
+    #                    constraint_parameters = burgers_ic_flux_params,
+    #                    backend = CPU(),
+    #                    verbose = true,
+    #                    mode = "exa",
+    #                    initial_vals = $starting_noise));
     # # flush(stdout)
 
-    @info "JuMP, Ipopt"
-    display(@benchmark sample_pcfm($ffm, (parameters=$ps, states=$st),
-                       $n_samples, 100, CONSTRAINT_FUNC;
-                       domain = burgers_domain,
-                       IC_func = IC_func_burgers,
-                       constraint_parameters = burgers_ic_flux_params,
-                       backend = CPU(),
-                       verbose = true,
-                       mode = "jump",
-                       optimizer = Ipopt.Optimizer,
-                       initial_vals = $starting_noise));
+    # @info "JuMP, MadNLP"
+    # display(@benchmark sample_pcfm($ffm, (parameters=$ps, states=$st),
+    #                    $n_samples, 100, CONSTRAINT_FUNC;
+    #                    domain = burgers_domain,
+    #                    IC_func = IC_func_burgers,
+    #                    constraint_parameters = burgers_ic_flux_params,
+    #                    backend = CPU(),
+    #                    verbose = true,
+    #                    mode = "jump",
+    #                    optimizer = MadNLP.Optimizer,
+    #                    initial_vals = $starting_noise));
+    # # # flush(stdout)
+
+    # @info "JuMP, Ipopt"
+    # display(@benchmark sample_pcfm($ffm, (parameters=$ps, states=$st),
+    #                    $n_samples, 100, CONSTRAINT_FUNC;
+    #                    domain = burgers_domain,
+    #                    IC_func = IC_func_burgers,
+    #                    constraint_parameters = burgers_ic_flux_params,
+    #                    backend = CPU(),
+    #                    verbose = true,
+    #                    mode = "jump",
+    #                    optimizer = Ipopt.Optimizer,
+    #                    initial_vals = $starting_noise));
     # # flush(stdout)
 
     # @info "FFM"
