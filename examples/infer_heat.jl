@@ -5,8 +5,6 @@ on the 1D heat (diffusion) equation.
 Note: Script does not use Reactant
 """
 
-#S
-
 using PCFM
 
 using ExaModels, MadNLP, MadNLPGPU
@@ -37,12 +35,15 @@ Random.seed!(1234)
 # ---------------------------------------------------------------------------
 # Configuration
 # ---------------------------------------------------------------------------
-batch_size   = 32
+# batch_size   = 32
 nx           = 100          # Spatial resolution
 nt           = 100          # Temporal resolution
 emb_channels = 32
 n_epochs     = 1000
 force_retrain = false
+
+# Output path 
+SAMPLES_PATH = length(ARGS) >= 2 ? ARGS[2] : "samples_heat.jld2"
 
 # Checkpoint path
 weight_file = joinpath(@__DIR__, "checkpoints", "ffm_heat_checkpoint.jld2")
@@ -105,10 +106,6 @@ st = st |> device
 # 5. Generate samples
 # ---------------------------------------------------------------------------
 println("\n[5/5] Generating samples...")
-n_samples = 32
-# sample_compiled_funcs = (n_samples == batch_size) ? compiled_funcs : PCFM.compile_functions(ffm, n_samples)
-tstate_inf = (parameters = ps, states = st)
-
 
 
 
@@ -116,6 +113,8 @@ tstate_inf = (parameters = ps, states = st)
 ########################################################################################################################################################
 ########################################################################################################################################################
 
+
+n_samples = length(ARGS) >= 1 ? parse(Int, ARGS[1]) : 32
 
 starting_noise = randn(Float32, nx, nt, 1, n_samples);
 
@@ -242,13 +241,13 @@ u_analytic
 
 
 # Save samples
-# JLD2.save("samples_heat.jld2",
-#     "samples_exa_gpu",    samples_exa_gpu,
-#     "samples_exa_cpu",    samples_exa_cpu,
-#     "samples_jump_madnlp", samples_jump_madnlp,
-#     "samples_jump_ipopt", samples_jump_ipopt,
-#     # "samples_ffm",        samples_ffm,
-#     "u_analytic",         u_analytic)
+JLD2.save(SAMPLES_PATH,
+    "samples_exa_gpu",    samples_exa_gpu,
+    "samples_exa_cpu",    samples_exa_cpu,
+    "samples_jump_madnlp", samples_jump_madnlp,
+    "samples_jump_ipopt", samples_jump_ipopt,
+    # "samples_ffm",        samples_ffm,
+    "u_analytic",         u_analytic)
 
 # Load samples
 # data = JLD2.load("samples_heat.jld2")

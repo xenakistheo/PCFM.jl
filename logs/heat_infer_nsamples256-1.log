@@ -1,0 +1,221 @@
+
+******************************************************************************
+This program contains Ipopt, a library for large-scale nonlinear optimization.
+ Ipopt is released as open source code under the Eclipse Public License (EPL).
+         For more information visit https://github.com/coin-or/Ipopt
+******************************************************************************
+
+Precompiling packages...
+   9743.8 ms  ✓ Reactant_jll
+  11554.7 ms  ✓ CUDA_Runtime_jll
+   5720.5 ms  ✓ CUDSS_jll
+   5701.4 ms  ✓ CUDNN_jll
+   5672.6 ms  ✓ CUDA_Compiler_jll
+  34516.4 ms  ✓ CUDA
+  12125.5 ms  ✓ LinearOperators → LinearOperatorsCUDAExt
+  12172.6 ms  ✓ ExaModels → ExaModelsCUDA
+  12726.9 ms  ✓ ArrayInterface → ArrayInterfaceCUDAExt
+  12768.6 ms  ✓ CUDA → ChainRulesCoreExt
+  12912.8 ms  ✓ Atomix → AtomixCUDAExt
+  12990.1 ms  ✓ WeightInitializers → CUDAExt
+  13169.3 ms  ✓ MLDataDevices → CUDAExt
+  13377.6 ms  ✓ CUDA → EnzymeCoreExt
+  13481.8 ms  ✓ CUDA → SpecialFunctionsExt
+  13472.0 ms  ✓ NNlib → NNlibCUDAExt
+  14636.8 ms  ✓ LuxLib → CUDAExt
+   6250.3 ms  ✓ CUDSS
+   6615.7 ms  ✓ LuxLib → CUDAForwardDiffExt
+   8891.2 ms  ✓ cuDNN
+   5930.7 ms  ✓ ArrayInterface → ArrayInterfaceCUDSSExt
+   5876.1 ms  ✓ MLDataDevices → cuDNNExt
+   8628.8 ms  ✓ MadNLPGPU
+   6291.7 ms  ✓ NNlib → NNlibCUDACUDNNExt
+   6916.6 ms  ✓ LuxLib → cuDNNExt
+ 111993.2 ms  ✓ Reactant
+  19974.6 ms  ✓ LuxCore → ReactantExt
+  20266.1 ms  ✓ Reactant → ReactantRandom123Ext
+  20184.0 ms  ✓ Reactant → ReactantSpecialFunctionsExt
+  20747.9 ms  ✓ Reactant → ReactantLogExpFunctionsExt
+  20934.9 ms  ✓ Reactant → ReactantSparseArraysExt
+  20797.2 ms  ✓ Reactant → ReactantOffsetArraysExt
+  20704.4 ms  ✓ MLDataDevices → ReactantExt
+  20792.1 ms  ✓ Reactant → ReactantDatesExt
+  21037.5 ms  ✓ Reactant → ReactantStatisticsExt
+  20853.6 ms  ✓ Reactant → ReactantArrayInterfaceExt
+  20934.3 ms  ✓ Reactant → ReactantFillArraysExt
+  21043.4 ms  ✓ Reactant → ReactantAbstractFFTsExt
+  21470.6 ms  ✓ Reactant → ReactantStaticArraysExt
+  21543.5 ms  ✓ Reactant → ReactantStructArraysExt
+  21947.8 ms  ✓ Reactant → ReactantKernelAbstractionsExt
+  22512.9 ms  ✓ Optimisers → OptimisersReactantExt
+   8891.5 ms  ✓ WeightInitializers → ReactantExt
+   8549.1 ms  ✓ Reactant → ReactantFFTWExt
+   9648.0 ms  ✓ LuxLib → ReactantExt
+   9297.9 ms  ✓ Reactant → ReactantNNlibExt
+  11823.1 ms  ✓ Lux → ReactantExt
+  45284.2 ms  ✓ Reactant → ReactantCUDAExt
+  54725.5 ms  ✓ PCFM
+  49 dependencies successfully precompiled in 241 seconds. 510 already precompiled.
+[ Info: ExaModels, MadNLP, GPU
+[ Info: ExaModels, MadNLP, CPU
+[ Info: JuMP, MadNLP
+[ Info: JuMP, Ipopt
+[ Info: ExaModels, MadNLP, GPU
+[ Info: ExaModels, MadNLP, CPU
+[ Info: JuMP, MadNLP
+[ Info: JuMP, Ipopt
+============================================================
+Heat Equation — Functional Flow Matching
+============================================================
+
+[2/5] Creating FFM model...
+  Model created successfully
+
+[3/5] Loading checkpoint from: /orcd/home/002/txenakis/projects/18337/PCFM.jl/examples/checkpoints/ffm_heat_checkpoint.jld2
+  Loaded trained parameters and states
+
+[5/5] Generating samples...
+
+------------------------
+------Sampling PCFM------
+Modelling: exa
+Optimizer: MadNLPMOI.Optimizer
+Backend: CUDABackend(false, false)
+------------------------
+
+
+------------------------
+------Sampling PCFM------
+Modelling: exa
+Optimizer: MadNLPMOI.Optimizer
+Backend: CUDABackend(false, false)
+------------------------
+
+
+------------------------
+------Sampling PCFM------
+Modelling: exa
+Optimizer: MadNLPMOI.Optimizer
+Backend: CUDABackend(false, false)
+------------------------
+
+BenchmarkTools.Trial: 1 sample with 1 evaluation per sample.
+ Single result which took 98.837 s (15.68% GC) to evaluate,
+ with a memory estimate of 1.41 GiB, over 6690525 allocations.
+
+------------------------
+------Sampling PCFM------
+Modelling: exa
+Optimizer: MadNLPMOI.Optimizer
+Backend: CPU(false)
+------------------------
+
+
+------------------------
+------Sampling PCFM------
+Modelling: exa
+Optimizer: MadNLPMOI.Optimizer
+Backend: CPU(false)
+------------------------
+
+
+------------------------
+------Sampling PCFM------
+Modelling: exa
+Optimizer: MadNLPMOI.Optimizer
+Backend: CPU(false)
+------------------------
+
+BenchmarkTools.Trial: 1 sample with 1 evaluation per sample.
+ Single result which took 111.657 s (3.30% GC) to evaluate,
+ with a memory estimate of 20.65 GiB, over 754489 allocations.
+
+------------------------
+------Sampling PCFM------
+Modelling: jump
+Optimizer: MadNLPMOI.Optimizer
+Backend: CPU(false)
+------------------------
+
+
+------------------------
+------Sampling PCFM------
+Modelling: jump
+Optimizer: MadNLPMOI.Optimizer
+Backend: CPU(false)
+------------------------
+
+
+------------------------
+------Sampling PCFM------
+Modelling: jump
+Optimizer: MadNLPMOI.Optimizer
+Backend: CPU(false)
+------------------------
+
+BenchmarkTools.Trial: 1 sample with 1 evaluation per sample.
+ Single result which took 1186.666 s (32.50% GC) to evaluate,
+ with a memory estimate of 910.80 GiB, over 12944631625 allocations.
+
+------------------------
+------Sampling PCFM------
+Modelling: jump
+Optimizer: IpoptMathOptInterfaceExt.Optimizer
+Backend: CPU(false)
+------------------------
+
+
+------------------------
+------Sampling PCFM------
+Modelling: jump
+Optimizer: IpoptMathOptInterfaceExt.Optimizer
+Backend: CPU(false)
+------------------------
+
+
+------------------------
+------Sampling PCFM------
+Modelling: jump
+Optimizer: IpoptMathOptInterfaceExt.Optimizer
+Backend: CPU(false)
+------------------------
+
+BenchmarkTools.Trial: 1 sample with 1 evaluation per sample.
+ Single result which took 1596.487 s (25.38% GC) to evaluate,
+ with a memory estimate of 771.70 GiB, over 12432600228 allocations.
+
+------------------------
+------Sampling PCFM------
+Modelling: exa
+Optimizer: MadNLPMOI.Optimizer
+Backend: CUDABackend(false, false)
+------------------------
+
+100.148418 seconds (6.70 M allocations: 1.409 GiB, 16.68% gc time, 0.01% compilation time)
+
+------------------------
+------Sampling PCFM------
+Modelling: exa
+Optimizer: MadNLPMOI.Optimizer
+Backend: CPU(false)
+------------------------
+
+117.119552 seconds (755.15 k allocations: 20.646 GiB, 2.73% gc time, 0.00% compilation time)
+
+------------------------
+------Sampling PCFM------
+Modelling: jump
+Optimizer: MadNLPMOI.Optimizer
+Backend: CPU(false)
+------------------------
+
+1203.526555 seconds (12.94 G allocations: 910.801 GiB, 32.24% gc time, 0.00% compilation time)
+
+------------------------
+------Sampling PCFM------
+Modelling: jump
+Optimizer: IpoptMathOptInterfaceExt.Optimizer
+Backend: CPU(false)
+------------------------
+
+1549.173146 seconds (12.43 G allocations: 771.698 GiB, 24.86% gc time)
