@@ -28,7 +28,7 @@ Random.seed!(42)
 # ---------------------------------------------------------------------------
 # Configuration
 # ---------------------------------------------------------------------------
-s            = 32     # spatial grid size (s × s), must match checkpoint
+s            = 16     # spatial grid size (s × s), must match checkpoint
 nt           = 50     # time steps, must match checkpoint
 emb_channels = 32
 
@@ -36,7 +36,7 @@ emb_channels = 32
 SAMPLES_PATH = length(ARGS) >= 1 ? ARGS[1] : "samples_ns.jld2"
 
 # Checkpoint path
-weight_file = joinpath(@__DIR__, "checkpoints", "ffm_ns_checkpoint.jld2")
+weight_file = joinpath(@__DIR__, "checkpoints", "ffm_ns_s16_checkpoint.jld2")
 
 # Grid: periodic domain [0, 1) × [0, 1)
 x_grid = range(0.0f0, 1.0f0; length=s+1)[1:end-1]
@@ -62,7 +62,7 @@ ffm = FFM(
     hidden_channels = 64,
     proj_channels   = 256,
     n_layers        = 4,
-    modes           = (8, 8, 12),
+    modes           = (4, 4, 12),
     device          = dev_gpu
 )
 println("  Model created successfully")
@@ -80,7 +80,7 @@ ps = ps |> device
 st = st |> device
 
 println("\n[3/3] Generating samples...")
-n_samples = 16
+n_samples = 4
 tstate_inf = (parameters = ps, states = st)
 
 const ns_domain = (x_start=0f0, x_end=1f0, y_start=0f0, y_end=1f0, t_start=0f0, t_end=1f0)
@@ -137,7 +137,7 @@ end
 
 ##################
 # Load reference solutions from test dataset
-test_data_file = joinpath(@__DIR__, "..", "datasets", "data", "ns_nw30_nf30_s32_t50_mu0.001.h5")
+test_data_file = joinpath(@__DIR__, "..", "datasets", "data", "ns_nw30_nf30_s16_t50_mu0.001.h5")
 ref_samples = zeros(Float32, s, s, nt, 1, n_samples)
 
 if isfile(test_data_file)
