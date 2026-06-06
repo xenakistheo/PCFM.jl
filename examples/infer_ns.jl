@@ -4,8 +4,6 @@
 # Run train/train_ns.jl first to produce the checkpoint.
 #
 # Note: Script does not use Reactant
-
-@info "Info: starting script"
 using PCFM
 using ExaModels, MadNLP, MadNLPGPU
 using Lux
