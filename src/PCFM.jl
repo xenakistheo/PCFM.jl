@@ -27,11 +27,14 @@ include("./constraints.jl")
 # Export main functions
 export FFM
 export prepare_input, interpolate_flow
-export train_ffm!, sample_ffm, sample_pcfm
+export train_ffm!, sample_ffm, sample_pcfm, sample_pcfm_2d
+
 # Data
 export generate_diffusion_data
 export load_burgers_batch, load_rd_batch, load_ns_batch
+
 # Constraints
 export heat_constraints!, rd_constraints!, rd_constraints_2!, burgers_constraints_BC_Mass!, burgers_constraints_IC_Mass_Flux!, ns_constraints!
+export burgers_constraints_IC!, burgers_constraints_IC_Mass!
 
 end # module PCFM

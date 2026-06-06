@@ -302,3 +302,123 @@ function sample_pcfm(ffm::FFM, tstate, n_samples, n_steps, H!;
 
     return Array(x)
 end
+
+
+function sample_pcfm_2d(ffm::FFM, tstate, n_samples, n_steps, H!;
+        constraint_parameters = nothing,
+        domain = (x_start=0.0f0, x_end=1.0f0, y_start=0.0f0, y_end=1.0f0, t_start=0.0f0, t_end=1.0f0),
+        IC_func = (x, y) -> sin(2f0 * Float32(π) * Float32(y)),
+        backend = CPU(),
+        mode = "exa",
+        optimizer = MadNLP.Optimizer,
+        use_compiled = true,
+        compiled_funcs = nothing,
+        verbose = true,
+        initial_vals = nothing)
+
+    spatial_size = ffm.config[:spatial_size]
+    nx, ny       = spatial_size
+    nt           = ffm.config[:nt]
+    emb_channels = ffm.config[:emb_channels]
+    device       = ffm.config[:device]
+
+    println("\n------------------------")
+    println("------Sampling PCFM 2D------")
+    println("Modelling: $mode")
+    println("Optimizer: ", string(optimizer))
+    println("Backend: ", string(backend))
+    println("------------------------\n")
+
+    if hasfield(typeof(tstate), :parameters)
+        ps = tstate.parameters
+        st = tstate.states
+    else
+        ps = tstate[1]
+        st = tstate[2]
+    end
+
+    if use_compiled && compiled_funcs !== nothing
+        model_fn         = compiled_funcs.model
+        prepare_input_fn = compiled_funcs.prepare_input
+    else
+        model_fn         = ffm.model
+        prepare_input_fn = prepare_input
+    end
+
+    x_grid = range(domain.x_start, domain.x_end, length=nx)
+    y_grid = range(domain.y_start, domain.y_end, length=ny)
+    dx     = Float32(x_grid[2] - x_grid[1])
+    dy     = Float32(y_grid[2] - y_grid[1])
+
+    u_0_ic_vals = Float32.(IC_func.(x_grid, y_grid'))                                        # (nx, ny)
+    u_0_ic_mat  = KernelAbstractions.adapt(backend,
+        repeat(reshape(u_0_ic_vals, nx, ny, 1), 1, 1, n_samples))                           # (nx, ny, n_samples)
+
+    if initial_vals !== nothing
+        @assert size(initial_vals) == (nx, ny, nt, 1, n_samples)
+        x_0 = initial_vals |> device
+    else
+        x_0 = randn(Float32, nx, ny, nt, 1, n_samples) |> device
+    end
+
+    x            = copy(x_0)
+    dt           = 1.0f0 / n_steps
+    grid_points  = (nx, ny)
+    grid_spacing = (dx, dy)
+    t_vec        = fill(0f0, n_samples) |> device
+
+    N = nx * ny * nt * n_samples
+
+    if mode == "jump"
+        u_0_ic_mat_cpu = Array(u_0_ic_mat)                                                   # (nx, ny, n_samples) on CPU
+    else  # "exa"
+        x1_param = KernelAbstractions.adapt(backend, zeros(Float32, N))
+        core     = ExaCore(backend=backend)
+        θ        = parameter(core, x1_param)
+        u        = variable(core, 1:N; start = x1_param)
+        objective(core, (u[i] - θ[i])^2 for i in 1:N)
+        H!(core, u, u_0_ic_mat, nt, n_samples, grid_points, grid_spacing, dt, constraint_parameters; backend=backend)
+        nlp = ExaModel(core)
+
+        if backend isa GPU
+            solver = MadNLP.MadNLPSolver(nlp; linear_solver=MadNLPGPU.CUDSSSolver, print_level=MadNLP.ERROR)
+        else
+            solver = MadNLP.MadNLPSolver(nlp; print_level=MadNLP.ERROR)
+        end
+    end
+
+    for step in 0:(n_steps - 1)
+        if verbose && step % 5 == 0
+            println("PCFM step: $step/$n_steps")
+        end
+
+        τ      = step * dt
+        τ_next = τ + dt
+        fill!(t_vec, τ)
+
+        x_input = prepare_input_fn(x, t_vec, spatial_size, nt, n_samples, emb_channels)
+        v, st   = model_fn(x_input, ps, st)
+
+        x_1 = x .+ v .* (1.0f0 - τ)
+
+        if mode == "jump"
+            x_1_cpu  = Array(x_1)
+            jmp_model = Model(optimizer)
+            set_silent(jmp_model)
+            @variable(jmp_model, u_jmp[1:nx, 1:ny, 1:nt, 1:n_samples])
+            @objective(jmp_model, Min, sum((u_jmp[i,j,k,s] - x_1_cpu[i,j,k,1,s])^2
+                                          for i in 1:nx, j in 1:ny, k in 1:nt, s in 1:n_samples))
+            H!(jmp_model, u_jmp, u_0_ic_mat_cpu, nt, n_samples, grid_points, grid_spacing, dt, constraint_parameters)
+            optimize!(jmp_model)
+            x_1 = reshape(Float32.(value.(u_jmp)), nx, ny, nt, 1, n_samples) |> device
+        else
+            copyto!(nlp.θ, reshape(x_1, N))
+            result = MadNLP.solve!(solver)
+            x_1    = reshape(Float32.(solution(result, u)), nx, ny, nt, 1, n_samples) |> device
+        end
+
+        @. x = x_0 + (x_1 - x_0) * τ_next
+    end
+
+    return Array(x)
+end
