@@ -1,0 +1,14 @@
+Job ID:      15535398
+Node:        node4104
+GPUs:        0
+Start:       Sat Jun  6 10:03:30 EDT 2026
+Project dir: /home/txenakis/projects/18337/PCFM.jl
+N samples:   256
+Run:         2
+Samples out: samples_heat_nsamples256_run2.jld2
+--------------------------------------
+Running Heat inference...
+Inference: done
+--------------------------------------
+Done: Sat Jun  6 14:11:03 EDT 2026
+Logs: logs/heat_infer_nsamples256_run2.log
