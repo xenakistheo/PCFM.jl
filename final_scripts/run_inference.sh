@@ -8,7 +8,7 @@
 #SBATCH --error=logs/%x_%j.err
 
 # Usage: sbatch --job-name=pcfm_<problem> final_scripts/run_inference.sh <problem> [run]
-# Problems: heat | heat2 | burgers_BC | burgers_IC | rd
+# Problems: heat | heat2 | burgers_BC | burgers_IC | rd | ns
 # Example:  sbatch --job-name=pcfm_heat final_scripts/run_inference.sh heat 2
 
 set -euo pipefail
@@ -22,11 +22,22 @@ case "$PROBLEM" in
     burgers_BC) SCRIPT="examples/infer_burgers_BC.jl" ; LOG_BASE="logs/burgers_BC_infer" ;;
     burgers_IC) SCRIPT="examples/infer_burgers_IC.jl" ; LOG_BASE="logs/burgers_IC_infer" ;;
     rd)         SCRIPT="examples/infer_rd.jl"         ; LOG_BASE="logs/rd_infer"         ;;
+    ns)         SCRIPT="examples/infer_ns.jl"         ; LOG_BASE="logs/ns_infer"         ;;
     *)
         echo "Usage: sbatch --job-name=pcfm_<problem> $0 <problem> [run]"
-        echo "  problem: heat | heat2 | burgers_BC | burgers_IC | rd"
+        echo "  problem: heat | heat2 | burgers_BC | burgers_IC | rd | ns"
         exit 1
         ;;
+esac
+
+SAMPLES_PATH="samples_${PROBLEM}${RUN:+_run$RUN}.jld2"
+
+# Per-problem Julia args: heat expects (nsamples, samples_path); ns expects (samples_path);
+# others don't use ARGS so pass nothing to avoid parse errors.
+case "$PROBLEM" in
+    heat)  JULIA_ARGS=(32 "$SAMPLES_PATH") ;;
+    ns)    JULIA_ARGS=("$SAMPLES_PATH") ;;
+    *)     JULIA_ARGS=() ;;
 esac
 
 LOG="${LOG_BASE}${RUN:+-$RUN}.log"
@@ -40,10 +51,11 @@ echo "GPUs:        $CUDA_VISIBLE_DEVICES"
 echo "Start:       $(date)"
 echo "Project dir: $SLURM_SUBMIT_DIR"
 echo "Problem:     $PROBLEM"
+echo "Samples out: $SAMPLES_PATH"
 echo "--------------------------------------"
 
 echo "Running $PROBLEM inference..."
-julia --project=. "$SCRIPT" \
+julia --project=. "$SCRIPT" "${JULIA_ARGS[@]}" \
     > "$LOG" 2>&1 \
     && echo "Inference: done" || { echo "Inference: FAILED"; exit 1; }
 
