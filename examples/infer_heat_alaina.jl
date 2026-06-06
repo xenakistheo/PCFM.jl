@@ -46,7 +46,7 @@ ffm = FFM(
     proj_channels   = 256,
     n_layers        = 4,
     modes           = (32, 32),
-    device          = cpu_device   # projection solvers are CPU-only
+    device          = gpu_device()
 )
 println("  Model created successfully")
 

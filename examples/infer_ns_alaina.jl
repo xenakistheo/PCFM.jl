@@ -52,7 +52,7 @@ ffm = FFM(
     proj_channels   = 256,
     n_layers        = 4,
     modes           = (4, 4, 12),
-    device          = cpu_device
+    device          = gpu_device()
 )
 println("  Model created successfully")
 
