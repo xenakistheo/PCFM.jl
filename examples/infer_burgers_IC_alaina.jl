@@ -3,7 +3,7 @@
 #
 # Mirrors infer_burgers_IC.jl: same model, same IC, same save format.
 # Solvers: BurgersICFluxSolver (LBFGS) + BurgersICFluxIPSolver (IPNewton)
-# Projection solvers run on CPU only.
+# Model inference runs on GPU; projection solvers run on CPU.
 
 using PCFM
 using Lux
@@ -59,11 +59,11 @@ println("  Model created successfully")
 
 println("\n[2/3] Loading checkpoint from: $weight_file")
 saved = JLD2.load(weight_file)
-ps = saved["parameters"]
-st = saved["states"]
+ps = saved["parameters"] |> cu
 println("  Loaded trained parameters and states")
 
 _, st = Lux.setup(Random.default_rng(), ffm.model)
+st = st |> cu
 
 # ---------------------------------------------------------------------------
 # Constraint data
@@ -82,14 +82,14 @@ begin
                         $n_samples, 100,
                         BurgersICFluxSolver(),
                         $constraint_data;
-                        verbose=false))
+                        device=cu, verbose=false))
 
     @info "BurgersICFlux IPNewton"
     display(@benchmark sample_pcfm($ffm.model, $ps, $st, $nx, $nt, $emb_channels,
                         $n_samples, 100,
                         BurgersICFluxIPSolver(),
                         $constraint_data;
-                        verbose=false))
+                        device=cu, verbose=false))
 end
 
 # ---------------------------------------------------------------------------
@@ -101,14 +101,14 @@ begin
                         n_samples, 100,
                         BurgersICFluxSolver(),
                         constraint_data;
-                        verbose=true)
+                        device=cu, verbose=true)
 
     @info "BurgersICFlux IPNewton"
     @time samples_ipnewton = sample_pcfm(ffm.model, ps, st, nx, nt, emb_channels,
                         n_samples, 100,
                         BurgersICFluxIPSolver(),
                         constraint_data;
-                        verbose=true)
+                        device=cu, verbose=true)
 end
 
 # ---------------------------------------------------------------------------

@@ -7,7 +7,7 @@
 # NOTE: Alaina's RD solvers track mass evolution using the logistic reaction
 # source only (rho * u * (1-u)). The diffusion term (nu) is not included in
 # the mass update — this is a simplification relative to rd_constraints_2!.
-# Projection solvers run on CPU only.
+# Model inference runs on GPU; projection solvers run on CPU.
 
 using PCFM
 using Lux
@@ -85,11 +85,11 @@ println("  Model created successfully")
 
 println("\n[2/3] Loading checkpoint from: $weight_file")
 saved = JLD2.load(weight_file)
-ps = saved["parameters"]
-st = saved["states"]
+ps = saved["parameters"] |> cu
 println("  Loaded trained parameters and states")
 
 _, st = Lux.setup(Random.default_rng(), ffm.model)
+st = st |> cu
 
 # ---------------------------------------------------------------------------
 # Constraint data
@@ -108,14 +108,14 @@ begin
                         $n_samples, 100,
                         RDSolver(rho=$rd_rho),
                         $constraint_data;
-                        verbose=false))
+                        device=cu, verbose=false))
 
     @info "RD IPNewton (rho=$rd_rho)"
     display(@benchmark sample_pcfm($ffm.model, $ps, $st, $nx, $nt, $emb_channels,
                         $n_samples, 100,
                         RDIPNewtonSolver(rho=$rd_rho),
                         $constraint_data;
-                        verbose=false))
+                        device=cu, verbose=false))
 end
 
 # ---------------------------------------------------------------------------
@@ -127,14 +127,14 @@ begin
                         n_samples, 100,
                         RDSolver(rho=rd_rho),
                         constraint_data;
-                        verbose=true)
+                        device=cu, verbose=true)
 
     @info "RD IPNewton (rho=$rd_rho)"
     @time samples_ipnewton = sample_pcfm(ffm.model, ps, st, nx, nt, emb_channels,
                         n_samples, 100,
                         RDIPNewtonSolver(rho=rd_rho),
                         constraint_data;
-                        verbose=true)
+                        device=cu, verbose=true)
 end
 
 # ---------------------------------------------------------------------------

@@ -2,7 +2,7 @@
 # sample_pcfm (solve_projection interface) instead of ExaModels/JuMP.
 #
 # Mirrors infer_heat.jl: same model, same IC, same save format.
-# Projection solvers run on CPU only.
+# Model inference runs on GPU; projection solvers run on CPU.
 
 using PCFM
 using Lux
@@ -52,11 +52,11 @@ println("  Model created successfully")
 
 println("\n[2/3] Loading checkpoint from: $weight_file")
 saved = JLD2.load(weight_file)
-ps = saved["parameters"]   # keep on CPU
-st = saved["states"]
+ps = saved["parameters"] |> cu
 println("  Loaded trained parameters and states")
 
 _, st = Lux.setup(Random.default_rng(), ffm.model)
+st = st |> cu
 
 # ---------------------------------------------------------------------------
 # Build constraint data  (IC = sin(x + π/4), same as infer_heat.jl)
@@ -75,14 +75,14 @@ begin
                         $n_samples, 100,
                         IPMassProjectionSolver(),
                         $constraint_data;
-                        verbose=false))
+                        device=cu, verbose=false))
 
     @info "LBFGS IC+Mass projection"
     display(@benchmark sample_pcfm($ffm.model, $ps, $st, $nx, $nt, $emb_channels,
                         $n_samples, 100,
                         PenaltyLBFGSMassProjectionSolver(),
                         $constraint_data;
-                        verbose=false))
+                        device=cu, verbose=false))
 end
 
 # ---------------------------------------------------------------------------
@@ -94,14 +94,14 @@ begin
                         n_samples, 100,
                         IPMassProjectionSolver(),
                         constraint_data;
-                        verbose=true)
+                        device=cu, verbose=true)
 
     @info "LBFGS IC+Mass projection"
     @time samples_lbfgs = sample_pcfm(ffm.model, ps, st, nx, nt, emb_channels,
                         n_samples, 100,
                         PenaltyLBFGSMassProjectionSolver(),
                         constraint_data;
-                        verbose=true)
+                        device=cu, verbose=true)
 end
 
 # ---------------------------------------------------------------------------

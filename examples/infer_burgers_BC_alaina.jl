@@ -7,7 +7,7 @@
 # NOTE: Alaina's BC solvers use a single u_L scalar for all samples.
 # The original infer_burgers_BC.jl draws per-sample left BCs from U[0,1].
 # Here u_L defaults to the IC value at x=0 (≈1.0 for the sigmoid IC).
-# Projection solvers run on CPU only.
+# Model inference runs on GPU; projection solvers run on CPU.
 
 using PCFM
 using Lux
@@ -62,11 +62,11 @@ println("  Model created successfully")
 
 println("\n[2/3] Loading checkpoint from: $weight_file")
 saved = JLD2.load(weight_file)
-ps = saved["parameters"]
-st = saved["states"]
+ps = saved["parameters"] |> cu
 println("  Loaded trained parameters and states")
 
 _, st = Lux.setup(Random.default_rng(), ffm.model)
+st = st |> cu
 
 # ---------------------------------------------------------------------------
 # Constraint data  (u_L defaults to IC value at x=0 ≈ 1.0)
@@ -84,14 +84,14 @@ begin
                         $n_samples, 100,
                         BurgersBCMassSolver(),
                         $constraint_data;
-                        verbose=false))
+                        device=cu, verbose=false))
 
     @info "BurgersBCMass IPNewton"
     display(@benchmark sample_pcfm($ffm.model, $ps, $st, $nx, $nt, $emb_channels,
                         $n_samples, 100,
                         BurgersBCMassIPSolver(),
                         $constraint_data;
-                        verbose=false))
+                        device=cu, verbose=false))
 end
 
 # ---------------------------------------------------------------------------
@@ -103,14 +103,14 @@ begin
                         n_samples, 100,
                         BurgersBCMassSolver(),
                         constraint_data;
-                        verbose=true)
+                        device=cu, verbose=true)
 
     @info "BurgersBCMass IPNewton"
     @time samples_ipnewton = sample_pcfm(ffm.model, ps, st, nx, nt, emb_channels,
                         n_samples, 100,
                         BurgersBCMassIPSolver(),
                         constraint_data;
-                        verbose=true)
+                        device=cu, verbose=true)
 end
 
 # ---------------------------------------------------------------------------
