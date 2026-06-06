@@ -69,21 +69,21 @@ println("\n[3/3] Generating samples...")
 # ---------------------------------------------------------------------------
 # Samples
 # ---------------------------------------------------------------------------
-begin
-    @info "IPNewton IC+Mass projection"
-    @time samples_ipnewton = sample_pcfm(ffm, (parameters=ps, states=st),
-                        n_samples, 100,
-                        IPMassProjectionSolver(),
-                        constraint_data;
-                        verbose=true)
-
+for repeat in 1:2
     @info "LBFGS IC+Mass projection"
     @time samples_lbfgs = sample_pcfm(ffm, (parameters=ps, states=st),
                         n_samples, 100,
                         PenaltyLBFGSMassProjectionSolver(),
                         constraint_data;
-                        verbose=true)
-end
+                        verbose=true);
+
+    @info "IPNewton IC+Mass projection"
+    @time samples_ipnewton = sample_pcfm(ffm, (parameters=ps, states=st),
+                        n_samples, 100,
+                        IPMassProjectionSolver(),
+                        constraint_data;
+                        verbose=true);
+end 
 
 # ---------------------------------------------------------------------------
 # Analytic solution (same as infer_heat.jl)
