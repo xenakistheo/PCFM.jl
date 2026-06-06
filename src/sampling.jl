@@ -321,6 +321,7 @@ function sample_pcfm(model, ps, st, nx, nt, emb_channels,
     constraint_data;
     device = identity,
     verbose=true)
+    Base.@nospecialize model ps st constraint_data device
 
     spatial_size = nx isa Tuple ? nx : (nx,)
 
