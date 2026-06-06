@@ -71,18 +71,18 @@ println("\n[3/3] Generating samples...")
 # ---------------------------------------------------------------------------
 begin
     @info "IPNewton IC+Mass projection"
-    display(@benchmark sample_pcfm($ffm.model, $ps, $st, $nx, $nt, $emb_channels,
+    display(@benchmark sample_pcfm($ffm, (parameters=$ps, states=$st),
                         $n_samples, 100,
                         IPMassProjectionSolver(),
                         $constraint_data;
-                        device=cu, verbose=false))
+                        verbose=false))
 
     @info "LBFGS IC+Mass projection"
-    display(@benchmark sample_pcfm($ffm.model, $ps, $st, $nx, $nt, $emb_channels,
+    display(@benchmark sample_pcfm($ffm, (parameters=$ps, states=$st),
                         $n_samples, 100,
                         PenaltyLBFGSMassProjectionSolver(),
                         $constraint_data;
-                        device=cu, verbose=false))
+                        verbose=false))
 end
 
 # ---------------------------------------------------------------------------
@@ -90,18 +90,18 @@ end
 # ---------------------------------------------------------------------------
 begin
     @info "IPNewton IC+Mass projection"
-    @time samples_ipnewton = sample_pcfm(ffm.model, ps, st, nx, nt, emb_channels,
+    @time samples_ipnewton = sample_pcfm(ffm, (parameters=ps, states=st),
                         n_samples, 100,
                         IPMassProjectionSolver(),
                         constraint_data;
-                        device=cu, verbose=true)
+                        verbose=true)
 
     @info "LBFGS IC+Mass projection"
-    @time samples_lbfgs = sample_pcfm(ffm.model, ps, st, nx, nt, emb_channels,
+    @time samples_lbfgs = sample_pcfm(ffm, (parameters=ps, states=st),
                         n_samples, 100,
                         PenaltyLBFGSMassProjectionSolver(),
                         constraint_data;
-                        device=cu, verbose=true)
+                        verbose=true)
 end
 
 # ---------------------------------------------------------------------------

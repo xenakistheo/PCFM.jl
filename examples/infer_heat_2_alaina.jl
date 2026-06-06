@@ -80,18 +80,18 @@ println("\n[3/3] Generating samples...")
 # ---------------------------------------------------------------------------
 begin
     @info "Heat PDE+Energy LBFGS (kappa=$kappa)"
-    display(@benchmark sample_pcfm($ffm.model, $ps, $st, $nx, $nt, $emb_channels,
+    display(@benchmark sample_pcfm($ffm, (parameters=$ps, states=$st),
                         $n_samples, 100,
                         HeatICPDEEnergySolver(kappa=$kappa),
                         $constraint_data;
-                        device=cu, verbose=false))
+                        verbose=false))
 
     @info "Heat PDE+Energy IPNewton (kappa=$kappa)"
-    display(@benchmark sample_pcfm($ffm.model, $ps, $st, $nx, $nt, $emb_channels,
+    display(@benchmark sample_pcfm($ffm, (parameters=$ps, states=$st),
                         $n_samples, 100,
                         HeatICPDEEnergyIPSolver(kappa=$kappa),
                         $constraint_data;
-                        device=cu, verbose=false))
+                        verbose=false))
 end
 
 # ---------------------------------------------------------------------------
@@ -99,18 +99,18 @@ end
 # ---------------------------------------------------------------------------
 begin
     @info "Heat PDE+Energy LBFGS (kappa=$kappa)"
-    @time samples_lbfgs = sample_pcfm(ffm.model, ps, st, nx, nt, emb_channels,
+    @time samples_lbfgs = sample_pcfm(ffm, (parameters=ps, states=st),
                         n_samples, 100,
                         HeatICPDEEnergySolver(kappa=kappa),
                         constraint_data;
-                        device=cu, verbose=true)
+                        verbose=true)
 
     @info "Heat PDE+Energy IPNewton (kappa=$kappa)"
-    @time samples_ipnewton = sample_pcfm(ffm.model, ps, st, nx, nt, emb_channels,
+    @time samples_ipnewton = sample_pcfm(ffm, (parameters=ps, states=st),
                         n_samples, 100,
                         HeatICPDEEnergyIPSolver(kappa=kappa),
                         constraint_data;
-                        device=cu, verbose=true)
+                        verbose=true)
 end
 
 # ---------------------------------------------------------------------------

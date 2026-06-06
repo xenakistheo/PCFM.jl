@@ -304,53 +304,48 @@ function sample_pcfm(ffm::FFM, tstate, n_samples, n_steps, H!;
 end
 
 """
-    sample_pcfm(model, ps, st, nx, nt, emb_channels,
-                n_samples, n_steps,
+    sample_pcfm(ffm::FFM, tstate, n_samples, n_steps,
                 solver::AbstractProjectionSolver,
                 constraint_data;
                 verbose = true)
 
-Physics-constrained sampling.  The ODE loop knows **nothing** about
-which solver or constraint is used — it just calls `solve_projection`.
+Physics-constrained sampling using Alaina's projection solvers.
+Mirrors the structure of the ExaModels/JuMP overload: model inference
+runs on ffm.config[:device]; solve_projection always runs on CPU.
 
 Alaina's Code
 """
-function sample_pcfm(model, ps, st, nx, nt, emb_channels,
-    n_samples, n_steps,
+function sample_pcfm(ffm::FFM, tstate, n_samples, n_steps,
     solver::AbstractProjectionSolver,
     constraint_data;
-    device = identity,
     verbose=true)
-    Base.@nospecialize model ps st constraint_data device
 
-    spatial_size = nx isa Tuple ? nx : (nx,)
+    spatial_size = ffm.config[:spatial_size]
+    nt           = ffm.config[:nt]
+    emb_channels = ffm.config[:emb_channels]
+    device       = ffm.config[:device]
+
+    ps, st = _unpack_tstate(tstate)
 
     x_0 = randn(Float32, spatial_size..., nt, 1, n_samples)
-    x = copy(x_0)
-    dt = 1.0f0 / n_steps
-    # time_model = 0.0
-    # time_proj  = 0.0
+    x   = copy(x_0)
+    dt  = 1.0f0 / n_steps
 
     for step in 0:(n_steps - 1)
         verbose && step % 10 == 0 && println("PCFM step: $step/$n_steps")
 
-        τ = step * dt
+        τ      = step * dt
         τ_next = τ + dt
-        t_vec = fill(Float32(τ), n_samples) |> device
+        t_vec  = fill(Float32(τ), n_samples) |> device
 
         x_input = prepare_input(x |> device, t_vec, spatial_size, nt, n_samples, emb_channels)
-        # t0 = time()
-        v, st = model(x_input, ps, st)
-        # time_model += time() - t0
+        v, st   = ffm.model(x_input, ps, st)
 
         x_1 = x .+ Array(v) .* (1.0f0 - τ)
-        # t0 = time()
         x_1 = solve_projection(solver, x_1, constraint_data)
-        # time_proj += time() - t0
-        x = x_0 .+ (x_1 .- x_0) .* τ_next
+        x   = x_0 .+ (x_1 .- x_0) .* τ_next
     end
 
-    # @info "Timing breakdown" time_model time_proj proj_perc=(time_proj/(time_model+time_proj))*100 model_perc=(time_model/(time_model+time_proj))*100   # ← report
     return x
 end
 

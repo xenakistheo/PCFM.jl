@@ -76,18 +76,18 @@ println("\n[3/3] Generating samples...")
 # ---------------------------------------------------------------------------
 begin
     @info "NS Vorticity LBFGS"
-    display(@benchmark sample_pcfm($ffm.model, $ps, $st, ($s, $s), $nt, $emb_channels,
+    display(@benchmark sample_pcfm($ffm, (parameters=$ps, states=$st),
                         $n_samples, 100,
                         NSVorticityLBFGSSolver(),
                         $constraint_data;
-                        device=cu, verbose=false))
+                        verbose=false))
 
     @info "NS Vorticity IPNewton"
-    display(@benchmark sample_pcfm($ffm.model, $ps, $st, ($s, $s), $nt, $emb_channels,
+    display(@benchmark sample_pcfm($ffm, (parameters=$ps, states=$st),
                         $n_samples, 100,
                         NSVorticityIPNewtonSolver(),
                         $constraint_data;
-                        device=cu, verbose=false))
+                        verbose=false))
 end
 
 # ---------------------------------------------------------------------------
@@ -95,18 +95,18 @@ end
 # ---------------------------------------------------------------------------
 begin
     @info "NS Vorticity LBFGS"
-    @time samples_lbfgs = sample_pcfm(ffm.model, ps, st, (s, s), nt, emb_channels,
+    @time samples_lbfgs = sample_pcfm(ffm, (parameters=ps, states=st),
                         n_samples, 100,
                         NSVorticityLBFGSSolver(),
                         constraint_data;
-                        device=cu, verbose=true)
+                        verbose=true)
 
     @info "NS Vorticity IPNewton"
-    @time samples_ipnewton = sample_pcfm(ffm.model, ps, st, (s, s), nt, emb_channels,
+    @time samples_ipnewton = sample_pcfm(ffm, (parameters=ps, states=st),
                         n_samples, 100,
                         NSVorticityIPNewtonSolver(),
                         constraint_data;
-                        device=cu, verbose=true)
+                        verbose=true)
 end
 
 # ---------------------------------------------------------------------------

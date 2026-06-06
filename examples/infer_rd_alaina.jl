@@ -104,18 +104,18 @@ println("\n[3/3] Generating samples...")
 # ---------------------------------------------------------------------------
 begin
     @info "RD LBFGS (rho=$rd_rho)"
-    display(@benchmark sample_pcfm($ffm.model, $ps, $st, $nx, $nt, $emb_channels,
+    display(@benchmark sample_pcfm($ffm, (parameters=$ps, states=$st),
                         $n_samples, 100,
                         RDSolver(rho=$rd_rho),
                         $constraint_data;
-                        device=cu, verbose=false))
+                        verbose=false))
 
     @info "RD IPNewton (rho=$rd_rho)"
-    display(@benchmark sample_pcfm($ffm.model, $ps, $st, $nx, $nt, $emb_channels,
+    display(@benchmark sample_pcfm($ffm, (parameters=$ps, states=$st),
                         $n_samples, 100,
                         RDIPNewtonSolver(rho=$rd_rho),
                         $constraint_data;
-                        device=cu, verbose=false))
+                        verbose=false))
 end
 
 # ---------------------------------------------------------------------------
@@ -123,18 +123,18 @@ end
 # ---------------------------------------------------------------------------
 begin
     @info "RD LBFGS (rho=$rd_rho)"
-    @time samples_lbfgs = sample_pcfm(ffm.model, ps, st, nx, nt, emb_channels,
+    @time samples_lbfgs = sample_pcfm(ffm, (parameters=ps, states=st),
                         n_samples, 100,
                         RDSolver(rho=rd_rho),
                         constraint_data;
-                        device=cu, verbose=true)
+                        verbose=true)
 
     @info "RD IPNewton (rho=$rd_rho)"
-    @time samples_ipnewton = sample_pcfm(ffm.model, ps, st, nx, nt, emb_channels,
+    @time samples_ipnewton = sample_pcfm(ffm, (parameters=ps, states=st),
                         n_samples, 100,
                         RDIPNewtonSolver(rho=rd_rho),
                         constraint_data;
-                        device=cu, verbose=true)
+                        verbose=true)
 end
 
 # ---------------------------------------------------------------------------

@@ -78,18 +78,18 @@ println("\n[3/3] Generating samples...")
 # ---------------------------------------------------------------------------
 begin
     @info "BurgersICFlux LBFGS"
-    display(@benchmark sample_pcfm($ffm.model, $ps, $st, $nx, $nt, $emb_channels,
+    display(@benchmark sample_pcfm($ffm, (parameters=$ps, states=$st),
                         $n_samples, 100,
                         BurgersICFluxSolver(),
                         $constraint_data;
-                        device=cu, verbose=false))
+                        verbose=false))
 
     @info "BurgersICFlux IPNewton"
-    display(@benchmark sample_pcfm($ffm.model, $ps, $st, $nx, $nt, $emb_channels,
+    display(@benchmark sample_pcfm($ffm, (parameters=$ps, states=$st),
                         $n_samples, 100,
                         BurgersICFluxIPSolver(),
                         $constraint_data;
-                        device=cu, verbose=false))
+                        verbose=false))
 end
 
 # ---------------------------------------------------------------------------
@@ -97,18 +97,18 @@ end
 # ---------------------------------------------------------------------------
 begin
     @info "BurgersICFlux LBFGS"
-    @time samples_lbfgs = sample_pcfm(ffm.model, ps, st, nx, nt, emb_channels,
+    @time samples_lbfgs = sample_pcfm(ffm, (parameters=ps, states=st),
                         n_samples, 100,
                         BurgersICFluxSolver(),
                         constraint_data;
-                        device=cu, verbose=true)
+                        verbose=true)
 
     @info "BurgersICFlux IPNewton"
-    @time samples_ipnewton = sample_pcfm(ffm.model, ps, st, nx, nt, emb_channels,
+    @time samples_ipnewton = sample_pcfm(ffm, (parameters=ps, states=st),
                         n_samples, 100,
                         BurgersICFluxIPSolver(),
                         constraint_data;
-                        device=cu, verbose=true)
+                        verbose=true)
 end
 
 # ---------------------------------------------------------------------------

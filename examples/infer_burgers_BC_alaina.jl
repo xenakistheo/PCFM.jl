@@ -80,18 +80,18 @@ println("\n[3/3] Generating samples...")
 # ---------------------------------------------------------------------------
 begin
     @info "BurgersBCMass LBFGS"
-    display(@benchmark sample_pcfm($ffm.model, $ps, $st, $nx, $nt, $emb_channels,
+    display(@benchmark sample_pcfm($ffm, (parameters=$ps, states=$st),
                         $n_samples, 100,
                         BurgersBCMassSolver(),
                         $constraint_data;
-                        device=cu, verbose=false))
+                        verbose=false))
 
     @info "BurgersBCMass IPNewton"
-    display(@benchmark sample_pcfm($ffm.model, $ps, $st, $nx, $nt, $emb_channels,
+    display(@benchmark sample_pcfm($ffm, (parameters=$ps, states=$st),
                         $n_samples, 100,
                         BurgersBCMassIPSolver(),
                         $constraint_data;
-                        device=cu, verbose=false))
+                        verbose=false))
 end
 
 # ---------------------------------------------------------------------------
@@ -99,18 +99,18 @@ end
 # ---------------------------------------------------------------------------
 begin
     @info "BurgersBCMass LBFGS"
-    @time samples_lbfgs = sample_pcfm(ffm.model, ps, st, nx, nt, emb_channels,
+    @time samples_lbfgs = sample_pcfm(ffm, (parameters=ps, states=st),
                         n_samples, 100,
                         BurgersBCMassSolver(),
                         constraint_data;
-                        device=cu, verbose=true)
+                        verbose=true)
 
     @info "BurgersBCMass IPNewton"
-    @time samples_ipnewton = sample_pcfm(ffm.model, ps, st, nx, nt, emb_channels,
+    @time samples_ipnewton = sample_pcfm(ffm, (parameters=ps, states=st),
                         n_samples, 100,
                         BurgersBCMassIPSolver(),
                         constraint_data;
-                        device=cu, verbose=true)
+                        verbose=true)
 end
 
 # ---------------------------------------------------------------------------
