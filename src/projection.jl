@@ -592,25 +592,11 @@ end
 struct BurgersICIPSolver <: AbstractProjectionSolver end
 
 function solve_projection(::BurgersICIPSolver, Z_hat, cdata)
-    _, nt, nc, nb = size(Z_hat)
+    nx, nt, nc, nb = size(Z_hat)
     Z_proj = copy(Z_hat)
 
     for b in 1:nb, c in 1:nc
         Z_proj[:, 1, c, b] .= cdata.u_0_ic_vec
-
-        for k in 1:(nt - 1)
-            function ic_loss_ip(u_next, p)
-                u_hat_next = p
-                return sum(abs2, u_next .- u_hat_next)
-            end
-
-            ad_type = DifferentiationInterface.SecondOrder(AutoForwardDiff(), AutoForwardDiff())
-            opt_func = OptimizationFunction(ic_loss_ip, ad_type)
-            u_hat_next = Float64.(Z_proj[:, k+1, c, b])
-            prob = OptimizationProblem(opt_func, copy(u_hat_next), u_hat_next)
-            sol = solve(prob, OptimizationOptimJL.IPNewton())
-            Z_proj[:, k+1, c, b] .= Float32.(sol.u)
-        end
     end
     return Z_proj
 end

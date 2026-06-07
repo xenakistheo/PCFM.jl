@@ -77,18 +77,19 @@ println("\n[3/3] Generating samples...")
 # Samples
 # ---------------------------------------------------------------------------
 SAMPLES_PATH = "samples_burgers_IC_only_alaina.jld2"
-for iter in 1:1
-    @info "BurgersIC only LBFGS"
-    @time samples_ic_only = sample_pcfm(ffm, (parameters=ps, states=st),
-                        n_samples, 100,
-                        BurgersICSolver(),
-                        constraint_data;
-                        verbose=true)
+for iter in 1:4
 
     @info "BurgersIC only IPNewton"
     @time samples_ic_only_ip = sample_pcfm(ffm, (parameters=ps, states=st),
                         n_samples, 100,
                         BurgersICIPSolver(),
+                        constraint_data;
+                        verbose=true)
+
+    @info "BurgersIC only LBFGS"
+    @time samples_ic_only = sample_pcfm(ffm, (parameters=ps, states=st),
+                        n_samples, 100,
+                        BurgersICSolver(),
                         constraint_data;
                         verbose=true)
 
@@ -108,6 +109,14 @@ for iter in 1:1
 end
 
 begin
+    @info "BurgersIC only IPNewton"
+    @time samples_ic_only_ip = sample_pcfm(ffm, (parameters=ps, states=st),
+                        n_samples, 100,
+                        BurgersICIPSolver(),
+                        constraint_data;
+                        verbose=true)
+
+
     @info "BurgersIC only LBFGS"
     @time samples_ic_only = sample_pcfm(ffm, (parameters=ps, states=st),
                         n_samples, 100,
@@ -115,12 +124,6 @@ begin
                         constraint_data;
                         verbose=true)
 
-    @info "BurgersIC only IPNewton"
-    @time samples_ic_only_ip = sample_pcfm(ffm, (parameters=ps, states=st),
-                        n_samples, 100,
-                        BurgersICIPSolver(),
-                        constraint_data;
-                        verbose=true)
 
     # @info "BurgersICFlux LBFGS"
     # @time samples_lbfgs = sample_pcfm(ffm, (parameters=ps, states=st),
