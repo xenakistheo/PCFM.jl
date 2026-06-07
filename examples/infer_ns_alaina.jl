@@ -2,8 +2,8 @@
 # projection-based sample_pcfm (solve_projection interface).
 #
 # Mirrors infer_ns.jl: same model, same IC, same save format.
-# Solvers: NSVorticityLBFGSSolver + NSVorticityIPNewtonSolver
-# Constraint: IC + vorticity integral (W₀ = ∫∫ ω dx dy)
+# Solvers: NSEnstrophyLBFGSSolver + NSEnstrophyIPNewtonSolver
+# Constraints: IC + mass (W₀ = ∫∫ ω dx dy) + enstrophy (E₀ = ∫∫ ω² dx dy)
 # Model inference runs on GPU; projection solvers run on CPU.
 
 using PCFM
@@ -74,22 +74,39 @@ println("\n[3/3] Generating samples...")
 # ---------------------------------------------------------------------------
 # Samples
 # ---------------------------------------------------------------------------
-begin
-    @info "NS Vorticity LBFGS"
+for iter in 1:3
+    @info "NS Enstrophy LBFGS"
     @time samples_lbfgs = sample_pcfm(ffm, (parameters=ps, states=st),
                         n_samples, 100,
-                        NSVorticityLBFGSSolver(),
-                        constraint_data;
-                        verbose=true)
-
-    @info "NS Vorticity IPNewton"
-    @time samples_ipnewton = sample_pcfm(ffm, (parameters=ps, states=st),
-                        n_samples, 100,
-                        NSVorticityIPNewtonSolver(),
+                        NSEnstrophyLBFGSSolver(),
                         constraint_data;
                         verbose=true)
 end
 
+for iter in 1:3
+    @info "NS Enstrophy IPNewton"
+    @time samples_ipnewton = sample_pcfm(ffm, (parameters=ps, states=st),
+                        n_samples, 100,
+                        NSEnstrophyIPNewtonSolver(),
+                        constraint_data;
+                        verbose=true)
+end
+
+begin
+    @info "NS Enstrophy LBFGS"
+    @time samples_lbfgs = sample_pcfm(ffm, (parameters=ps, states=st),
+                        n_samples, 100,
+                        NSEnstrophyLBFGSSolver(),
+                        constraint_data;
+                        verbose=true)
+
+    @info "NS Enstrophy IPNewton"
+    @time samples_ipnewton = sample_pcfm(ffm, (parameters=ps, states=st),
+                        n_samples, 100,
+                        NSEnstrophyIPNewtonSolver(),
+                        constraint_data;
+                        verbose=true)
+end
 # ---------------------------------------------------------------------------
 # Reference solutions from test dataset
 # ---------------------------------------------------------------------------

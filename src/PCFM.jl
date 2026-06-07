@@ -42,7 +42,7 @@ export generate_diffusion_data
 export load_burgers_batch, load_rd_batch, load_ns_batch
 
 # Constraints
-export heat_constraints!, rd_constraints!, rd_constraints_2!, burgers_constraints_BC_Mass!, burgers_constraints_IC_Mass_Flux!, ns_constraints!
+export heat_constraints!, rd_constraints!, rd_constraints_2!, burgers_constraints_BC_Mass!, burgers_constraints_IC_Mass_Flux!, ns_constraints!, ns_enstrophy_constraints!
 export burgers_constraints_IC!, burgers_constraints_IC_Mass!
 
 
@@ -62,8 +62,10 @@ export IPMassProjectionSolver
 export RDSolver
 export NSVorticityAnalyticSolver
 export NSVorticityLBFGSSolver
-export RDIPNewtonSolver
 export NSVorticityIPNewtonSolver
+export NSEnstrophyLBFGSSolver
+export NSEnstrophyIPNewtonSolver
+export RDIPNewtonSolver
 export BurgersBCMassSolver, BurgersBCMassIPSolver
 export BurgersICSolver, BurgersICIPSolver
 export BurgersICFluxSolver, BurgersICFluxIPSolver

@@ -129,10 +129,23 @@ starting_noise = randn(Float32, nx, nt, 1, n_samples)
 
 # Samples
 SAMPLES_PATH = "samples_burgers_IC_Flux_10.jld2"
+for iter in 1:2
+    @info "ExaModels, MadNLP, GPU"
+    @time samples_exa_gpu = sample_pcfm(ffm, (parameters=ps, states=st),
+                       n_samples, 100, CONSTRAINT_FUNC;
+                       domain = burgers_domain,
+                       IC_func = IC_func_burgers,
+                       constraint_parameters = burgers_ic_flux_params,
+                       backend = backend,
+                       verbose = true,
+                       mode = "exa",
+                       initial_vals = starting_noise);
+end
+
 begin
     @info "ExaModels, MadNLP, GPU"
     @time samples_exa_gpu = sample_pcfm(ffm, (parameters=ps, states=st),
-                       n_samples, 10, CONSTRAINT_FUNC;
+                       n_samples, 100, CONSTRAINT_FUNC;
                        domain = burgers_domain,
                        IC_func = IC_func_burgers,
                        constraint_parameters = burgers_ic_flux_params,

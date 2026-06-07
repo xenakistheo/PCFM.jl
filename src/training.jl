@@ -39,7 +39,7 @@ function train_ffm!(ffm::FFM, data;
     device       = ffm.config[:device]
 
     losses = Float32[]
-    tstate = Training.TrainState(ffm.model, ffm.ps, ffm.st, Adam(lr))
+    tstate = Training.TrainState(ffm.model, ffm.ps, ffm.st, Optimisers.Adam(lr))
 
     n_samples = size(data)[end]
     data = data |> device

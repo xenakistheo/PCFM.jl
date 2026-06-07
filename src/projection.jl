@@ -447,6 +447,86 @@ function solve_projection(::NSVorticityIPNewtonSolver, Z_hat, cdata)
     return Z_proj
 end
 
+#  NS Enstrophy: ∫w dx = W₀  AND  ∫w² dx = E₀  — 2D
+
+struct NSEnstrophyLBFGSSolver{T} <: AbstractProjectionSolver
+    penalty::T
+end
+NSEnstrophyLBFGSSolver(; penalty=1.0f4) = NSEnstrophyLBFGSSolver(penalty)
+
+function solve_projection(solver::NSEnstrophyLBFGSSolver, Z_hat, cdata)
+    layout = get_array_layout(Z_hat)
+    dx = cdata.dx
+    W0 = cdata.M0
+    E0 = cdata.E0
+    λ  = solver.penalty
+    Z_proj = copy(Z_hat)
+
+    function penalised_loss(w_flat, p)
+        w_hat_flat, _dx, _W0, _E0 = p
+        obj = sum(abs2, w_flat .- w_hat_flat)
+        W_k = sum(w_flat) * _dx
+        E_k = sum(abs2, w_flat) * _dx
+        return obj + λ * (W_k - _W0)^2 + λ * (E_k - _E0)^2
+    end
+
+    opt_func = OptimizationFunction(penalised_loss, AutoForwardDiff())
+
+    for b in 1:layout.nb, c in 1:layout.nc
+        set_slice!(Z_proj, 1, c, b, cdata.u_0_ic)
+        for k in 2:layout.nt
+            slice = get_slice(Z_proj, k, c, b)
+            w_hat_flat = vec(copy(slice))
+            u0 = copy(w_hat_flat)
+            prob = OptimizationProblem(opt_func, u0, (w_hat_flat, dx, W0, E0))
+            sol = solve(prob, OptimizationOptimJL.LBFGS())
+            slice .= reshape(sol.u, size(slice))
+        end
+    end
+    return Z_proj
+end
+
+function _ns_enstrophy_ip_loss(w_flat, p)
+    w_hat_flat = p[1]
+    return sum(abs2, w_flat .- w_hat_flat)
+end
+
+function _ns_enstrophy_ip_cons!(res, w_flat, p)
+    W0 = p[2]
+    E0 = p[3]
+    _dx = p[4]
+    res[1] = sum(w_flat) * _dx - W0
+    res[2] = sum(abs2, w_flat) * _dx - E0
+    return nothing
+end
+
+struct NSEnstrophyIPNewtonSolver <: AbstractProjectionSolver end
+
+function solve_projection(::NSEnstrophyIPNewtonSolver, Z_hat, cdata)
+    layout = get_array_layout(Z_hat)
+    dx = cdata.dx
+    W0 = cdata.M0
+    E0 = cdata.E0
+    Z_proj = copy(Z_hat)
+
+    ad_type = DifferentiationInterface.SecondOrder(AutoForwardDiff(), AutoForwardDiff())
+    opt_func = OptimizationFunction(_ns_enstrophy_ip_loss, ad_type; cons = _ns_enstrophy_ip_cons!)
+
+    for b in 1:layout.nb, c in 1:layout.nc
+        set_slice!(Z_proj, 1, c, b, cdata.u_0_ic)
+        for k in 2:layout.nt
+            slice = get_slice(Z_proj, k, c, b)
+            w_hat = Float64.(vec(slice))
+            u0 = copy(w_hat)
+            p = (w_hat, Float64(W0), Float64(E0), Float64(dx))
+            prob = OptimizationProblem(opt_func, u0, p; lcons = [0.0, 0.0], ucons = [0.0, 0.0])
+            sol = solve(prob, OptimizationOptimJL.IPNewton())
+            slice .= reshape(Float32.(sol.u), size(slice))
+        end
+    end
+    return Z_proj
+end
+
 # Burgers - 1D
 
 # ════════════════════════════════════════════════════════════
@@ -980,6 +1060,7 @@ function make_constraint_data(u_0_ic_input, nx_or_spatial, nt, n_samples;
     end
 
     M0 = sum(ic) * dx
+    E0 = sum(abs2, ic) * dx
 
     _g_L = g_L === nothing ? zeros(Float32, nt) : g_L
     _g_R = g_R === nothing ? zeros(Float32, nt) : g_R
@@ -1005,6 +1086,7 @@ function make_constraint_data(u_0_ic_input, nx_or_spatial, nt, n_samples;
         dt_physics   = dt_physics,
         nt           = nt,
         M0           = M0,
+        E0           = E0,
         g_L          = _g_L,
         g_R          = _g_R,
         u_L          = _u_L,

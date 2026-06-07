@@ -65,6 +65,70 @@ function ns_constraints!(model::Model, u, u0, nt, n_samples, grid_points, grid_s
 end
 
 
+function ns_enstrophy_constraints!(model::Model, u, u0, nt, n_samples, grid_points, grid_spacing, dt, params=nothing)
+    nx, ny = grid_points
+    dx, dy = grid_spacing
+
+    M0 = [sum(u0[i, j, s] for i in 1:nx, j in 1:ny) for s in 1:n_samples]
+    E0 = [sum(u0[i, j, s]^2 for i in 1:nx, j in 1:ny) * dx * dy for s in 1:n_samples]
+
+    # 1. Initial condition
+    @constraint(model, [i in 1:nx, j in 1:ny, s in 1:n_samples], u[i, j, 1, s] == u0[i, j, s])
+
+    # 2. Mass conservation (linear)
+    @constraint(model, [t in 2:nt, s in 1:n_samples],
+        sum(u[i, j, t, s] for i in 1:nx, j in 1:ny) == M0[s])
+
+    # 3. Enstrophy conservation (nonlinear, quadratic)
+    @NLconstraint(model, [t in 2:nt, s in 1:n_samples],
+        sum(u[i, j, t, s]^2 for i in 1:nx, j in 1:ny) * dx * dy == E0[s])
+end
+
+
+function ns_enstrophy_constraints!(core::ExaCore, u_flat, u0_flat, nt, n_samples, grid_points, grid_spacing, dt, params=nothing; backend=CPU())
+    nx, ny = grid_points
+    dx, dy = grid_spacing
+
+    idx(i, j, t, s) = i + (j-1)*nx + (t-1)*nx*ny + (s-1)*nx*ny*nt
+
+    u0_param = parameter(core, u0_flat)
+
+    # 1. Initial condition
+    constraint(core,
+        (u_flat[idx(i, j, 1, s)] - u0_param[i, j, s]
+         for i in 1:nx, j in 1:ny, s in 1:n_samples);
+        lcon = KernelAbstractions.adapt(backend, zeros(nx * ny * n_samples)),
+        ucon = KernelAbstractions.adapt(backend, zeros(nx * ny * n_samples))
+    )
+
+    ts_pairs = [(t, s) for t in 2:nt for s in 1:n_samples]
+
+    # 2. Mass conservation (linear)
+    M0 = dropdims(sum(u0_flat, dims=(1, 2)), dims=(1, 2))
+    M0_param = parameter(core, M0)
+
+    constraint(core,
+        (sum(u_flat[idx(i, j, d[1], d[2])] for i in 1:nx, j in 1:ny) - M0_param[d[2]]
+            for d in ts_pairs);
+        lcon = KernelAbstractions.adapt(backend, zeros((nt-1) * n_samples)),
+        ucon = KernelAbstractions.adapt(backend, zeros((nt-1) * n_samples))
+    )
+
+    # 3. Enstrophy conservation (nonlinear, quadratic)
+    E0 = dropdims(sum(u0_flat .^ 2, dims=(1, 2)), dims=(1, 2)) .* (dx * dy)
+    E0_param = parameter(core, E0)
+
+    constraint(core,
+        (sum(u_flat[idx(i, j, d[1], d[2])]^2 for i in 1:nx, j in 1:ny) * dx * dy - E0_param[d[2]]
+            for d in ts_pairs);
+        lcon = KernelAbstractions.adapt(backend, zeros((nt-1) * n_samples)),
+        ucon = KernelAbstractions.adapt(backend, zeros((nt-1) * n_samples))
+    )
+
+    return nothing
+end
+
+
 function ns_constraints!(core::ExaCore, u_flat, u0_flat, nt, n_samples, grid_points, grid_spacing, dt, params=nothing; backend=CPU())
     nx, ny  = grid_points                                                                                                                                            
     dx, dy = grid_spacing
