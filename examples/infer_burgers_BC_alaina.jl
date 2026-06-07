@@ -78,7 +78,7 @@ println("\n[3/3] Generating samples...")
 # ---------------------------------------------------------------------------
 # Samples
 # ---------------------------------------------------------------------------
-for iter in 1:4
+for iter in 1:3
     @info "BurgersBCMass LBFGS"
     @time samples_lbfgs = sample_pcfm(ffm, (parameters=ps, states=st),
                         n_samples, 100,
