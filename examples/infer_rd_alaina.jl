@@ -102,7 +102,7 @@ println("\n[3/3] Generating samples...")
 # ---------------------------------------------------------------------------
 # Samples
 # ---------------------------------------------------------------------------
-for iter in 1:2
+begin 
     @info "RD LBFGS (rho=$rd_rho)"
     @time samples_lbfgs = sample_pcfm(ffm, (parameters=ps, states=st),
                         n_samples, 100,
