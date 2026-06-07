@@ -332,7 +332,7 @@ function sample_pcfm(ffm::FFM, tstate, n_samples, n_steps,
     dt  = 1.0f0 / n_steps
 
     for step in 0:(n_steps - 1)
-        verbose && step % 10 == 0 && println("PCFM step: $step/$n_steps")
+        verbose && step % 5 == 0 && println("PCFM step: $step/$n_steps")
 
         τ      = step * dt
         τ_next = τ + dt
