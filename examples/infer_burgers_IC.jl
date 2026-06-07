@@ -125,7 +125,7 @@ starting_noise = randn(Float32, nx, nt, 1, n_samples)
 # end
 
 # Samples
-begin
+for iter in 1:1
     @info "ExaModels, MadNLP, GPU"
     @time samples_exa_gpu = sample_pcfm(ffm, (parameters=ps, states=st),
                        n_samples, 100, CONSTRAINT_FUNC;
