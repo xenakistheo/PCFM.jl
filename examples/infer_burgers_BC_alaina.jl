@@ -78,7 +78,7 @@ println("\n[3/3] Generating samples...")
 # ---------------------------------------------------------------------------
 # Samples
 # ---------------------------------------------------------------------------
-begin
+for iter in 1:4
     @info "BurgersBCMass LBFGS"
     @time samples_lbfgs = sample_pcfm(ffm, (parameters=ps, states=st),
                         n_samples, 100,
@@ -86,12 +86,12 @@ begin
                         constraint_data;
                         verbose=true)
 
-    @info "BurgersBCMass IPNewton"
-    @time samples_ipnewton = sample_pcfm(ffm, (parameters=ps, states=st),
-                        n_samples, 100,
-                        BurgersBCMassIPSolver(),
-                        constraint_data;
-                        verbose=true)
+    # @info "BurgersBCMass IPNewton"
+    # @time samples_ipnewton = sample_pcfm(ffm, (parameters=ps, states=st),
+    #                     n_samples, 100,
+    #                     BurgersBCMassIPSolver(),
+    #                     constraint_data;
+    #                     verbose=true)
 end
 
 # ---------------------------------------------------------------------------
@@ -117,7 +117,7 @@ end
 # ---------------------------------------------------------------------------
 JLD2.save(SAMPLES_PATH,
     "samples_lbfgs",    samples_lbfgs,
-    "samples_ipnewton", samples_ipnewton,
+    # "samples_ipnewton", samples_ipnewton,
     "ref_samples",      ref_samples)
 
 @info "Samples saved to $SAMPLES_PATH"

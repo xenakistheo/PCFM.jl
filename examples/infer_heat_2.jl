@@ -5,8 +5,6 @@ on the 1D heat (diffusion) equation.
 Note: Script does not use Reactant
 """
 
-#S
-
 using PCFM
 
 using ExaModels, MadNLP, MadNLPGPU
