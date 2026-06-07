@@ -1,0 +1,9 @@
+Job ID:      15557943
+Node:        node3512
+GPUs:        0
+Start:       Sun Jun  7 01:21:28 EDT 2026
+Project dir: /orcd/home/002/txenakis/projects/18337/PCFM.jl
+Problem:     rd
+Samples out: samples_rd_alaina_run2.jld2
+--------------------------------------
+Running rd inference (Alaina solvers)...

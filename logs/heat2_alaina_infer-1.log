@@ -1,18 +1,5 @@
 [ Info: Heat PDE+Energy LBFGS (kappa=0.01)
-[ Info: Heat PDE+Energy LBFGS (kappa=0.01)
-[ Info: Heat PDE+Energy LBFGS (kappa=0.01)
-ERROR: LoadError: UndefVarError: `samples_lbfgs` not defined in `Main`
-Suggestion: check for spelling errors or missing imports.
-Stacktrace:
- [1] top-level scope
-   @ /orcd/home/002/txenakis/projects/18337/PCFM.jl/examples/infer_heat_2_alaina.jl:108
- [2] include(mod::Module, _path::String)
-   @ Base ./Base.jl:306
- [3] exec_options(opts::Base.JLOptions)
-   @ Base ./client.jl:317
- [4] _start()
-   @ Base ./client.jl:550
-in expression starting at /orcd/home/002/txenakis/projects/18337/PCFM.jl/examples/infer_heat_2_alaina.jl:108
+[ Info: Samples saved to samples_heat2_alaina_run1.jld2
 ============================================================
 Heat-2 (PDE+Energy) — Functional Flow Matching (Alaina solvers)
 ============================================================
@@ -44,46 +31,4 @@ PCFM step: 80/100
 PCFM step: 85/100
 PCFM step: 90/100
 PCFM step: 95/100
-977.081759 seconds (23.15 G allocations: 3.436 TiB, 33.35% gc time, 1 lock conflict, 4.07% compilation time: 3% of which was recompilation)
-PCFM step: 0/100
-PCFM step: 5/100
-PCFM step: 10/100
-PCFM step: 15/100
-PCFM step: 20/100
-PCFM step: 25/100
-PCFM step: 30/100
-PCFM step: 35/100
-PCFM step: 40/100
-PCFM step: 45/100
-PCFM step: 50/100
-PCFM step: 55/100
-PCFM step: 60/100
-PCFM step: 65/100
-PCFM step: 70/100
-PCFM step: 75/100
-PCFM step: 80/100
-PCFM step: 85/100
-PCFM step: 90/100
-PCFM step: 95/100
-963.275286 seconds (22.97 G allocations: 3.426 TiB, 34.08% gc time)
-PCFM step: 0/100
-PCFM step: 5/100
-PCFM step: 10/100
-PCFM step: 15/100
-PCFM step: 20/100
-PCFM step: 25/100
-PCFM step: 30/100
-PCFM step: 35/100
-PCFM step: 40/100
-PCFM step: 45/100
-PCFM step: 50/100
-PCFM step: 55/100
-PCFM step: 60/100
-PCFM step: 65/100
-PCFM step: 70/100
-PCFM step: 75/100
-PCFM step: 80/100
-PCFM step: 85/100
-PCFM step: 90/100
-PCFM step: 95/100
-939.276677 seconds (22.97 G allocations: 3.425 TiB, 34.81% gc time)
+1031.824021 seconds (23.14 G allocations: 3.436 TiB, 33.05% gc time, 3.84% compilation time: 3% of which was recompilation)

@@ -1,0 +1,13 @@
+Job ID:      15557216
+Node:        node1634
+GPUs:        0
+Start:       Sun Jun  7 00:56:33 EDT 2026
+Project dir: /orcd/home/002/txenakis/projects/18337/PCFM.jl
+Problem:     heat2
+Samples out: samples_heat2_alaina_run1.jld2
+--------------------------------------
+Running heat2 inference (Alaina solvers)...
+Inference: done
+--------------------------------------
+Done: Sun Jun  7 01:16:11 EDT 2026
+Logs: logs/heat2_alaina_infer-1.log

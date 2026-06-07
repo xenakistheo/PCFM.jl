@@ -76,20 +76,65 @@ println("\n[3/3] Generating samples...")
 # ---------------------------------------------------------------------------
 # Samples
 # ---------------------------------------------------------------------------
-begin
-    @info "BurgersICFlux LBFGS"
-    @time samples_lbfgs = sample_pcfm(ffm, (parameters=ps, states=st),
+SAMPLES_PATH = "samples_burgers_IC_only_alaina.jld2"
+for iter in 1:1
+    @info "BurgersIC only LBFGS"
+    @time samples_ic_only = sample_pcfm(ffm, (parameters=ps, states=st),
                         n_samples, 100,
-                        BurgersICFluxSolver(),
+                        BurgersICSolver(),
                         constraint_data;
                         verbose=true)
 
-    @info "BurgersICFlux IPNewton"
-    @time samples_ipnewton = sample_pcfm(ffm, (parameters=ps, states=st),
+    @info "BurgersIC only IPNewton"
+    @time samples_ic_only_ip = sample_pcfm(ffm, (parameters=ps, states=st),
                         n_samples, 100,
-                        BurgersICFluxIPSolver(),
+                        BurgersICIPSolver(),
                         constraint_data;
                         verbose=true)
+
+    # @info "BurgersICFlux LBFGS"
+    # @time samples_lbfgs = sample_pcfm(ffm, (parameters=ps, states=st),
+    #                     n_samples, 100,
+    #                     BurgersICFluxSolver(),
+    #                     constraint_data;
+    #                     verbose=true)
+
+    # @info "BurgersICFlux IPNewton"
+    # @time samples_ipnewton = sample_pcfm(ffm, (parameters=ps, states=st),
+    #                     n_samples, 100,
+    #                     BurgersICFluxIPSolver(),
+    #                     constraint_data;
+    #                     verbose=true)
+end
+
+begin
+    @info "BurgersIC only LBFGS"
+    @time samples_ic_only = sample_pcfm(ffm, (parameters=ps, states=st),
+                        n_samples, 100,
+                        BurgersICSolver(),
+                        constraint_data;
+                        verbose=true)
+
+    @info "BurgersIC only IPNewton"
+    @time samples_ic_only_ip = sample_pcfm(ffm, (parameters=ps, states=st),
+                        n_samples, 100,
+                        BurgersICIPSolver(),
+                        constraint_data;
+                        verbose=true)
+
+    # @info "BurgersICFlux LBFGS"
+    # @time samples_lbfgs = sample_pcfm(ffm, (parameters=ps, states=st),
+    #                     n_samples, 100,
+    #                     BurgersICFluxSolver(),
+    #                     constraint_data;
+    #                     verbose=true)
+
+    # @info "BurgersICFlux IPNewton"
+    # @time samples_ipnewton = sample_pcfm(ffm, (parameters=ps, states=st),
+    #                     n_samples, 100,
+    #                     BurgersICFluxIPSolver(),
+    #                     constraint_data;
+    #                     verbose=true)
 end
 
 # ---------------------------------------------------------------------------
@@ -114,8 +159,10 @@ end
 # Save
 # ---------------------------------------------------------------------------
 JLD2.save(SAMPLES_PATH,
-    "samples_lbfgs",    samples_lbfgs,
-    "samples_ipnewton", samples_ipnewton,
-    "ref_samples",      ref_samples)
+    "samples_ic_only",    samples_ic_only,
+    "samples_ic_only_ip", samples_ic_only_ip,
+    # "samples_lbfgs",      samples_lbfgs,
+    # "samples_ipnewton",   samples_ipnewton,
+    "ref_samples",        ref_samples)
 
 @info "Samples saved to $SAMPLES_PATH"

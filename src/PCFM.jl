@@ -65,6 +65,7 @@ export NSVorticityLBFGSSolver
 export RDIPNewtonSolver
 export NSVorticityIPNewtonSolver
 export BurgersBCMassSolver, BurgersBCMassIPSolver
+export BurgersICSolver, BurgersICIPSolver
 export BurgersICFluxSolver, BurgersICFluxIPSolver
 export HeatICPDEEnergySolver, HeatICPDEEnergyIPSolver
 

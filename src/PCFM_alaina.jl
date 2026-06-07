@@ -43,6 +43,7 @@ export NSVorticityLBFGSSolver
 export RDIPNewtonSolver
 export NSVorticityIPNewtonSolver
 export BurgersBCMassSolver, BurgersBCMassIPSolver
+export BurgersICSolver, BurgersICIPSolver
 export BurgersICFluxSolver, BurgersICFluxIPSolver
 
 export solve_projection, make_constraint_data

@@ -97,6 +97,8 @@ tstate_inf = (parameters = ps, states = st)
 left_bc_vals = rand(Float32, n_samples)
 
 constraint_name = length(ARGS) >= 1 ? ARGS[1] : "IC_Mass_Flux"
+constraint_name = "IC_Mass_Flux"
+
 CONSTRAINT_FUNC = if constraint_name == "IC"
     burgers_constraints_IC!
 elseif constraint_name == "IC_Mass"
@@ -105,6 +107,7 @@ else
     burgers_constraints_IC_Mass_Flux!
 end
 godunov_flux_k = length(ARGS) >= 2 ? parse(Int, ARGS[2]) : 5
+godunov_flux_k = 10
 
 const burgers_domain = (x_start=0f0, x_end=1f0, t_start=0f0, t_end=1f0)
 const burgers_params = (left_bc=left_bc_vals,)
@@ -125,10 +128,11 @@ starting_noise = randn(Float32, nx, nt, 1, n_samples)
 # end
 
 # Samples
-for iter in 1:1
+SAMPLES_PATH = "samples_burgers_IC_Flux_10.jld2"
+begin
     @info "ExaModels, MadNLP, GPU"
     @time samples_exa_gpu = sample_pcfm(ffm, (parameters=ps, states=st),
-                       n_samples, 100, CONSTRAINT_FUNC;
+                       n_samples, 10, CONSTRAINT_FUNC;
                        domain = burgers_domain,
                        IC_func = IC_func_burgers,
                        constraint_parameters = burgers_ic_flux_params,
@@ -137,16 +141,16 @@ for iter in 1:1
                        mode = "exa",
                        initial_vals = starting_noise);
 
-    @info "ExaModels, MadNLP, CPU"
-    @time samples_exa_cpu = sample_pcfm(ffm, (parameters=ps, states=st),
-                       n_samples, 100, CONSTRAINT_FUNC;
-                       domain = burgers_domain,
-                       IC_func = IC_func_burgers,
-                       constraint_parameters = burgers_ic_flux_params,
-                       backend = CPU(),
-                       verbose = true,
-                       mode = "exa",
-                       initial_vals = starting_noise);
+    # @info "ExaModels, MadNLP, CPU"
+    # @time samples_exa_cpu = sample_pcfm(ffm, (parameters=ps, states=st),
+    #                    n_samples, 100, CONSTRAINT_FUNC;
+    #                    domain = burgers_domain,
+    #                    IC_func = IC_func_burgers,
+    #                    constraint_parameters = burgers_ic_flux_params,
+    #                    backend = CPU(),
+    #                    verbose = true,
+    #                    mode = "exa",
+    #                    initial_vals = starting_noise);
 
     # @info "JuMP, MadNLP"
     # @time samples_jump_madnlp = sample_pcfm(ffm, (parameters=ps, states=st),
@@ -229,9 +233,9 @@ JLD2.save(SAMPLES_PATH,
     "left_bc_vals", left_bc_vals,
     "ref_samples",         ref_samples,
     "samples_exa_gpu",     samples_exa_gpu,
-    "samples_exa_cpu",     samples_exa_cpu,
-    "samples_jump_madnlp", samples_jump_madnlp,
-    "samples_jump_ipopt", samples_jump_ipopt
+    # "samples_exa_cpu",     samples_exa_cpu,
+    # "samples_jump_madnlp", samples_jump_madnlp,
+    # "samples_jump_ipopt", samples_jump_ipopt
     # "samples_ffm",         samples_ffm)
 )
 # Load samples
@@ -241,3 +245,5 @@ JLD2.save(SAMPLES_PATH,
 # samples_exa_cpu     = data["samples_exa_cpu"]
 # samples_jump_madnlp = data["samples_jump_madnlp"]
 # samples_ffm         = data["samples_ffm"]
+
+
