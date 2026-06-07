@@ -1,0 +1,221 @@
+Internal error: during type inference of
+kwcall(NamedTuple{(:verbose,), Tuple{Bool}}, typeof(PCFM.sample_pcfm), PCFM.FFM{NeuralOperators.FourierNeuralOperator{Lux.Chain{NamedTuple{(:positional_embedding, :lifting, :fno_blocks, :projection), Tuple{Lux.NoOpLayer, Lux.Chain{NamedTuple{(:layer_1, :layer_2), Tuple{Lux.Conv{typeof(NNlib.gelu_tanh), Int64, Int64, Tuple{Int64, Int64}, Tuple{Int64, Int64}, NTuple{4, Int64}, Tuple{Int64, Int64}, Int64, Nothing, Nothing, Static.True, Static.False}, Lux.Conv{typeof(Base.identity), Int64, Int64, Tuple{Int64, Int64}, Tuple{Int64, Int64}, NTuple{4, Int64}, Tuple{Int64, Int64}, Int64, Nothing, Nothing, Static.True, Static.False}}}, Nothing}, Lux.Chain{NamedTuple{(:layer_1, :layer_2, :layer_3, :layer_4), NTuple{4, NeuralOperators.OperatorKernel{Lux.Parallel{NeuralOperators.Fix1{typeof(NeuralOperators.add_act), typeof(NNlib.gelu_tanh)}, NamedTuple{(:layer_1, :layer_2), Tuple{Lux.Chain{NamedTuple{(:layer_1, :layer_2), Tuple{Lux.Parallel{NeuralOperators.Fix1{typeof(NeuralOperators.add_act), typeof(NNlib.gelu_tanh)}, NamedTuple{(:layer_1, :layer_2), Tuple{Lux.Conv{typeof(Base.identity), Int64, Int64, Tuple{Int64, Int64}, Tuple{Int64, Int64}, NTuple{4, Int64}, Tuple{Int64, Int64}, Int64, Nothing, Nothing, Static.False, Static.False}, Lux.Chain{NamedTuple{(:stabilizer, :conv_layer), Tuple{Lux.WrappedFunction{Base.Broadcast.BroadcastFunction{typeof(Base.tanh)}}, NeuralOperators.OperatorConv{NeuralOperators.FourierTransform{Base.Complex{Float32}, Tuple{Int64, Int64}}, typeof(WeightInitializers.glorot_uniform)}}}, Nothing}}}, Nothing}, Lux.Chain{NamedTuple{(:layer_1, :layer_2), Tuple{Lux.Conv{typeof(Base.identity), Int64, Int64, Tuple{Int64, Int64}, Tuple{Int64, Int64}, NTuple{4, Int64}, Tuple{Int64, Int64}, Int64, Nothing, Nothing, Static.True, Static.False}, Lux.Conv{typeof(Base.identity), Int64, Int64, Tuple{Int64, Int64}, Tuple{Int64, Int64}, NTuple{4, Int64}, Tuple{Int64, Int64}, Int64, Nothing, Nothing, Static.True, Static.False}}}, Nothing}}}, Nothing}, NeuralOperators.SoftGating{Lux.Scale{Static.False, typeof(Base.identity), Tuple{Int64, Int64, Int64}, typeof(WeightInitializers.glorot_uniform), typeof(WeightInitializers.zeros32)}}}}, Nothing}}}}, Nothing}, Lux.Chain{NamedTuple{(:layer_1, :layer_2), Tuple{Lux.Conv{typeof(NNlib.gelu_tanh), Int64, Int64, Tuple{Int64, Int64}, Tuple{Int64, Int64}, NTuple{4, Int64}, Tuple{Int64, Int64}, Int64, Nothing, Nothing, Static.True, Static.False}, Lux.Conv{typeof(Base.identity), Int64, Int64, Tuple{Int64, Int64}, Tuple{Int64, Int64}, NTuple{4, Int64}, Tuple{Int64, Int64}, Int64, Nothing, Nothing, Static.True, Static.False}}}, Nothing}}}, Nothing}}, NamedTuple{(:positional_embedding, :lifting, :fno_blocks, :projection), Tuple{NamedTuple{(), Tuple{}}, NamedTuple{(:layer_1, :layer_2), Tuple{NamedTuple{(:weight, :bias), Tuple{CUDA.CuArray{Float32, 4, CUDA.DeviceMemory}, CUDA.CuArray{Float32, 1, CUDA.DeviceMemory}}}, NamedTuple{(:weight, :bias), Tuple{CUDA.CuArray{Float32, 4, CUDA.DeviceMemory}, CUDA.CuArray{Float32, 1, CUDA.DeviceMemory}}}}}, NamedTuple{(:layer_1, :layer_2, :layer_3, :layer_4), NTuple{4, NamedTuple{(:layer_1, :layer_2), Tuple{NamedTuple{(:layer_1, :layer_2), Tuple{NamedTuple{(:layer_1, :layer_2), Tuple{NamedTuple{(:weight,), Tuple{CUDA.CuArray{Float32, 4, CUDA.DeviceMemory}}}, NamedTuple{(:stabilizer, :conv_layer), Tuple{NamedTuple{(), Tuple{}}, NamedTuple{(:weight,), Tuple{CUDA.CuArray{Base.Complex{Float32}, 3, CUDA.DeviceMemory}}}}}}}, NamedTuple{(:layer_1, :layer_2), Tuple{NamedTuple{(:weight, :bias), Tuple{CUDA.CuArray{Float32, 4, CUDA.DeviceMemory}, CUDA.CuArray{Float32, 1, CUDA.DeviceMemory}}}, NamedTuple{(:weight, :bias), Tuple{CUDA.CuArray{Float32, 4, CUDA.DeviceMemory}, CUDA.CuArray{Float32, 1, CUDA.DeviceMemory}}}}}}}, NamedTuple{(:weight,), Tuple{CUDA.CuArray{Float32, 3, CUDA.DeviceMemory}}}}}}}, NamedTuple{(:layer_1, :layer_2), Tuple{NamedTuple{(:weight, :bias), Tuple{CUDA.CuArray{Float32, 4, CUDA.DeviceMemory}, CUDA.CuArray{Float32, 1, CUDA.DeviceMemory}}}, NamedTuple{(:weight, :bias), Tuple{CUDA.CuArray{Float32, 4, CUDA.DeviceMemory}, CUDA.CuArray{Float32, 1, CUDA.DeviceMemory}}}}}}}, NamedTuple{(:positional_embedding, :lifting, :fno_blocks, :projection), Tuple{NamedTuple{(), Tuple{}}, NamedTuple{(:layer_1, :layer_2), Tuple{NamedTuple{(), Tuple{}}, NamedTuple{(), Tuple{}}}}, NamedTuple{(:layer_1, :layer_2, :layer_3, :layer_4), NTuple{4, NamedTuple{(:layer_1, :layer_2), Tuple{NamedTuple{(:layer_1, :layer_2), Tuple{NamedTuple{(:layer_1, :layer_2), Tuple{NamedTuple{(), Tuple{}}, NamedTuple{(:stabilizer, :conv_layer), Tuple{NamedTuple{(), Tuple{}}, NamedTuple{(), Tuple{}}}}}}, NamedTuple{(:layer_1, :layer_2), Tuple{NamedTuple{(), Tuple{}}, NamedTuple{(), Tuple{}}}}}}, NamedTuple{(), Tuple{}}}}}}, NamedTuple{(:layer_1, :layer_2), Tuple{NamedTuple{(), Tuple{}}, NamedTuple{(), Tuple{}}}}}}}, NamedTuple{(:parameters, :states), Tuple{NamedTuple{(:positional_embedding, :lifting, :fno_blocks, :projection), Tuple{NamedTuple{(), Tuple{}}, NamedTuple{(:layer_1, :layer_2), Tuple{NamedTuple{(:weight, :bias), Tuple{CUDA.CuArray{Float32, 4, CUDA.DeviceMemory}, CUDA.CuArray{Float32, 1, CUDA.DeviceMemory}}}, NamedTuple{(:weight, :bias), Tuple{CUDA.CuArray{Float32, 4, CUDA.DeviceMemory}, CUDA.CuArray{Float32, 1, CUDA.DeviceMemory}}}}}, NamedTuple{(:layer_1, :layer_2, :layer_3, :layer_4), NTuple{4, NamedTuple{(:layer_1, :layer_2), Tuple{NamedTuple{(:layer_1, :layer_2), Tuple{NamedTuple{(:layer_1, :layer_2), Tuple{NamedTuple{(:weight,), Tuple{CUDA.CuArray{Float32, 4, CUDA.DeviceMemory}}}, NamedTuple{(:stabilizer, :conv_layer), Tuple{NamedTuple{(), Tuple{}}, NamedTuple{(:weight,), Tuple{CUDA.CuArray{Base.Complex{Float32}, 3, CUDA.DeviceMemory}}}}}}}, NamedTuple{(:layer_1, :layer_2), Tuple{NamedTuple{(:weight, :bias), Tuple{CUDA.CuArray{Float32, 4, CUDA.DeviceMemory}, CUDA.CuArray{Float32, 1, CUDA.DeviceMemory}}}, NamedTuple{(:weight, :bias), Tuple{CUDA.CuArray{Float32, 4, CUDA.DeviceMemory}, CUDA.CuArray{Float32, 1, CUDA.DeviceMemory}}}}}}}, NamedTuple{(:weight,), Tuple{CUDA.CuArray{Float32, 3, CUDA.DeviceMemory}}}}}}}, NamedTuple{(:layer_1, :layer_2), Tuple{NamedTuple{(:weight, :bias), Tuple{CUDA.CuArray{Float32, 4, CUDA.DeviceMemory}, CUDA.CuArray{Float32, 1, CUDA.DeviceMemory}}}, NamedTuple{(:weight, :bias), Tuple{CUDA.CuArray{Float32, 4, CUDA.DeviceMemory}, CUDA.CuArray{Float32, 1, CUDA.DeviceMemory}}}}}}}, NamedTuple{(:positional_embedding, :lifting, :fno_blocks, :projection), Tuple{NamedTuple{(), Tuple{}}, NamedTuple{(:layer_1, :layer_2), Tuple{NamedTuple{(), Tuple{}}, NamedTuple{(), Tuple{}}}}, NamedTuple{(:layer_1, :layer_2, :layer_3, :layer_4), NTuple{4, NamedTuple{(:layer_1, :layer_2), Tuple{NamedTuple{(:layer_1, :layer_2), Tuple{NamedTuple{(:layer_1, :layer_2), Tuple{NamedTuple{(), Tuple{}}, NamedTuple{(:stabilizer, :conv_layer), Tuple{NamedTuple{(), Tuple{}}, NamedTuple{(), Tuple{}}}}}}, NamedTuple{(:layer_1, :layer_2), Tuple{NamedTuple{(), Tuple{}}, NamedTuple{(), Tuple{}}}}}}, NamedTuple{(), Tuple{}}}}}}, NamedTuple{(:layer_1, :layer_2), Tuple{NamedTuple{(), Tuple{}}, NamedTuple{(), Tuple{}}}}}}}}, Int64, Int64, PCFM.IPMassProjectionSolver, NamedTuple{(:u_0_ic, :u_0_ic_vec, :u_0_ic_matrix, :dx, :dt_physics, :nt, :M0, :g_L, :g_R, :u_L), Tuple{Array{Float32, 1}, Array{Float32, 1}, Array{Float32, 4}, Float32, Float32, Int64, Float32, Array{Float32, 1}, Array{Float32, 1}, Float32}})
+Encountered unexpected error in runtime:
+TypeError(func=:TypeVar, context="lower bound", expected=Type, got=1)
+ijl_type_error_rt at /cache/build/builder-amdci5-3/julialang/julia-release-1-dot-12/src/rtutils.c:121
+ijl_new_typevar at /cache/build/builder-amdci5-3/julialang/julia-release-1-dot-12/src/builtins.c:1691
+finish_unionall at /cache/build/builder-amdci5-3/julialang/julia-release-1-dot-12/src/subtype.c:3046
+intersect_unionall_ at /cache/build/builder-amdci5-3/julialang/julia-release-1-dot-12/src/subtype.c:3423
+intersect_unionall at /cache/build/builder-amdci5-3/julialang/julia-release-1-dot-12/src/subtype.c:3471
+intersect at /cache/build/builder-amdci5-3/julialang/julia-release-1-dot-12/src/subtype.c:4199
+intersect_unionall_ at /cache/build/builder-amdci5-3/julialang/julia-release-1-dot-12/src/subtype.c:3380
+intersect_unionall at /cache/build/builder-amdci5-3/julialang/julia-release-1-dot-12/src/subtype.c:3471
+intersect at /cache/build/builder-amdci5-3/julialang/julia-release-1-dot-12/src/subtype.c:4199
+intersect_all at /cache/build/builder-amdci5-3/julialang/julia-release-1-dot-12/src/subtype.c:4355
+jl_type_intersection_env_s at /cache/build/builder-amdci5-3/julialang/julia-release-1-dot-12/src/subtype.c:4603
+jl_typemap_intersection_node_visitor at /cache/build/builder-amdci5-3/julialang/julia-release-1-dot-12/src/typemap.c:543
+jl_typemap_intersection_visitor at /cache/build/builder-amdci5-3/julialang/julia-release-1-dot-12/src/typemap.c:810
+jl_typemap_intersection_memory_visitor at /cache/build/builder-amdci5-3/julialang/julia-release-1-dot-12/src/typemap.c:500
+jl_typemap_intersection_visitor at /cache/build/builder-amdci5-3/julialang/julia-release-1-dot-12/src/typemap.c:800
+jl_typemap_intersection_visitor at /cache/build/builder-amdci5-3/julialang/julia-release-1-dot-12/src/typemap.c:768
+ml_matches at /cache/build/builder-amdci5-3/julialang/julia-release-1-dot-12/src/gf.c:4727
+ml_matches at /cache/build/builder-amdci5-3/julialang/julia-release-1-dot-12/src/gf.c:4608 [inlined]
+ijl_matching_methods at /cache/build/builder-amdci5-3/julialang/julia-release-1-dot-12/src/gf.c:3126 [inlined]
+ijl_matching_methods at /cache/build/builder-amdci5-3/julialang/julia-release-1-dot-12/src/gf.c:3113
+_methods_by_ftype at ./runtime_internals.jl:1415 [inlined]
+_findall at ./../usr/share/julia/Compiler/src/methodtable.jl:97 [inlined]
+#findall#5 at ./../usr/share/julia/Compiler/src/methodtable.jl:70 [inlined]
+findall at ./../usr/share/julia/Compiler/src/methodtable.jl:70 [inlined]
+#findall#7 at ./../usr/share/julia/Compiler/src/methodtable.jl:111
+findall at ./../usr/share/julia/Compiler/src/methodtable.jl:102 [inlined]
+find_simple_method_matches at ./../usr/share/julia/Compiler/src/abstractinterpretation.jl:386
+jfptr_find_simple_method_matches_3473.1 at /orcd/home/002/txenakis/.julia/juliaup/julia-1.12.5+0.x64.linux.gnu/lib/julia/sys.so (unknown line)
+tojlinvoke85052.1 at /orcd/home/002/txenakis/.julia/juliaup/julia-1.12.5+0.x64.linux.gnu/lib/julia/sys.so (unknown line)
+j_find_simple_method_matches_76925.1 at /orcd/home/002/txenakis/.julia/juliaup/julia-1.12.5+0.x64.linux.gnu/lib/julia/sys.so (unknown line)
+#find_method_matches#129 at ./../usr/share/julia/Compiler/src/abstractinterpretation.jl:348 [inlined]
+find_method_matches at ./../usr/share/julia/Compiler/src/abstractinterpretation.jl:342 [inlined]
+abstract_call_gf_by_type at ./../usr/share/julia/Compiler/src/abstractinterpretation.jl:120
+abstract_call_known at ./../usr/share/julia/Compiler/src/abstractinterpretation.jl:2783
+abstract_call at ./../usr/share/julia/Compiler/src/abstractinterpretation.jl:2890
+abstract_call at ./../usr/share/julia/Compiler/src/abstractinterpretation.jl:2883 [inlined]
+abstract_call at ./../usr/share/julia/Compiler/src/abstractinterpretation.jl:3043
+abstract_eval_statement_expr at ./../usr/share/julia/Compiler/src/abstractinterpretation.jl:3386
+abstract_eval_basic_statement at ./../usr/share/julia/Compiler/src/abstractinterpretation.jl:3836 [inlined]
+abstract_eval_basic_statement at ./../usr/share/julia/Compiler/src/abstractinterpretation.jl:3793 [inlined]
+typeinf_local at ./../usr/share/julia/Compiler/src/abstractinterpretation.jl:4343
+jfptr_typeinf_local_83385.1 at /orcd/home/002/txenakis/.julia/juliaup/julia-1.12.5+0.x64.linux.gnu/lib/julia/sys.so (unknown line)
+typeinf at ./../usr/share/julia/Compiler/src/abstractinterpretation.jl:4501
+typeinf_ext at ./../usr/share/julia/Compiler/src/typeinfer.jl:1254
+typeinf_ext_toplevel at ./../usr/share/julia/Compiler/src/typeinfer.jl:1437 [inlined]
+typeinf_ext_toplevel at ./../usr/share/julia/Compiler/src/typeinfer.jl:1446
+jfptr_typeinf_ext_toplevel_82377.1 at /orcd/home/002/txenakis/.julia/juliaup/julia-1.12.5+0.x64.linux.gnu/lib/julia/sys.so (unknown line)
+jl_apply at /cache/build/builder-amdci5-3/julialang/julia-release-1-dot-12/src/julia.h:2391 [inlined]
+jl_type_infer at /cache/build/builder-amdci5-3/julialang/julia-release-1-dot-12/src/gf.c:466
+jl_compile_method_internal at /cache/build/builder-amdci5-3/julialang/julia-release-1-dot-12/src/gf.c:3516
+_jl_invoke at /cache/build/builder-amdci5-3/julialang/julia-release-1-dot-12/src/gf.c:4006 [inlined]
+ijl_apply_generic at /cache/build/builder-amdci5-3/julialang/julia-release-1-dot-12/src/gf.c:4214
+macro expansion at ./timing.jl:697 [inlined]
+top-level scope at /orcd/home/002/txenakis/projects/18337/PCFM.jl/examples/infer_heat_alaina.jl:81
+jl_toplevel_eval_flex at /cache/build/builder-amdci5-3/julialang/julia-release-1-dot-12/src/toplevel.c:1024
+jl_toplevel_eval_flex at /cache/build/builder-amdci5-3/julialang/julia-release-1-dot-12/src/toplevel.c:975
+ijl_toplevel_eval at /cache/build/builder-amdci5-3/julialang/julia-release-1-dot-12/src/toplevel.c:1047
+ijl_toplevel_eval_in at /cache/build/builder-amdci5-3/julialang/julia-release-1-dot-12/src/toplevel.c:1092
+eval at ./boot.jl:489
+include_string at ./loading.jl:2870
+_include at ./loading.jl:2930
+include at ./Base.jl:306
+exec_options at ./client.jl:317
+_start at ./client.jl:550
+jfptr__start_74358.1 at /orcd/home/002/txenakis/.julia/juliaup/julia-1.12.5+0.x64.linux.gnu/lib/julia/sys.so (unknown line)
+jl_apply at /cache/build/builder-amdci5-3/julialang/julia-release-1-dot-12/src/julia.h:2391 [inlined]
+true_main at /cache/build/builder-amdci5-3/julialang/julia-release-1-dot-12/src/jlapi.c:971
+jl_repl_entrypoint at /cache/build/builder-amdci5-3/julialang/julia-release-1-dot-12/src/jlapi.c:1139
+main at /cache/build/builder-amdci5-3/julialang/julia-release-1-dot-12/cli/loader_exe.c:58
+__libc_start_main at /lib64/libc.so.6 (unknown line)
+unknown function (ip: 0x4010b8) at /workspace/srcdir/glibc-2.17/csu/../sysdeps/x86_64/start.S
+Internal error: during type inference of
+kwcall(NamedTuple{(:verbose,), Tuple{Bool}}, typeof(PCFM.sample_pcfm), PCFM.FFM{NeuralOperators.FourierNeuralOperator{Lux.Chain{NamedTuple{(:positional_embedding, :lifting, :fno_blocks, :projection), Tuple{Lux.NoOpLayer, Lux.Chain{NamedTuple{(:layer_1, :layer_2), Tuple{Lux.Conv{typeof(NNlib.gelu_tanh), Int64, Int64, Tuple{Int64, Int64}, Tuple{Int64, Int64}, NTuple{4, Int64}, Tuple{Int64, Int64}, Int64, Nothing, Nothing, Static.True, Static.False}, Lux.Conv{typeof(Base.identity), Int64, Int64, Tuple{Int64, Int64}, Tuple{Int64, Int64}, NTuple{4, Int64}, Tuple{Int64, Int64}, Int64, Nothing, Nothing, Static.True, Static.False}}}, Nothing}, Lux.Chain{NamedTuple{(:layer_1, :layer_2, :layer_3, :layer_4), NTuple{4, NeuralOperators.OperatorKernel{Lux.Parallel{NeuralOperators.Fix1{typeof(NeuralOperators.add_act), typeof(NNlib.gelu_tanh)}, NamedTuple{(:layer_1, :layer_2), Tuple{Lux.Chain{NamedTuple{(:layer_1, :layer_2), Tuple{Lux.Parallel{NeuralOperators.Fix1{typeof(NeuralOperators.add_act), typeof(NNlib.gelu_tanh)}, NamedTuple{(:layer_1, :layer_2), Tuple{Lux.Conv{typeof(Base.identity), Int64, Int64, Tuple{Int64, Int64}, Tuple{Int64, Int64}, NTuple{4, Int64}, Tuple{Int64, Int64}, Int64, Nothing, Nothing, Static.False, Static.False}, Lux.Chain{NamedTuple{(:stabilizer, :conv_layer), Tuple{Lux.WrappedFunction{Base.Broadcast.BroadcastFunction{typeof(Base.tanh)}}, NeuralOperators.OperatorConv{NeuralOperators.FourierTransform{Base.Complex{Float32}, Tuple{Int64, Int64}}, typeof(WeightInitializers.glorot_uniform)}}}, Nothing}}}, Nothing}, Lux.Chain{NamedTuple{(:layer_1, :layer_2), Tuple{Lux.Conv{typeof(Base.identity), Int64, Int64, Tuple{Int64, Int64}, Tuple{Int64, Int64}, NTuple{4, Int64}, Tuple{Int64, Int64}, Int64, Nothing, Nothing, Static.True, Static.False}, Lux.Conv{typeof(Base.identity), Int64, Int64, Tuple{Int64, Int64}, Tuple{Int64, Int64}, NTuple{4, Int64}, Tuple{Int64, Int64}, Int64, Nothing, Nothing, Static.True, Static.False}}}, Nothing}}}, Nothing}, NeuralOperators.SoftGating{Lux.Scale{Static.False, typeof(Base.identity), Tuple{Int64, Int64, Int64}, typeof(WeightInitializers.glorot_uniform), typeof(WeightInitializers.zeros32)}}}}, Nothing}}}}, Nothing}, Lux.Chain{NamedTuple{(:layer_1, :layer_2), Tuple{Lux.Conv{typeof(NNlib.gelu_tanh), Int64, Int64, Tuple{Int64, Int64}, Tuple{Int64, Int64}, NTuple{4, Int64}, Tuple{Int64, Int64}, Int64, Nothing, Nothing, Static.True, Static.False}, Lux.Conv{typeof(Base.identity), Int64, Int64, Tuple{Int64, Int64}, Tuple{Int64, Int64}, NTuple{4, Int64}, Tuple{Int64, Int64}, Int64, Nothing, Nothing, Static.True, Static.False}}}, Nothing}}}, Nothing}}, NamedTuple{(:positional_embedding, :lifting, :fno_blocks, :projection), Tuple{NamedTuple{(), Tuple{}}, NamedTuple{(:layer_1, :layer_2), Tuple{NamedTuple{(:weight, :bias), Tuple{CUDA.CuArray{Float32, 4, CUDA.DeviceMemory}, CUDA.CuArray{Float32, 1, CUDA.DeviceMemory}}}, NamedTuple{(:weight, :bias), Tuple{CUDA.CuArray{Float32, 4, CUDA.DeviceMemory}, CUDA.CuArray{Float32, 1, CUDA.DeviceMemory}}}}}, NamedTuple{(:layer_1, :layer_2, :layer_3, :layer_4), NTuple{4, NamedTuple{(:layer_1, :layer_2), Tuple{NamedTuple{(:layer_1, :layer_2), Tuple{NamedTuple{(:layer_1, :layer_2), Tuple{NamedTuple{(:weight,), Tuple{CUDA.CuArray{Float32, 4, CUDA.DeviceMemory}}}, NamedTuple{(:stabilizer, :conv_layer), Tuple{NamedTuple{(), Tuple{}}, NamedTuple{(:weight,), Tuple{CUDA.CuArray{Base.Complex{Float32}, 3, CUDA.DeviceMemory}}}}}}}, NamedTuple{(:layer_1, :layer_2), Tuple{NamedTuple{(:weight, :bias), Tuple{CUDA.CuArray{Float32, 4, CUDA.DeviceMemory}, CUDA.CuArray{Float32, 1, CUDA.DeviceMemory}}}, NamedTuple{(:weight, :bias), Tuple{CUDA.CuArray{Float32, 4, CUDA.DeviceMemory}, CUDA.CuArray{Float32, 1, CUDA.DeviceMemory}}}}}}}, NamedTuple{(:weight,), Tuple{CUDA.CuArray{Float32, 3, CUDA.DeviceMemory}}}}}}}, NamedTuple{(:layer_1, :layer_2), Tuple{NamedTuple{(:weight, :bias), Tuple{CUDA.CuArray{Float32, 4, CUDA.DeviceMemory}, CUDA.CuArray{Float32, 1, CUDA.DeviceMemory}}}, NamedTuple{(:weight, :bias), Tuple{CUDA.CuArray{Float32, 4, CUDA.DeviceMemory}, CUDA.CuArray{Float32, 1, CUDA.DeviceMemory}}}}}}}, NamedTuple{(:positional_embedding, :lifting, :fno_blocks, :projection), Tuple{NamedTuple{(), Tuple{}}, NamedTuple{(:layer_1, :layer_2), Tuple{NamedTuple{(), Tuple{}}, NamedTuple{(), Tuple{}}}}, NamedTuple{(:layer_1, :layer_2, :layer_3, :layer_4), NTuple{4, NamedTuple{(:layer_1, :layer_2), Tuple{NamedTuple{(:layer_1, :layer_2), Tuple{NamedTuple{(:layer_1, :layer_2), Tuple{NamedTuple{(), Tuple{}}, NamedTuple{(:stabilizer, :conv_layer), Tuple{NamedTuple{(), Tuple{}}, NamedTuple{(), Tuple{}}}}}}, NamedTuple{(:layer_1, :layer_2), Tuple{NamedTuple{(), Tuple{}}, NamedTuple{(), Tuple{}}}}}}, NamedTuple{(), Tuple{}}}}}}, NamedTuple{(:layer_1, :layer_2), Tuple{NamedTuple{(), Tuple{}}, NamedTuple{(), Tuple{}}}}}}}, NamedTuple{(:parameters, :states), Tuple{NamedTuple{(:positional_embedding, :lifting, :fno_blocks, :projection), Tuple{NamedTuple{(), Tuple{}}, NamedTuple{(:layer_1, :layer_2), Tuple{NamedTuple{(:weight, :bias), Tuple{CUDA.CuArray{Float32, 4, CUDA.DeviceMemory}, CUDA.CuArray{Float32, 1, CUDA.DeviceMemory}}}, NamedTuple{(:weight, :bias), Tuple{CUDA.CuArray{Float32, 4, CUDA.DeviceMemory}, CUDA.CuArray{Float32, 1, CUDA.DeviceMemory}}}}}, NamedTuple{(:layer_1, :layer_2, :layer_3, :layer_4), NTuple{4, NamedTuple{(:layer_1, :layer_2), Tuple{NamedTuple{(:layer_1, :layer_2), Tuple{NamedTuple{(:layer_1, :layer_2), Tuple{NamedTuple{(:weight,), Tuple{CUDA.CuArray{Float32, 4, CUDA.DeviceMemory}}}, NamedTuple{(:stabilizer, :conv_layer), Tuple{NamedTuple{(), Tuple{}}, NamedTuple{(:weight,), Tuple{CUDA.CuArray{Base.Complex{Float32}, 3, CUDA.DeviceMemory}}}}}}}, NamedTuple{(:layer_1, :layer_2), Tuple{NamedTuple{(:weight, :bias), Tuple{CUDA.CuArray{Float32, 4, CUDA.DeviceMemory}, CUDA.CuArray{Float32, 1, CUDA.DeviceMemory}}}, NamedTuple{(:weight, :bias), Tuple{CUDA.CuArray{Float32, 4, CUDA.DeviceMemory}, CUDA.CuArray{Float32, 1, CUDA.DeviceMemory}}}}}}}, NamedTuple{(:weight,), Tuple{CUDA.CuArray{Float32, 3, CUDA.DeviceMemory}}}}}}}, NamedTuple{(:layer_1, :layer_2), Tuple{NamedTuple{(:weight, :bias), Tuple{CUDA.CuArray{Float32, 4, CUDA.DeviceMemory}, CUDA.CuArray{Float32, 1, CUDA.DeviceMemory}}}, NamedTuple{(:weight, :bias), Tuple{CUDA.CuArray{Float32, 4, CUDA.DeviceMemory}, CUDA.CuArray{Float32, 1, CUDA.DeviceMemory}}}}}}}, NamedTuple{(:positional_embedding, :lifting, :fno_blocks, :projection), Tuple{NamedTuple{(), Tuple{}}, NamedTuple{(:layer_1, :layer_2), Tuple{NamedTuple{(), Tuple{}}, NamedTuple{(), Tuple{}}}}, NamedTuple{(:layer_1, :layer_2, :layer_3, :layer_4), NTuple{4, NamedTuple{(:layer_1, :layer_2), Tuple{NamedTuple{(:layer_1, :layer_2), Tuple{NamedTuple{(:layer_1, :layer_2), Tuple{NamedTuple{(), Tuple{}}, NamedTuple{(:stabilizer, :conv_layer), Tuple{NamedTuple{(), Tuple{}}, NamedTuple{(), Tuple{}}}}}}, NamedTuple{(:layer_1, :layer_2), Tuple{NamedTuple{(), Tuple{}}, NamedTuple{(), Tuple{}}}}}}, NamedTuple{(), Tuple{}}}}}}, NamedTuple{(:layer_1, :layer_2), Tuple{NamedTuple{(), Tuple{}}, NamedTuple{(), Tuple{}}}}}}}}, Int64, Int64, PCFM.IPMassProjectionSolver, NamedTuple{(:u_0_ic, :u_0_ic_vec, :u_0_ic_matrix, :dx, :dt_physics, :nt, :M0, :g_L, :g_R, :u_L), Tuple{Array{Float32, 1}, Array{Float32, 1}, Array{Float32, 4}, Float32, Float32, Int64, Float32, Array{Float32, 1}, Array{Float32, 1}, Float32}})
+Encountered unexpected error in runtime:
+TypeError(func=:TypeVar, context="lower bound", expected=Type, got=1)
+ijl_type_error_rt at /cache/build/builder-amdci5-3/julialang/julia-release-1-dot-12/src/rtutils.c:121
+ijl_new_typevar at /cache/build/builder-amdci5-3/julialang/julia-release-1-dot-12/src/builtins.c:1691
+finish_unionall at /cache/build/builder-amdci5-3/julialang/julia-release-1-dot-12/src/subtype.c:3046
+intersect_unionall_ at /cache/build/builder-amdci5-3/julialang/julia-release-1-dot-12/src/subtype.c:3423
+intersect_unionall at /cache/build/builder-amdci5-3/julialang/julia-release-1-dot-12/src/subtype.c:3471
+intersect at /cache/build/builder-amdci5-3/julialang/julia-release-1-dot-12/src/subtype.c:4199
+intersect_unionall_ at /cache/build/builder-amdci5-3/julialang/julia-release-1-dot-12/src/subtype.c:3380
+intersect_unionall at /cache/build/builder-amdci5-3/julialang/julia-release-1-dot-12/src/subtype.c:3471
+intersect at /cache/build/builder-amdci5-3/julialang/julia-release-1-dot-12/src/subtype.c:4199
+intersect_all at /cache/build/builder-amdci5-3/julialang/julia-release-1-dot-12/src/subtype.c:4355
+jl_type_intersection_env_s at /cache/build/builder-amdci5-3/julialang/julia-release-1-dot-12/src/subtype.c:4603
+jl_typemap_intersection_node_visitor at /cache/build/builder-amdci5-3/julialang/julia-release-1-dot-12/src/typemap.c:543
+jl_typemap_intersection_visitor at /cache/build/builder-amdci5-3/julialang/julia-release-1-dot-12/src/typemap.c:810
+jl_typemap_intersection_memory_visitor at /cache/build/builder-amdci5-3/julialang/julia-release-1-dot-12/src/typemap.c:500
+jl_typemap_intersection_visitor at /cache/build/builder-amdci5-3/julialang/julia-release-1-dot-12/src/typemap.c:800
+jl_typemap_intersection_visitor at /cache/build/builder-amdci5-3/julialang/julia-release-1-dot-12/src/typemap.c:768
+ml_matches at /cache/build/builder-amdci5-3/julialang/julia-release-1-dot-12/src/gf.c:4727
+ml_matches at /cache/build/builder-amdci5-3/julialang/julia-release-1-dot-12/src/gf.c:4608 [inlined]
+ijl_matching_methods at /cache/build/builder-amdci5-3/julialang/julia-release-1-dot-12/src/gf.c:3126 [inlined]
+ijl_matching_methods at /cache/build/builder-amdci5-3/julialang/julia-release-1-dot-12/src/gf.c:3113
+_methods_by_ftype at ./runtime_internals.jl:1415 [inlined]
+_findall at ./../usr/share/julia/Compiler/src/methodtable.jl:97 [inlined]
+#findall#5 at ./../usr/share/julia/Compiler/src/methodtable.jl:70 [inlined]
+findall at ./../usr/share/julia/Compiler/src/methodtable.jl:70 [inlined]
+#findall#7 at ./../usr/share/julia/Compiler/src/methodtable.jl:111
+findall at ./../usr/share/julia/Compiler/src/methodtable.jl:102 [inlined]
+find_simple_method_matches at ./../usr/share/julia/Compiler/src/abstractinterpretation.jl:386
+jfptr_find_simple_method_matches_3473.1 at /orcd/home/002/txenakis/.julia/juliaup/julia-1.12.5+0.x64.linux.gnu/lib/julia/sys.so (unknown line)
+tojlinvoke85052.1 at /orcd/home/002/txenakis/.julia/juliaup/julia-1.12.5+0.x64.linux.gnu/lib/julia/sys.so (unknown line)
+j_find_simple_method_matches_76925.1 at /orcd/home/002/txenakis/.julia/juliaup/julia-1.12.5+0.x64.linux.gnu/lib/julia/sys.so (unknown line)
+#find_method_matches#129 at ./../usr/share/julia/Compiler/src/abstractinterpretation.jl:348 [inlined]
+find_method_matches at ./../usr/share/julia/Compiler/src/abstractinterpretation.jl:342 [inlined]
+abstract_call_gf_by_type at ./../usr/share/julia/Compiler/src/abstractinterpretation.jl:120
+abstract_call_known at ./../usr/share/julia/Compiler/src/abstractinterpretation.jl:2783
+abstract_call at ./../usr/share/julia/Compiler/src/abstractinterpretation.jl:2890
+abstract_call at ./../usr/share/julia/Compiler/src/abstractinterpretation.jl:2883 [inlined]
+abstract_call at ./../usr/share/julia/Compiler/src/abstractinterpretation.jl:3043
+abstract_eval_statement_expr at ./../usr/share/julia/Compiler/src/abstractinterpretation.jl:3386
+abstract_eval_basic_statement at ./../usr/share/julia/Compiler/src/abstractinterpretation.jl:3836 [inlined]
+abstract_eval_basic_statement at ./../usr/share/julia/Compiler/src/abstractinterpretation.jl:3793 [inlined]
+typeinf_local at ./../usr/share/julia/Compiler/src/abstractinterpretation.jl:4343
+jfptr_typeinf_local_83385.1 at /orcd/home/002/txenakis/.julia/juliaup/julia-1.12.5+0.x64.linux.gnu/lib/julia/sys.so (unknown line)
+typeinf at ./../usr/share/julia/Compiler/src/abstractinterpretation.jl:4501
+typeinf_ext at ./../usr/share/julia/Compiler/src/typeinfer.jl:1254
+typeinf_ext_toplevel at ./../usr/share/julia/Compiler/src/typeinfer.jl:1437 [inlined]
+typeinf_ext_toplevel at ./../usr/share/julia/Compiler/src/typeinfer.jl:1446
+jfptr_typeinf_ext_toplevel_82377.1 at /orcd/home/002/txenakis/.julia/juliaup/julia-1.12.5+0.x64.linux.gnu/lib/julia/sys.so (unknown line)
+jl_apply at /cache/build/builder-amdci5-3/julialang/julia-release-1-dot-12/src/julia.h:2391 [inlined]
+jl_type_infer at /cache/build/builder-amdci5-3/julialang/julia-release-1-dot-12/src/gf.c:466
+jl_compile_method_internal at /cache/build/builder-amdci5-3/julialang/julia-release-1-dot-12/src/gf.c:3516
+_jl_invoke at /cache/build/builder-amdci5-3/julialang/julia-release-1-dot-12/src/gf.c:4006 [inlined]
+ijl_apply_generic at /cache/build/builder-amdci5-3/julialang/julia-release-1-dot-12/src/gf.c:4214
+macro expansion at ./timing.jl:697 [inlined]
+top-level scope at /orcd/home/002/txenakis/projects/18337/PCFM.jl/examples/infer_heat_alaina.jl:81
+jl_toplevel_eval_flex at /cache/build/builder-amdci5-3/julialang/julia-release-1-dot-12/src/toplevel.c:1024
+jl_toplevel_eval_flex at /cache/build/builder-amdci5-3/julialang/julia-release-1-dot-12/src/toplevel.c:975
+ijl_toplevel_eval at /cache/build/builder-amdci5-3/julialang/julia-release-1-dot-12/src/toplevel.c:1047
+ijl_toplevel_eval_in at /cache/build/builder-amdci5-3/julialang/julia-release-1-dot-12/src/toplevel.c:1092
+eval at ./boot.jl:489
+include_string at ./loading.jl:2870
+_include at ./loading.jl:2930
+include at ./Base.jl:306
+exec_options at ./client.jl:317
+_start at ./client.jl:550
+jfptr__start_74358.1 at /orcd/home/002/txenakis/.julia/juliaup/julia-1.12.5+0.x64.linux.gnu/lib/julia/sys.so (unknown line)
+jl_apply at /cache/build/builder-amdci5-3/julialang/julia-release-1-dot-12/src/julia.h:2391 [inlined]
+true_main at /cache/build/builder-amdci5-3/julialang/julia-release-1-dot-12/src/jlapi.c:971
+jl_repl_entrypoint at /cache/build/builder-amdci5-3/julialang/julia-release-1-dot-12/src/jlapi.c:1139
+main at /cache/build/builder-amdci5-3/julialang/julia-release-1-dot-12/cli/loader_exe.c:58
+__libc_start_main at /lib64/libc.so.6 (unknown line)
+unknown function (ip: 0x4010b8) at /workspace/srcdir/glibc-2.17/csu/../sysdeps/x86_64/start.S
+[ Info: LBFGS IC+Mass projection
+[ Info: IPNewton IC+Mass projection
+[ Info: LBFGS IC+Mass projection
+[ Info: IPNewton IC+Mass projection
+ERROR: LoadError: UndefVarError: `samples_ipnewton` not defined in `Main`
+Suggestion: check for spelling errors or missing imports.
+Stacktrace:
+ [1] top-level scope
+   @ /orcd/home/002/txenakis/projects/18337/PCFM.jl/examples/infer_heat_alaina.jl:99
+ [2] include(mod::Module, _path::String)
+   @ Base ./Base.jl:306
+ [3] exec_options(opts::Base.JLOptions)
+   @ Base ./client.jl:317
+ [4] _start()
+   @ Base ./client.jl:550
+in expression starting at /orcd/home/002/txenakis/projects/18337/PCFM.jl/examples/infer_heat_alaina.jl:99
+============================================================
+Heat Equation — Functional Flow Matching (Alaina solvers)
+============================================================
+
+[1/3] Creating FFM model...
+  Model created successfully
+
+[2/3] Loading checkpoint from: /orcd/home/002/txenakis/projects/18337/PCFM.jl/examples/checkpoints/ffm_heat_checkpoint.jld2
+  Loaded trained parameters and states
+
+[3/3] Generating samples...
+PCFM step: 0/100
+PCFM step: 10/100
+PCFM step: 20/100
+PCFM step: 30/100
+PCFM step: 40/100
+PCFM step: 50/100
+PCFM step: 60/100
+PCFM step: 70/100
+PCFM step: 80/100
+PCFM step: 90/100
+1638.155489 seconds (4.08 G allocations: 4.222 TiB, 18.26% gc time, 1 lock conflict, 2.34% compilation time: 3% of which was recompilation)
+PCFM step: 0/100
+PCFM step: 10/100
+PCFM step: 20/100
+PCFM step: 30/100
+PCFM step: 40/100
+PCFM step: 50/100
+PCFM step: 60/100
+PCFM step: 70/100
+PCFM step: 80/100
+PCFM step: 90/100
+6241.336610 seconds (1.50 G allocations: 13.737 TiB, 29.70% gc time, 0.19% compilation time)
+PCFM step: 0/100
+PCFM step: 10/100
+PCFM step: 20/100
+PCFM step: 30/100
+PCFM step: 40/100
+PCFM step: 50/100
+PCFM step: 60/100
+PCFM step: 70/100
+PCFM step: 80/100
+PCFM step: 90/100
+1509.656878 seconds (3.89 G allocations: 4.178 TiB, 18.60% gc time)
+PCFM step: 0/100
+PCFM step: 10/100
+PCFM step: 20/100
+PCFM step: 30/100
+PCFM step: 40/100
+PCFM step: 50/100
+PCFM step: 60/100
+PCFM step: 70/100
+PCFM step: 80/100
+PCFM step: 90/100
+6253.399677 seconds (1.46 G allocations: 13.796 TiB, 29.92% gc time, 0.00% compilation time)
