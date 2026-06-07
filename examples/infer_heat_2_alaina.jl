@@ -78,7 +78,7 @@ println("\n[3/3] Generating samples...")
 # ---------------------------------------------------------------------------
 # Samples
 # ---------------------------------------------------------------------------
-begin
+for iter in 1:4
     @info "Heat PDE+Energy LBFGS (kappa=$kappa)"
     @time samples_lbfgs = sample_pcfm(ffm, (parameters=ps, states=st),
                         n_samples, 100,
@@ -86,12 +86,12 @@ begin
                         constraint_data;
                         verbose=true)
 
-    @info "Heat PDE+Energy IPNewton (kappa=$kappa)"
-    @time samples_ipnewton = sample_pcfm(ffm, (parameters=ps, states=st),
-                        n_samples, 100,
-                        HeatICPDEEnergyIPSolver(kappa=kappa),
-                        constraint_data;
-                        verbose=true)
+    # @info "Heat PDE+Energy IPNewton (kappa=$kappa)"
+    # @time samples_ipnewton = sample_pcfm(ffm, (parameters=ps, states=st),
+    #                     n_samples, 100,
+    #                     HeatICPDEEnergyIPSolver(kappa=kappa),
+    #                     constraint_data;
+    #                     verbose=true)
 end
 
 # ---------------------------------------------------------------------------
@@ -107,7 +107,7 @@ u_analytic[:, :, 1, 1] = u_exact
 # ---------------------------------------------------------------------------
 JLD2.save(SAMPLES_PATH,
     "samples_lbfgs",    samples_lbfgs,
-    "samples_ipnewton", samples_ipnewton,
+    # "samples_ipnewton", samples_ipnewton,
     "u_analytic",       u_analytic)
 
 @info "Samples saved to $SAMPLES_PATH"
