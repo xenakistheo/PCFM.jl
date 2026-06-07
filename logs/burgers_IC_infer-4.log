@@ -1,0 +1,25 @@
+[ Info: ExaModels, MadNLP, GPU
+[ Info: Reference IC: p_loc = 0.4822 (index 16 / 30)
+============================================================
+Burgers Equation — Functional Flow Matching
+============================================================
+
+[1/3] Creating FFM model...
+  Model created successfully
+
+[2/3] Loading checkpoint from: /orcd/home/002/txenakis/projects/18337/PCFM.jl/examples/checkpoints/ffm_burgers_checkpoint.jld2
+  Loaded trained parameters and states
+
+[3/3] Generating samples...
+backend = CUDABackend(false, false)
+
+------------------------
+------Sampling PCFM------
+Modelling: exa
+Optimizer: MadNLPMOI.Optimizer
+Backend: CUDABackend(false, false)
+------------------------
+
+PCFM step: 0/10
+PCFM step: 5/10
+360.928153 seconds (593.26 M allocations: 31.506 GiB, 3.17% gc time, 36.03% compilation time: <1% of which was recompilation)

@@ -1,0 +1,13 @@
+Job ID:      15559273
+Node:        node3005
+GPUs:        0
+Start:       Sun Jun  7 02:34:31 EDT 2026
+Project dir: /home/txenakis/projects/18337/PCFM.jl
+Problem:     burgers_IC
+Samples out: samples_burgers_IC_alaina_run4.jld2
+--------------------------------------
+Running burgers_IC inference (Alaina solvers)...
+Inference: done
+--------------------------------------
+Done: Sun Jun  7 02:40:11 EDT 2026
+Logs: logs/burgers_IC_alaina_infer-4.log
