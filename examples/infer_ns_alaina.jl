@@ -25,6 +25,7 @@ emb_channels = 32
 
 SAMPLES_PATH = length(ARGS) >= 2 ? ARGS[2] : "samples_ns_alaina.jld2"
 n_samples    = length(ARGS) >= 1 ? parse(Int, ARGS[1]) : 4
+n_samples = 2
 
 weight_file = joinpath(@__DIR__, "checkpoints", "ffm_ns_s16_checkpoint.jld2")
 
@@ -74,23 +75,7 @@ println("\n[3/3] Generating samples...")
 # ---------------------------------------------------------------------------
 # Samples
 # ---------------------------------------------------------------------------
-for iter in 1:3
-    @info "NS Enstrophy LBFGS"
-    @time samples_lbfgs = sample_pcfm(ffm, (parameters=ps, states=st),
-                        n_samples, 100,
-                        NSEnstrophyLBFGSSolver(),
-                        constraint_data;
-                        verbose=true)
-end
 
-for iter in 1:3
-    @info "NS Enstrophy IPNewton"
-    @time samples_ipnewton = sample_pcfm(ffm, (parameters=ps, states=st),
-                        n_samples, 100,
-                        NSEnstrophyIPNewtonSolver(),
-                        constraint_data;
-                        verbose=true)
-end
 
 begin
     @info "NS Enstrophy LBFGS"
@@ -100,12 +85,12 @@ begin
                         constraint_data;
                         verbose=true)
 
-    @info "NS Enstrophy IPNewton"
-    @time samples_ipnewton = sample_pcfm(ffm, (parameters=ps, states=st),
-                        n_samples, 100,
-                        NSEnstrophyIPNewtonSolver(),
-                        constraint_data;
-                        verbose=true)
+    # @info "NS Enstrophy IPNewton"
+    # @time samples_ipnewton = sample_pcfm(ffm, (parameters=ps, states=st),
+    #                     n_samples, 100,
+    #                     NSEnstrophyIPNewtonSolver(),
+    #                     constraint_data;
+    #                     verbose=true)
 end
 # ---------------------------------------------------------------------------
 # Reference solutions from test dataset
@@ -134,7 +119,6 @@ end
 # ---------------------------------------------------------------------------
 JLD2.save(SAMPLES_PATH,
     "samples_lbfgs",    samples_lbfgs,
-    "samples_ipnewton", samples_ipnewton,
     "ref_samples",      ref_samples)
 
 @info "Samples saved to $SAMPLES_PATH"
