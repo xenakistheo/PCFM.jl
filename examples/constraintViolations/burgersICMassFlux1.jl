@@ -1,0 +1,84 @@
+using JLD2
+using Statistics
+
+function load_raw(d, key)
+    s = d[key][1:end-1, 1:end-1, :, :]   # (nx, nt, 1, n_samples)
+    return dropdims(s, dims=3)             # (nx, nt, n_samples)
+end
+
+data_path = joinpath(@__DIR__, "..", "..", "final_samples", "samples_burgers_IC_Flux_1.jld2")
+data = JLD2.load(data_path)
+
+analytic        = load_raw(data, "ref_samples")
+samples_exa_gpu = load_raw(data, "samples_exa_gpu")
+samples_exa_cpu = load_raw(data, "samples_exa_cpu")
+
+nx = 100
+nt = 100
+dt = 1.0f0 / (nt - 1)
+dx = 1.0f0 / (nx - 1)
+
+u0_per_sample = analytic[:, 1, :]  # (nx, n_samples)
+
+smooth_pos(x, eps) = 0.5 * (x + sqrt(x^2 + eps^2))
+smooth_neg(x, eps) = 0.5 * (x - sqrt(x^2 + eps^2))
+
+# Constraints:
+#   1. IC:      u[:,1,s] == u0[:,s]
+#   2. Mass:    sum(u[:,t,s])*dx == sum(u0[:,s])*dx   for all t
+#   3. Godunov: u[i,2,s] - u[i,1,s] + λ*(F[i,1,s] - F[i-1,1,s]) == 0  for i in 2:nx-1  (k=1)
+function burgersICMassFlux1_constraint_violations(samples, u0_per_sample, nx, nt, dx, dt; eps=1e-6)
+    u = ndims(samples) == 4 ? dropdims(samples, dims=3) : samples  # (nx, nt, n_samples)
+    n_samples = size(u, 3)
+    λ = dt / dx
+
+    ic_total      = 0.0
+    mass_total    = 0.0
+    godunov_total = 0.0
+
+    for s in 1:n_samples
+        us = u[:, :, s]
+        u0 = u0_per_sample[:, s]
+        M0 = sum(u0) * dx
+
+        ic_total += mean(abs.(us[:, 1] .- u0))
+
+        for t in 1:nt
+            mass_total += abs(sum(us[:, t]) * dx - M0)
+        end
+
+        for i in 2:nx-1
+            F_i   = 0.5 * smooth_pos(us[i,   1], eps)^2 + 0.5 * smooth_neg(us[i+1, 1], eps)^2
+            F_im1 = 0.5 * smooth_pos(us[i-1, 1], eps)^2 + 0.5 * smooth_neg(us[i,   1], eps)^2
+            godunov_total += abs(us[i, 2] - us[i, 1] + λ * (F_i - F_im1))
+        end
+    end
+
+    ic_viol      = ic_total      / n_samples
+    mass_viol    = mass_total    / (n_samples * nt)
+    godunov_viol = godunov_total / (n_samples * (nx - 2))
+
+    return ic_viol, mass_viol, godunov_viol
+end
+
+solver_names = ["Reference", "ExaGPU", "ExaCPU"]
+all_samples  = [analytic, samples_exa_gpu, samples_exa_cpu]
+
+viols        = [burgersICMassFlux1_constraint_violations(s, u0_per_sample, nx, nt, dx, dt) for s in all_samples]
+ic_vals      = [v[1] for v in viols]
+mass_vals    = [v[2] for v in viols]
+godunov_vals = [v[3] for v in viols]
+
+combined = (ic_vals      ./ mean(ic_vals)
+          .+ mass_vals    ./ mean(mass_vals)
+          .+ godunov_vals ./ mean(godunov_vals)) ./ 3
+
+println("Constraint violations (mean absolute, averaged over samples):")
+println(rpad("Solver", 20), rpad("IC", 14), rpad("Mass", 14), rpad("Godunov(k=1)", 16), "Combined")
+for (name, ic, m, g, c) in zip(solver_names, ic_vals, mass_vals, godunov_vals, combined)
+    println(rpad(name, 20),
+            rpad(round(ic; sigdigits=4), 14),
+            rpad(round(m;  sigdigits=4), 14),
+            rpad(round(g;  sigdigits=4), 16),
+            round(c; sigdigits=4))
+end

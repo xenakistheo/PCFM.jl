@@ -6,19 +6,20 @@ include(joinpath(@__DIR__, "..", "..", "utils", "plotUtils.jl"))
 
 
 # Load samples
-data_path = joinpath(@__DIR__, "..", "..", "datasets", "samples", "samples_heat_2.jld2")
-data_path2 = joinpath(@__DIR__, "..", "..", "datasets", "samples", "alaina_results_heat_1.jld2")
+data_path = joinpath(@__DIR__, "..", "..", "final_samples", "samples_heat.jld2")
+data_path2 = joinpath(@__DIR__, "..", "..", "final_samples", "samples_heat2_alaina_run1.jld2")
 data = JLD2.load(data_path)
 data2 = JLD2.load(data_path2)
 
-results = data2["results"]
+samples_exa_gpu = dropdims(mean(data["samples_exa_gpu"], dims=(3,4)), dims=(3,4))  
+samples_exa_cpu = dropdims(mean(data["samples_exa_cpu"], dims=(3,4)), dims=(3,4)) 
+samples_jump_madnlp = dropdims(mean(data["samples_jump_madnlp"], dims=(3,4)), dims=(3,4))
+samples_jump_ipopt = dropdims(mean(data["samples_jump_ipopt"], dims=(3,4)), dims=(3,4))
+samples_lbfgs = dropdims(mean(data2["samples_lbfgs"], dims=(3,4)), dims=(3,4))
+# samples_ipnewton = dropdims(mean(data2["samples_ipnewton"], dims=(3,4)), dims=(3,4))
 
+analytic = data["u_analytic"][:,:,1,1]
 
-#TODO: Claude - Benchmark these!
-samples_LBFGS = results[7].samples  # (nx, nt, 1, n_samples)
-samples_IPNewton = results[9].samples  # (nx, nt, 1, n_samples)
-samples_exa_gpu     = data["samples_exa_gpu"]
-samples_exa_cpu     = data["samples_exa_cpu"]
 
 
 
@@ -100,8 +101,8 @@ function heat2_constraint_violations(samples, u0_ic, nx, nt, dx, dt, κ, k_eff)
     return (ic_viol + mass_viol + pde_viol + energy_viol) / 4
 end
 
-solver_names = ["LBFGS", "IPNewton", "exa_gpu", "exa_cpu"]
-all_samples  = [samples_LBFGS, samples_IPNewton, samples_exa_gpu, samples_exa_cpu]
+solver_names = ["LBFGS", "exa_gpu", "exa_cpu", "jump_ipopt", "jump_madnlp"]
+all_samples  = [samples_lbfgs, samples_exa_gpu, samples_exa_cpu, samples_jump_ipopt, samples_jump_madnlp]
 
 println("Constraint violations (mean absolute, averaged over samples):")
 println(rpad("Solver", 20), "Violation")
