@@ -246,7 +246,7 @@ function sample_pcfm(ffm::FFM, tstate, n_samples, n_steps, H!;
         nlp = ExaModel(core)                                                                                                                                                                                                                
         
         if backend isa GPU
-            solver = MadNLP.MadNLPSolver(nlp; linear_solver=MadNLPGPU.CUDSSSolver, print_level=MadNLP.ERROR) 
+            solver = MadNLP.MadNLPSolver(nlp; linear_solver=MadNLPGPU.CUDSSSolver) 
         else 
             solver = MadNLP.MadNLPSolver(nlp; print_level=MadNLP.ERROR)
         end 
@@ -288,16 +288,33 @@ function sample_pcfm(ffm::FFM, tstate, n_samples, n_steps, H!;
             x_1 = reshape(Float32.(value.(u)), nx, nt, 1, n_samples) |> device   
         else 
             copyto!(nlp.θ, reshape(x_1, N))
+            copyto!(nlp.meta.x0, reshape(x_1, N))       # warm-start initial guess
+            MadNLP.set_status!(solver, MadNLP.INITIAL)  # workaround: reinitialize! has Float32/Float64 bug
             result = MadNLP.solve!(solver)
-            # result = MadNLP.solve!(solver, 
-            #             tol=1e-7, 
-            #             bound_relax_factor=1e-7)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    
             x_1 = reshape(Float32.(solution(result, u)), nx, nt, 1, n_samples) |> device
         end 
         ##############
 
         # Step 3: Interpolate between x_0 and x_1 (corrected) at time t+dt
         @. x = x_0 + (x_1 - x_0) * τ_next 
+    end
+
+    # Final projection at t=1
+    if mode == "jump"
+        x_1_cpu = Array(x)
+        model = Model(optimizer)
+        set_silent(model)
+        @variable(model, u[1:nx, 1:nt, 1:n_samples])
+        @objective(model, Min, sum((u[i,j,s] - x_1_cpu[i,j,1,s])^2 for i in 1:nx, j in 1:nt, s in 1:n_samples))
+        H!(model, u, u_0_ic_mat, nt, n_samples, grid_points, grid_spacing, dt, constraint_parameters)
+        optimize!(model)
+        x = reshape(Float32.(value.(u)), nx, nt, 1, n_samples) |> device
+    else
+        copyto!(nlp.θ, reshape(x, N))
+        copyto!(nlp.meta.x0, reshape(x, N))
+        MadNLP.set_status!(solver, MadNLP.INITIAL)
+        result = MadNLP.solve!(solver)
+        x = reshape(Float32.(solution(result, u)), nx, nt, 1, n_samples) |> device
     end
 
     return Array(x)
