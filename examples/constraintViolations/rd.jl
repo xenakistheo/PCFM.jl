@@ -7,22 +7,25 @@ using Statistics
 
 ###
 # Load samples
-data_path = joinpath(@__DIR__, "..", "..", "datasets", "samples", "samples_rd.jld2")
-data_path2 = joinpath(@__DIR__, "..", "..", "datasets", "samples", "alaina_results_rd.jld2")
+data_path  = joinpath(@__DIR__, "..", "..", "final_samples", "samples_rd.jld2")
+data_path2 = joinpath(@__DIR__, "..", "..", "final_samples", "samples_rd_alaina_run3.jld2")
 
 data = JLD2.load(data_path)
 data2 = JLD2.load(data_path2)
-results = data2["results"]
 
-#TODO: Claude - Benchmark these!
-samples_LBFGS = results[1].samples  # (nx, nt, 1, n_samples)
-samples_IPNewton = results[2].samples  # (nx, nt, 1, n_samples)
+u0_fixed            = data["u0_fixed"]
+rd_params           = data["rd_params"]
+
 samples_exa_gpu     = data["samples_exa_gpu"]
 samples_exa_cpu     = data["samples_exa_cpu"]
 samples_jump_madnlp = data["samples_jump_madnlp"]
 samples_jump_ipopt = data["samples_jump_ipopt"]
-u0_fixed            = data["u0_fixed"]
-rd_params           = data["rd_params"]
+samples_lbgfs = data2["samples_lbfgs"]
+samples_ipnewton = data2["samples_ipnewton"]
+
+
+
+
 
 
 batch_size   = 32
@@ -126,13 +129,13 @@ function rd_constraint_violations(samples, u0_fixed, rho, nu, dt)
     return (ic_viol + mass_viol) / 2
 end
 
-solver_names = ["LBFGS (nx=100)", "IPNewton (nx=100)", "exa_gpu", "exa_cpu", "jump_madnlp", "jump_ipopt", "ffm"]
-all_samples  = [samples_LBFGS, samples_IPNewton, samples_exa_gpu, samples_exa_cpu, samples_jump_madnlp, samples_jump_ipopt, samples_ffm]
+solver_names = ["LBFGS (nx=100)", "IPNewton (nx=100)", "exa_gpu", "exa_cpu", "jump_madnlp", "jump_ipopt"]
+all_samples  = [samples_lbfgs, samples_ipnewton, samples_exa_gpu, samples_exa_cpu, samples_jump_madnlp, samples_jump_ipopt]
 
 println("Constraint violations (mean absolute, averaged over samples):")
 println("Note: IC violation is 0 for nx=100 solvers (u0_fixed is nx=64 only)")
 println(rpad("Solver", 22), "Violation")
 for (name, samples) in zip(solver_names, all_samples)
     viol = rd_constraint_violations(samples, u0_fixed, rd_params.rho, rd_params.nu, dt)
-    println(rpad(name, 22), round(viol; sigdigits=4))
+    println(rpad(name, 22), round(viol; sigdigits=3))
 end
