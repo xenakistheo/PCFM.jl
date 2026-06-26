@@ -143,7 +143,7 @@ function sample_pcfm(ffm::FFM, tstate, n_samples, n_steps, H!;
         else
             copyto!(nlp.θ, reshape(x_1, N))
             copyto!(nlp.meta.x0, reshape(x_1, N))
-            solver.opt.max_iter = 1
+            # solver.opt.max_iter = 1
             MadNLP.set_status!(solver, MadNLP.INITIAL)
             result = MadNLP.solve!(solver)
             x_1 = reshape(Float32.(solution(result, u)), nx, nt, 1, n_samples) |> device
@@ -167,7 +167,7 @@ function sample_pcfm(ffm::FFM, tstate, n_samples, n_steps, H!;
     else
         copyto!(nlp.θ, reshape(x, N))
         copyto!(nlp.meta.x0, reshape(x, N))
-        solver.opt.max_iter = 3
+        # solver.opt.max_iter = 3
         MadNLP.set_status!(solver, MadNLP.INITIAL)
         result = MadNLP.solve!(solver)
         x = reshape(Float32.(solution(result, u)), nx, nt, 1, n_samples) |> device
@@ -286,114 +286,9 @@ n_samples = 1
 
 starting_noise = randn(Float32, nx, nt, 1, n_samples);
 
-begin 
+
+
     # ExaModels, MadNLP, GPU
-    @info "ExaModels, MadNLP, GPU"
-    display(@benchmark sample_pcfm(ffm, (parameters = $ps, states = $st),
-                    $n_samples, 100, heat_constraints!;
-                    backend=backend,
-                    verbose = false,
-                    mode="exa", 
-                    initial_vals=$starting_noise));
-
-
-
-
-    # # ExaModels, MadNLP, CPU
-    @info "ExaModels, MadNLP, CPU"
-    display(@benchmark sample_pcfm(ffm, (parameters = $ps, states = $st),
-                    $n_samples, 100, heat_constraints!;
-                    backend=CPU(),
-                    verbose = false,
-                    mode="exa", 
-                    initial_vals=$starting_noise));
-
-
-
-    # #JuMP, MadNLP
-    @info "JuMP, MadNLP"
-    display(@benchmark sample_pcfm(ffm, (parameters = $ps, states = $st),
-                    $n_samples, 100, heat_constraints!;
-                    backend=CPU(),
-                    verbose = false,
-                    mode="jump",
-                    optimizer=MadNLP.Optimizer, 
-                    initial_vals=$starting_noise));
-
-
-
-    # #JuMP, Ipopt
-    @info "JuMP, Ipopt"
-    display(@benchmark sample_pcfm($ffm, (parameters = $ps, states = $st),
-                    $n_samples, 100, heat_constraints!;
-                    backend=CPU(),
-                    verbose = false,
-                    mode="jump",
-                    optimizer=Ipopt.Optimizer,
-                    initial_vals=$starting_noise));
-
-    # # FFM
-    # @info "FFM"
-    # display(@benchmark sample_ffm(ffm, (parameters = $ps, states = $st), $n_samples, 100; 
-    #     verbose = false,
-    #     initial_vals=$starting_noise));
-
-end 
-
-
-
-begin 
-        # ExaModels, MadNLP, GPU
-    @info "ExaModels, MadNLP, GPU"
-    @time samples_exa_gpu = sample_pcfm(ffm, (parameters = ps, states = st),
-                    n_samples, 100, heat_constraints!;
-                    backend=backend,
-                    verbose = false,
-                    mode="exa", 
-                    initial_vals=starting_noise);
-
-
-
-
-    # # ExaModels, MadNLP, CPU
-    @info "ExaModels, MadNLP, CPU"
-    @time samples_exa_cpu = sample_pcfm(ffm, (parameters = ps, states = st),
-                    n_samples, 100, heat_constraints!;
-                    backend=CPU(),
-                    verbose = false,
-                    mode="exa", 
-                    initial_vals=starting_noise);
-
-
-
-    # #JuMP, MadNLP
-    @info "JuMP, MadNLP"
-    @time samples_jump_madnlp = sample_pcfm(ffm, (parameters = ps, states = st),
-                    n_samples, 100, heat_constraints!;
-                    backend=CPU(),
-                    verbose = false,
-                    mode="jump",
-                    optimizer=MadNLP.Optimizer, 
-                    initial_vals=starting_noise);
-
-        # #JuMP, Ipopt
-    @info "JuMP, Ipopt"
-    @time samples_jump_ipopt = sample_pcfm(ffm, (parameters = ps, states = st),
-                    n_samples, 100, heat_constraints!;
-                    backend=CPU(),
-                    verbose = false,
-                    mode="jump",
-                    optimizer=Ipopt.Optimizer,
-                    initial_vals=starting_noise);
-
-    # # FFM
-    # @info "FFM"
-    # samples_ffm = sample_ffm(ffm, (parameters = ps, states = st), n_samples, 100; 
-    #     verbose = false,
-    #     initial_vals=starting_noise);
-end 
-# samples_ffm = Array(samples_ffm)
-
 @info "ExaModels, MadNLP, GPU"
 @time samples_exa_gpu = sample_pcfm(ffm, (parameters = ps, states = st),
                 n_samples, 100, heat_constraints!;
@@ -402,10 +297,9 @@ end
                 mode="exa", 
                 initial_vals=starting_noise);
 
-@time samples_ffm = Array(sample_ffm(ffm, (parameters = ps, states = st), n_samples, 100; 
-    verbose = false,
-    initial_vals=starting_noise));
 
+TYPE = Float64
+samples_exa_gpu
 
 
 batch_size   = 32
@@ -414,12 +308,12 @@ nt           = 100          # Temporal resolution
 emb_channels = 32
 t_range    = (0.0, 1.0)
 
-x_grid = range(0.0, 2.0f0*(π); length = nx)
+x_grid = range(0.0, 2.0*(TYPE(π)); length = nx)
 dx     = (x_grid[2] - x_grid[1])
-dt     = 1.0 / (nt - 1)
+dt     = 1.0f0 / (nt - 1f0)
 
 # Initial condition: u(x, 0) = sin(x + π/4)
-u0_ic = (sin.(x_grid .+ π/4))
+u0_ic = (sin.(x_grid .+ TYPE(π)/4))
 
 X = x_grid
 T = range(t_range[1], t_range[2]; length = nt)
@@ -460,36 +354,19 @@ function heat_constraint_violations(samples, u0_ic, nx, nt)
     return max_viol
 end
 typeof(viol)
-viol = heat_constraint_violations(samples_exa_gpu, u0_ic, nx, nt)
-viol = heat_constraint_violations(samples_ffm, u0_ic, nx, nt)
+viol = heat_constraint_violations(samples_exa_gpu, u0_ic, nx, nt) #4e-6
+# viol = heat_constraint_violations(samples_ffm, u0_ic, nx, nt)
+viol = heat_constraint_violations(u_analytic, u0_ic, nx, nt) #4e-6
 ##################
 
 # Compute Analytic Solution 
 X = x_grid
 T = range(t_range[1], t_range[2]; length = nt)
 u_exact = exp.(-3 .* T') .* sin.(X .+ π/4)   # (nx, nt), analytical solution ν=3
-u_analytic = similar(samples_exa_cpu)
+u_analytic = similar(samples_exa_gpu)
 u_analytic[:,:, 1, 1] = u_exact
 u_analytic
 
 
 
-
-# Save samples
-JLD2.save(SAMPLES_PATH,
-    "samples_exa_gpu",    samples_exa_gpu,
-    "samples_exa_cpu",    samples_exa_cpu,
-    "samples_jump_madnlp", samples_jump_madnlp,
-    "samples_jump_ipopt", samples_jump_ipopt,
-    # "samples_ffm",        samples_ffm,
-    "u_analytic",         u_analytic)
-
-# Load samples
-# data = JLD2.load("samples_heat.jld2")
-# samples_exa_gpu     = data["samples_exa_gpu"]
-# samples_exa_cpu     = data["samples_exa_cpu"]
-# samples_jump_madnlp = data["samples_jump_madnlp"]
-# samples_jump_ipopt = data["samples_jump_ipopt"]
-# samples_ffm         = data["samples_ffm"]
-# u_analytic          = data["u_analytic"]
 
