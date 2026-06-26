@@ -1,4 +1,3 @@
-
 using JLD2
 using CairoMakie
 using Statistics
@@ -63,15 +62,21 @@ function heat2_constraint_violations(samples, u0_ic, nx, nt, dx, dt, κ, k_eff)
     pde_total    = 0.0
     energy_total = 0.0
 
+    max_viol = 0.0
+
     for s in 1:n_samples
         us = u[:, :, s]
 
         # 1. IC
         ic_total += mean(abs.(us[:, 1] .- u0_ic))
+        for i in 1:nx
+            max_viol = max(max_viol, abs(us[i, 1] - u0_ic[i]))
+        end
 
         # 2. Mass (all t)
         for t in 1:nt
             mass_total += abs(sum(us[:, t]) * dx - M0)
+            max_viol = max(max_viol, abs(sum(us[:, t]) * dx - M0))
         end
 
         # 3. PDE residual (interior points, t in 1:k_eff)
@@ -80,6 +85,14 @@ function heat2_constraint_violations(samples, u0_ic, nx, nt, dx, dt, κ, k_eff)
                 (us[i, t+1] - us[i, t]) / dt
                 - κ * (us[i+1, t] - 2*us[i, t] + us[i-1, t]) / dx^2
             )
+            max_viol = max(max_viol, abs(
+                (us[i, t+1] - us[i, t]) / dt
+                - κ * (us[i+1, t] - 2*us[i, t] + us[i-1, t]) / dx^2
+            ))
+            max_viol = max(max_viol, abs(
+                (us[i, t+1] - us[i, t]) / dt
+                - κ * (us[i+1, t] - 2*us[i, t] + us[i-1, t]) / dx^2
+            ))
         end
 
         # 4. Energy dissipation (t in 1:k_eff)
@@ -90,6 +103,11 @@ function heat2_constraint_violations(samples, u0_ic, nx, nt, dx, dt, κ, k_eff)
                 - sum(us[:, t].^2) * dx
                 + 2 * κ * dt * ux_sq
             )
+            max_viol = max(max_viol, abs(
+                sum(us[:, t+1].^2) * dx
+                - sum(us[:, t].^2) * dx
+                + 2 * κ * dt * ux_sq
+            ))
         end
     end
 
@@ -98,7 +116,7 @@ function heat2_constraint_violations(samples, u0_ic, nx, nt, dx, dt, κ, k_eff)
     pde_viol    = pde_total    / (n_samples * k_eff * (nx - 2))
     energy_viol = energy_total / (n_samples * k_eff)
 
-    return (ic_viol + mass_viol + pde_viol + energy_viol) / 4
+    return (ic_viol + mass_viol + pde_viol + energy_viol) / 4, max_viol
 end
 
 solver_names = ["LBFGS", "exa_gpu", "exa_cpu", "jump_ipopt", "jump_madnlp"]
@@ -107,7 +125,7 @@ all_samples  = [samples_lbfgs, samples_exa_gpu, samples_exa_cpu, samples_jump_ip
 println("Constraint violations (mean absolute, averaged over samples):")
 println(rpad("Solver", 20), "Violation")
 for (name, samples) in zip(solver_names, all_samples)
-    viol = heat2_constraint_violations(samples, u0_ic, nx, nt, dx, dt, κ, k_eff)
-    println(rpad(name, 20), round(viol; sigdigits=4))
+    viol, max_viol = heat2_constraint_violations(samples, u0_ic, nx, nt, dx, dt, κ, k_eff)
+    println(rpad(name, 20), round(viol; sigdigits=4), " (max: ", round(max_viol; sigdigits=4), ")")
 end
 

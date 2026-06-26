@@ -1,4 +1,3 @@
-
 using JLD2
 using CairoMakie
 using Statistics
@@ -42,15 +41,25 @@ function burgersBC_constraint_violations(samples, nx, nt, dx, dt)
     dirichlet_total = 0.0
     neumann_total   = 0.0
     mass_total      = 0.0
+    max_viol        = 0.0
 
     for s in 1:n_samples
         us = u[:, :, s]
         left_bc = us[1, 1]
 
+        for t in 1:nt
+            max_viol = max(max_viol, abs(us[1, t] - left_bc))
+            max_viol = max(max_viol, abs(us[nx, t] - us[nx-1, t]))
+        end
         dirichlet_total += mean(abs.(us[1, :] .- left_bc))
         neumann_total   += mean(abs.(us[nx, :] .- us[nx-1, :]))
 
         flux(t) = 0.5 * us[nx, t]^2 - 0.5 * us[1, t]^2
+        for t in 2:nt
+            r = abs(sum(us[:, t]) * dx - sum(us[:, t-1]) * dx
+                    + 0.5 * dt * (flux(t) + flux(t-1)))
+            max_viol = max(max_viol, r)
+        end
         mass_total += mean(
             abs(sum(us[:, t]) * dx - sum(us[:, t-1]) * dx
                 + 0.5 * dt * (flux(t) + flux(t-1)))
@@ -61,16 +70,17 @@ function burgersBC_constraint_violations(samples, nx, nt, dx, dt)
     neumann_viol   = neumann_total   / n_samples
     mass_viol      = mass_total      / n_samples
 
-    return dirichlet_viol, neumann_viol, mass_viol
+    return dirichlet_viol, neumann_viol, mass_viol, max_viol
 end
 
 solver_names = ["Reference", "LBFGS", "IPOPT", "ExaGPU", "ExaCPU", "MADNLP"]
 all_samples  = [analytic, samples_lbfgs, samples_ipopt, samples_exa_gpu, samples_exa_cpu, samples_madnlp]
 
-viols = [burgersBC_constraint_violations(s, nx, nt, dx, dt) for s in all_samples]
+viols          = [burgersBC_constraint_violations(s, nx, nt, dx, dt) for s in all_samples]
 dirichlet_vals = [v[1] for v in viols]
 neumann_vals   = [v[2] for v in viols]
 mass_vals      = [v[3] for v in viols]
+max_vals       = [v[4] for v in viols]
 
 # Combined score: each constraint normalized by its mean across solvers so scale
 # differences don't bias the result, then averaged into a single number.
@@ -86,4 +96,9 @@ for (name, d, n, m, c) in zip(solver_names, dirichlet_vals, neumann_vals, mass_v
             rpad(round(n; sigdigits=4), 14),
             rpad(round(m; sigdigits=4), 14),
             round(c; sigdigits=4))
+end
+
+println("Max violations:")
+for (name, max_viol) in zip(solver_names, max_vals)
+    println(rpad(name, 20), round(max_viol; sigdigits=4))
 end

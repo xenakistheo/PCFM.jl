@@ -39,6 +39,7 @@ function ns_enstrophy_constraint_violations(samples, u0, nt, dx, dy)
     ic_total        = 0.0
     mass_total      = 0.0
     enstrophy_total = 0.0
+    max_viol        = 0.0
 
     for s in 1:n_s
         us = u[:, :, :, s]  # (nx, ny, nt)
@@ -48,6 +49,8 @@ function ns_enstrophy_constraint_violations(samples, u0, nt, dx, dy)
         for t in 2:nt
             mass_total      += abs(sum(us[:, :, t]) * dx * dy - M0)
             enstrophy_total += abs(sum(us[:, :, t] .^ 2) * dx * dy - E0)
+            max_viol = max(max_viol, abs(sum(us[:, :, t]) * dx * dy - M0))
+            max_viol = max(max_viol, abs(sum(us[:, :, t] .^ 2) * dx * dy - E0))
         end
     end
 
@@ -55,7 +58,7 @@ function ns_enstrophy_constraint_violations(samples, u0, nt, dx, dy)
     mass_viol      = mass_total      / (n_s * (nt - 1))
     enstrophy_viol = enstrophy_total / (n_s * (nt - 1))
 
-    return ic_viol, mass_viol, enstrophy_viol
+    return ic_viol, mass_viol, enstrophy_viol, max_viol
 end
 
 solver_names = ["Reference", "ExaGPU", "ExaCPU", "MADNLP", "IPOPT", "LBFGS"]
@@ -65,6 +68,7 @@ viols     = [ns_enstrophy_constraint_violations(s, u0, nt, dx, dy) for s in all_
 ic_vals   = [v[1] for v in viols]
 mass_vals = [v[2] for v in viols]
 enst_vals = [v[3] for v in viols]
+max_vals  = [v[4] for v in viols]
 
 # Combined score: each constraint normalized by its mean across solvers so scale
 # differences don't bias the result, then averaged into a single number.
@@ -80,4 +84,9 @@ for (name, ic, m, e, c) in zip(solver_names, ic_vals, mass_vals, enst_vals, comb
             rpad(round(m;  sigdigits=4), 14),
             rpad(round(e;  sigdigits=4), 14),
             round(c; sigdigits=4))
+end
+
+println("Max violations:")
+for (name, max_viol) in zip(solver_names, max_vals)
+    println(rpad(name, 20), round(max_viol; sigdigits=4))
 end

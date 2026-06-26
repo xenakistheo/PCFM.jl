@@ -64,21 +64,28 @@ function heat_constraint_violations(samples, u0_ic, nx, nt)
     m0 = sum(u0_ic[1:nx-1])
 
     ic_total   = 0.0
-    mass_total = 0.0
+    mass_total = 0.
+    max_viol = 0.0
 
     for s in 1:n_samples
         # IC: mean |u[i,1,s] - u0_ic[i]| over i
         ic_total += mean(abs.(u[:, 1, s] .- u0_ic))
+        
+        for i in 1:nx
+            max_viol = max(max_viol, abs(u[i, 1, s] - u0_ic[i]))
+        end
 
         # Mass: mean |sum(u[1:nx-1,t,s]) - m0| over t in 2:nt
         for t in 2:nt
             mass_total += abs(sum(u[1:nx-1, t, s]) - m0)
+            max_viol = max(max_viol, abs(sum(u[1:nx-1, t, s]) - m0))
+
         end
     end
 
     ic_viol   = ic_total / n_samples
     mass_viol = mass_total / (n_samples * (nt - 1))
-    return (ic_viol + mass_viol) / 2
+    return (ic_viol + mass_viol) / 2, max_viol
 end
 
 solver_names = ["LBFGS", "IPNewton", "exa_gpu", "exa_cpu", "jump_madnlp", "jump_ipopt"]
@@ -87,6 +94,6 @@ all_samples  = [samples_lbfgs, samples_ipnewton, samples_exa_gpu, samples_exa_cp
 println("Constraint violations (mean absolute, averaged over samples):")
 println(rpad("Solver", 20), "Violation")
 for (name, samples) in zip(solver_names, all_samples)
-    viol = heat_constraint_violations(samples, u0_ic, nx, nt)
-    println(rpad(name, 20), round(viol; sigdigits=4))
+    viol, max_viol  = heat_constraint_violations(samples, u0_ic, nx, nt)
+    println(rpad(name, 20), round(viol; sigdigits=4), " (max: ", round(max_viol; sigdigits=4), ")")
 end

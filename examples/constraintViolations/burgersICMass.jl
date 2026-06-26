@@ -30,6 +30,7 @@ function burgersICMass_constraint_violations(samples, u0_per_sample, nx, nt, dx,
 
     ic_total   = 0.0
     mass_total = 0.0
+    max_viol   = 0.0
 
     for s in 1:n_samples
         us = u[:, :, s]
@@ -37,16 +38,21 @@ function burgersICMass_constraint_violations(samples, u0_per_sample, nx, nt, dx,
         M0 = sum(u0) * dx
 
         ic_total += mean(abs.(us[:, 1] .- u0))
+        for i in 1:nx
+            max_viol = max(max_viol, abs(us[i, 1] - u0[i]))
+        end
 
         for t in 1:nt
-            mass_total += abs(sum(us[:, t]) * dx - M0)
+            r = abs(sum(us[:, t]) * dx - M0)
+            mass_total += r
+            max_viol = max(max_viol, r)
         end
     end
 
     ic_viol   = ic_total   / n_samples
     mass_viol = mass_total / (n_samples * nt)
 
-    return ic_viol, mass_viol
+    return ic_viol, mass_viol, max_viol
 end
 
 solver_names = ["Reference", "ExaGPU", "ExaCPU", "MADNLP"]
@@ -55,6 +61,7 @@ all_samples  = [analytic, samples_exa_gpu, samples_exa_cpu, samples_madnlp]
 viols     = [burgersICMass_constraint_violations(s, u0_per_sample, nx, nt, dx, dt) for s in all_samples]
 ic_vals   = [v[1] for v in viols]
 mass_vals = [v[2] for v in viols]
+max_vals  = [v[3] for v in viols]
 
 combined = (ic_vals ./ mean(ic_vals) .+ mass_vals ./ mean(mass_vals)) ./ 2
 
@@ -65,4 +72,9 @@ for (name, ic, m, c) in zip(solver_names, ic_vals, mass_vals, combined)
             rpad(round(ic; sigdigits=4), 14),
             rpad(round(m;  sigdigits=4), 14),
             round(c; sigdigits=4))
+end
+
+println("Max violations:")
+for (name, max_viol) in zip(solver_names, max_vals)
+    println(rpad(name, 20), round(max_viol; sigdigits=3))
 end

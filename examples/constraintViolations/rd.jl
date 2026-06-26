@@ -1,4 +1,3 @@
-
 using JLD2
 using CairoMakie
 using HDF5
@@ -95,6 +94,7 @@ function rd_constraint_violations(samples, u0_fixed, rho, nu, dt)
 
     ic_total   = 0.0
     mass_total = 0.0
+    max_viol    = 0.0
 
     for s in 1:n_samples
         us = u[:, :, s]
@@ -102,6 +102,9 @@ function rd_constraint_violations(samples, u0_fixed, rho, nu, dt)
 
         # 1. IC
         ic_total += mean(abs.(us[:, 1] .- u0))
+        for i in 1:nx_s
+            max_viol = max(max_viol, abs(us[i, 1] - u0[i]))
+        end
 
         # 2. Mass evolution with 4th-order boundary flux (mirrors rd_constraints!)
         for t in 2:nt_s
@@ -121,21 +124,30 @@ function rd_constraint_violations(samples, u0_fixed, rho, nu, dt)
                 (flux4_left(t-1) - flux4_right(t-1))
             )
             mass_total += abs(mass_diff - reaction - diffusion)
+            max_viol = max(max_viol, abs(mass_diff - reaction - diffusion))
         end
     end
 
     ic_viol   = ic_total   / n_samples
     mass_viol = mass_total / (n_samples * (nt_s - 1))
-    return (ic_viol + mass_viol) / 2
+    return (ic_viol + mass_viol) / 2, max_viol
 end
 
 solver_names = ["LBFGS (nx=100)", "IPNewton (nx=100)", "exa_gpu", "exa_cpu", "jump_madnlp", "jump_ipopt"]
 all_samples  = [samples_lbfgs, samples_ipnewton, samples_exa_gpu, samples_exa_cpu, samples_jump_madnlp, samples_jump_ipopt]
 
+viols     = [rd_constraint_violations(s, u0_fixed, rd_params.rho, rd_params.nu, dt) for s in all_samples]
+viol_vals = [v[1] for v in viols]
+max_vals  = [v[2] for v in viols]
+
 println("Constraint violations (mean absolute, averaged over samples):")
 println("Note: IC violation is 0 for nx=100 solvers (u0_fixed is nx=64 only)")
 println(rpad("Solver", 22), "Violation")
-for (name, samples) in zip(solver_names, all_samples)
-    viol = rd_constraint_violations(samples, u0_fixed, rd_params.rho, rd_params.nu, dt)
+for (name, viol) in zip(solver_names, viol_vals)
     println(rpad(name, 22), round(viol; sigdigits=3))
+end
+
+println("Max violations:")
+for (name, max_viol) in zip(solver_names, max_vals)
+    println(rpad(name, 22), round(max_viol; sigdigits=3))
 end

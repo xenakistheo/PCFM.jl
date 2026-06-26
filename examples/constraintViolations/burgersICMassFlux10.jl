@@ -4,7 +4,7 @@ using Statistics
 
 
 # Load samples
-data_path  = joinpath(@__DIR__, "..", "..", "final_samples", "samples_burgers_IC.jld2")
+data_path  = joinpath(@__DIR__, "..", "..", "final_samples", "samples_burgers_IC_Flux_10.jld2")
 data = JLD2.load(data_path)
 
 function load_raw(d, key)
@@ -14,7 +14,6 @@ end
 
 analytic        = load_raw(data, "ref_samples")
 samples_exa_gpu = load_raw(data, "samples_exa_gpu")
-samples_exa_cpu = load_raw(data, "samples_exa_cpu")
 
 nx = 100
 nt = 100
@@ -32,7 +31,7 @@ smooth_neg(x, eps) = 0.5 * (x - sqrt(x^2 + eps^2))
 #   3. Godunov: u[i,t+1,s] - u[i,t,s] + λ*(F[i,t,s]-F[i-1,t,s]) == 0
 #              for t in 1:k_eff, i in 2:nx-1
 # Returns simple mean of the three mean-absolute violations, averaged over samples.
-function burgersIC_constraint_violations(samples, u0_per_sample, nx, nt, dx, dt; k=5, eps=1e-6)
+function burgersIC_constraint_violations(samples, u0_per_sample, nx, nt, dx, dt; k=10, eps=1e-6)
     u = ndims(samples) == 4 ? dropdims(samples, dims=3) : samples  # (nx, nt, n_samples)
     n_samples = size(u, 3)
     λ = dt / dx
@@ -78,8 +77,8 @@ function burgersIC_constraint_violations(samples, u0_per_sample, nx, nt, dx, dt;
     return ic_viol, mass_viol, godunov_viol, max_viol
 end
 
-solver_names = ["Reference", "ExaGPU", "ExaCPU"]
-all_samples  = [analytic, samples_exa_gpu, samples_exa_cpu]
+solver_names = ["Reference", "ExaGPU"]
+all_samples  = [analytic, samples_exa_gpu]
 
 viols        = [burgersIC_constraint_violations(s, u0_per_sample, nx, nt, dx, dt) for s in all_samples]
 ic_vals      = [v[1] for v in viols]
@@ -92,7 +91,7 @@ combined = (ic_vals      ./ mean(ic_vals)
           .+ godunov_vals ./ mean(godunov_vals)) ./ 3
 
 println("Constraint violations (mean absolute, averaged over samples):")
-println(rpad("Solver", 20), rpad("IC", 14), rpad("Mass", 14), rpad("Godunov(k=5)", 16), "Combined")
+println(rpad("Solver", 20), rpad("IC", 14), rpad("Mass", 14), rpad("Godunov(k=10)", 16), "Combined")
 for (name, ic, m, g, c) in zip(solver_names, ic_vals, mass_vals, godunov_vals, combined)
     println(rpad(name, 20),
             rpad(round(ic; sigdigits=4), 14),

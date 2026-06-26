@@ -35,6 +35,7 @@ function burgersICMassFlux1_constraint_violations(samples, u0_per_sample, nx, nt
     ic_total      = 0.0
     mass_total    = 0.0
     godunov_total = 0.0
+    max_viol      = 0.0
 
     for s in 1:n_samples
         us = u[:, :, s]
@@ -42,15 +43,22 @@ function burgersICMassFlux1_constraint_violations(samples, u0_per_sample, nx, nt
         M0 = sum(u0) * dx
 
         ic_total += mean(abs.(us[:, 1] .- u0))
+        for i in 1:nx
+            max_viol = max(max_viol, abs(us[i, 1] - u0[i]))
+        end
 
         for t in 1:nt
-            mass_total += abs(sum(us[:, t]) * dx - M0)
+            r = abs(sum(us[:, t]) * dx - M0)
+            mass_total += r
+            max_viol = max(max_viol, r)
         end
 
         for i in 2:nx-1
             F_i   = 0.5 * smooth_pos(us[i,   1], eps)^2 + 0.5 * smooth_neg(us[i+1, 1], eps)^2
             F_im1 = 0.5 * smooth_pos(us[i-1, 1], eps)^2 + 0.5 * smooth_neg(us[i,   1], eps)^2
-            godunov_total += abs(us[i, 2] - us[i, 1] + λ * (F_i - F_im1))
+            r = abs(us[i, 2] - us[i, 1] + λ * (F_i - F_im1))
+            godunov_total += r
+            max_viol = max(max_viol, r)
         end
     end
 
@@ -58,7 +66,7 @@ function burgersICMassFlux1_constraint_violations(samples, u0_per_sample, nx, nt
     mass_viol    = mass_total    / (n_samples * nt)
     godunov_viol = godunov_total / (n_samples * (nx - 2))
 
-    return ic_viol, mass_viol, godunov_viol
+    return ic_viol, mass_viol, godunov_viol, max_viol
 end
 
 solver_names = ["Reference", "ExaGPU", "ExaCPU"]
@@ -68,6 +76,7 @@ viols        = [burgersICMassFlux1_constraint_violations(s, u0_per_sample, nx, n
 ic_vals      = [v[1] for v in viols]
 mass_vals    = [v[2] for v in viols]
 godunov_vals = [v[3] for v in viols]
+max_vals     = [v[4] for v in viols]
 
 combined = (ic_vals      ./ mean(ic_vals)
           .+ mass_vals    ./ mean(mass_vals)
@@ -81,4 +90,9 @@ for (name, ic, m, g, c) in zip(solver_names, ic_vals, mass_vals, godunov_vals, c
             rpad(round(m;  sigdigits=4), 14),
             rpad(round(g;  sigdigits=4), 16),
             round(c; sigdigits=4))
+end
+
+println("Max violations:")
+for (name, max_viol) in zip(solver_names, max_vals)
+    println(rpad(name, 20), round(max_viol; sigdigits=4))
 end

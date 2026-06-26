@@ -33,20 +33,32 @@ function burgersIC_constraint_violations(samples, u0_per_sample, nx, nt, dx, dt)
     n_samples = size(u, 3)
 
     ic_total = 0.0
+    max_viol = 0.0
     for s in 1:n_samples
         ic_total += mean(abs.(u[:, 1, s] .- u0_per_sample[:, s]))
+        for i in 1:nx
+            max_viol = max(max_viol, abs(u[i, 1, s] - u0_per_sample[i, s]))
+        end
     end
 
-    return ic_total / n_samples
+    return ic_total / n_samples, max_viol
 end
 
 solver_names = ["Reference", "LBFGS", "IPNewton", "IPOPT", "ExaGPU", "ExaCPU", "MADNLP"]
 all_samples  = [analytic, samples_lbfgs, samples_ipnewton, samples_ipopt,
                 samples_exa_gpu, samples_exa_cpu, samples_madnlp]
 
+viols    = [burgersIC_constraint_violations(s, u0_per_sample, nx, nt, dx, dt) for s in all_samples]
+ic_vals  = [v[1] for v in viols]
+max_vals = [v[2] for v in viols]
+
 println("Constraint violations (mean absolute, averaged over samples):")
 println(rpad("Solver", 20), "IC")
-for (name, samples) in zip(solver_names, all_samples)
-    ic = burgersIC_constraint_violations(samples, u0_per_sample, nx, nt, dx, dt)
+for (name, ic) in zip(solver_names, ic_vals)
     println(rpad(name, 20), round(ic; sigdigits=4))
+end
+
+println("Max violations:")
+for (name, max_viol) in zip(solver_names, max_vals)
+    println(rpad(name, 20), round(max_viol; sigdigits=4))
 end
