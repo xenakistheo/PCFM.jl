@@ -360,10 +360,10 @@ function sample_pcfm(ffm::FFM, tstate, n_samples, n_steps,
 
         x_1 = x .+ Array(v) .* (1.0f0 - τ)
         x_1 = solve_projection(solver, x_1, constraint_data)
-        x   = x_0 .+ (x_1 .- x_0) .* τ_next
+        x = x_0 .+ (x_1 .- x_0) .* τ_next
     end
 
-    return x
+    return solve_projection(solver, x, constraint_data)
 end
 
 function _unpack_tstate(tstate)
@@ -490,6 +490,23 @@ function sample_pcfm_2d(ffm::FFM, tstate, n_samples, n_steps, H!;
         end
 
         @. x = x_0 + (x_1 - x_0) * τ_next
+    end
+
+    #Final projection at t=1
+    if mode == "jump"
+        x_cpu  = Array(x)
+        jmp_model = Model(optimizer)
+        set_silent(jmp_model)
+        @variable(jmp_model, u_jmp[1:nx, 1:ny, 1:nt, 1:n_samples])
+        @objective(jmp_model, Min, sum((u_jmp[i,j,k,s] - x_cpu[i,j,k,1,s])^2
+                                        for i in 1:nx, j in 1:ny, k in 1:nt, s in 1:n_samples))
+        H!(jmp_model, u_jmp, u_0_ic_mat_cpu, nt, n_samples, grid_points, grid_spacing, dt, constraint_parameters)
+        optimize!(jmp_model)
+        x = reshape(Float32.(value.(u_jmp)), nx, ny, nt, 1, n_samples) |> device
+    else
+        copyto!(nlp.θ, reshape(x, N))
+        result = MadNLP.solve!(solver)
+        x = reshape(Float32.(solution(result, u)), nx, ny, nt, 1, n_samples) |> device
     end
 
     return Array(x)
