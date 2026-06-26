@@ -43,6 +43,9 @@ emb_channels = 32
 n_epochs     = 1000
 force_retrain = false
 
+# Output path 
+SAMPLES_PATH = length(ARGS) >= 2 ? ARGS[2] : "samples_heat_2.jld2"
+
 # Checkpoint path
 weight_file = joinpath(@__DIR__, "checkpoints", "ffm_heat_checkpoint.jld2")
 
@@ -261,89 +264,30 @@ end
 
 starting_noise = randn(Float32, nx, nt, 1, n_samples);
 
-begin 
+
+# begin 
     # ExaModels, MadNLP, GPU
-    @info "ExaModels, MadNLP, GPU"
-    display(@benchmark sample_pcfm(ffm, (parameters = $ps, states = $st),
-                    $n_samples, 100, heat_constraints_IC_Mass_PDE_Energy!;
-                    backend=backend,
-                    verbose = true,
-                    mode="exa",
-                    constraint_parameters = constraint_params,
-                    initial_vals=$starting_noise));
+@info "ExaModels, MadNLP, GPU"
+@time samples_exa_gpu = sample_pcfm(ffm, (parameters = ps, states = st),
+                n_samples, 100, heat_constraints_IC_Mass_PDE_Energy!;
+                backend=backend,
+                verbose = true,
+                mode="exa", 
+                constraint_parameters = constraint_params,
+                initial_vals=starting_noise);
 
 
 
 
-    # # ExaModels, MadNLP, CPU
-    @info "ExaModels, MadNLP, CPU"
-    display(@benchmark sample_pcfm(ffm, (parameters = $ps, states = $st),
-                    $n_samples, 100, heat_constraints_IC_Mass_PDE_Energy!;
-                    backend=CPU(),
-                    verbose = true,
-                    mode="exa",
-                    constraint_parameters = constraint_params,
-                    initial_vals=$starting_noise));
-
-
-
-#     # #JuMP, MadNLP
-#     @info "JuMP, MadNLP"
-#     @btime sample_pcfm(ffm, (parameters = $ps, states = $st),
-#                     $n_samples, 100, heat_constraints_IC_Mass_PDE_Energy!;
-#                     backend=CPU(),
-#                     verbose = true,
-#                     mode="jump",
-#                     optimizer=MadNLP.Optimizer,
-#                     constraint_parameters = constraint_params,
-#                     initial_vals=$starting_noise);
-
-
-
-#     # #JuMP, Ipopt
-#     @info "JuMP, Ipopt"
-#     @btime sample_pcfm($ffm, (parameters = $ps, states = $st),
-#                     $n_samples, 100, heat_constraints_IC_Mass_PDE_Energy!;
-#                     backend=CPU(),
-#                     verbose = true,
-#                     mode="jump",
-#                     optimizer=Ipopt.Optimizer,
-#                     constraint_parameters = constraint_params,
-#                     initial_vals=$starting_noise);
-
-    # # FFM
-    # @info "FFM"
-    # display(@benchmark sample_ffm(ffm, (parameters = $ps, states = $st), $n_samples, 100;
-    #     verbose = false,
-    #     initial_vals=$starting_noise));
-
-end 
-
-
-
-begin 
-        # ExaModels, MadNLP, GPU
-    @info "ExaModels, MadNLP, GPU"
-    @time samples_exa_gpu = sample_pcfm(ffm, (parameters = ps, states = st),
-                    n_samples, 100, heat_constraints_IC_Mass_PDE_Energy!;
-                    backend=backend,
-                    verbose = true,
-                    mode="exa", 
-                    constraint_parameters = constraint_params,
-                    initial_vals=starting_noise);
-
-
-
-
-    # # ExaModels, MadNLP, CPU
-    @info "ExaModels, MadNLP, CPU"
-    @time samples_exa_cpu = sample_pcfm(ffm, (parameters = ps, states = st),
-                    n_samples, 100, heat_constraints_IC_Mass_PDE_Energy!;
-                    backend=CPU(),
-                    verbose = true,
-                    mode="exa", 
-                    constraint_parameters = constraint_params,
-                    initial_vals=starting_noise);
+# # ExaModels, MadNLP, CPU
+@info "ExaModels, MadNLP, CPU"
+@time samples_exa_cpu = sample_pcfm(ffm, (parameters = ps, states = st),
+                n_samples, 100, heat_constraints_IC_Mass_PDE_Energy!;
+                backend=CPU(),
+                verbose = true,
+                mode="exa", 
+                constraint_parameters = constraint_params,
+                initial_vals=starting_noise);
 
 
 
@@ -373,7 +317,7 @@ begin
     # @time samples_ffm = sample_ffm(ffm, (parameters = ps, states = st), n_samples, 100; 
     #     verbose = false,
     #     initial_vals=starting_noise);
-end 
+# end 
 # samples_ffm = Array(samples_ffm)
 
 
@@ -391,9 +335,9 @@ u_analytic
 
 
 # Save samples
-# JLD2.save("samples_heat_2.jld2",
-#     "samples_exa_gpu",    samples_exa_gpu,
-#     "samples_exa_cpu",    samples_exa_cpu)
+JLD2.save(SAMPLES_PATH,
+    "samples_exa_gpu",    samples_exa_gpu,
+    "samples_exa_cpu",    samples_exa_cpu)
 #     # "samples_jump_madnlp", samples_jump_madnlp,
 #     # "samples_jump_ipopt", samples_jump_ipopt,
 #     # "samples_ffm",        samples_ffm,

@@ -1,0 +1,129 @@
+============================== burgersBC.jl ==============================
+Constraint violations (mean absolute, averaged over samples):
+Solver              Dirichlet     Neumann       Mass          Combined
+Reference           0.4181        0.00274       2.818e-5      2.038
+LBFGS               4.967e-6      0.03037       0.00331       1.747
+IPOPT               7.766e-8      0.04532       0.0002796     0.5504
+ExaGPU              8.84e-5       0.04323       0.000354      0.5639
+ExaCPU              7.766e-8      0.04532       0.0002796     0.5504
+MADNLP              7.766e-8      0.04532       0.0002796     0.5504
+Max violations:
+Reference           0.9331
+LBFGS               1.074
+IPOPT               1.065
+ExaGPU              1.05
+ExaCPU              1.065
+MADNLP              1.065
+
+============================== burgersIC.jl ==============================
+Constraint violations (mean absolute, averaged over samples):
+Solver              IC
+Reference           0.0
+LBFGS               0.04829
+IPNewton            0.04829
+IPOPT               0.04829
+ExaGPU              0.0483
+ExaCPU              0.04829
+MADNLP              0.04829
+Max violations:
+Reference           0.0
+LBFGS               1.0
+IPNewton            1.0
+IPOPT               1.0
+ExaGPU              1.0
+ExaCPU              1.0
+MADNLP              1.0
+
+============================== burgersICMass.jl ==============================
+Constraint violations (mean absolute, averaged over samples):
+Solver              IC            Mass          Combined
+Reference           0.0           0.08705       0.7574
+ExaGPU              0.04831       0.04756       1.081
+ExaCPU              0.04829       0.04763       1.081
+MADNLP              0.04829       0.04763       1.081
+Max violations:
+Reference           0.499
+ExaGPU              1.0
+ExaCPU              1.0
+MADNLP              1.0
+
+============================== burgersICMassFlux1.jl ==============================
+Constraint violations (mean absolute, averaged over samples):
+Solver              IC            Mass          Godunov(k=1)    Combined
+Reference           0.0           0.08705       5.131e-9        0.1462
+ExaGPU              0.04831       0.04764       3.941e-5        1.174
+ExaCPU              0.4567        0.4613        6.635e-8        1.68
+Max violations:
+Reference           0.4988
+ExaGPU              1.0
+ExaCPU              1.0
+
+============================== burgersICMassFlux5.jl ==============================
+Constraint violations (mean absolute, averaged over samples):
+Solver              IC            Mass          Godunov(k=5)    Combined
+Reference           0.0           0.08705       4.174e-9        0.4852
+ExaGPU              0.04834       0.04841       9.735e-5        0.9204
+ExaCPU              0.04829       0.04397       0.00055         1.594
+Max violations:
+Reference           0.4988
+ExaGPU              1.0
+ExaCPU              1.0
+
+============================== burgersICMassFlux10.jl ==============================
+Constraint violations (mean absolute, averaged over samples):
+Solver              IC            Mass          Godunov(k=10)   Combined
+Reference           0.0           0.08705       4.2e-9          0.4268
+ExaGPU              0.04833       0.04892       9.444e-5        1.573
+Max violations:
+Reference           0.4988
+ExaGPU              1.0
+
+============================== heat1.jl ==============================
+Constraint violations (mean absolute, averaged over samples):
+Solver              Violation
+LBFGS               0.03935 (max: 0.477)
+IPNewton            0.05314 (max: 0.5544)
+exa_gpu             3.122e-6 (max: 1.085e-5)
+exa_cpu             2.047e-7 (max: 6.706e-7)
+jump_madnlp         6.145e-7 (max: 1.52e-6)
+jump_ipopt          6.16e-7 (max: 1.49e-6)
+
+============================== heat2.jl ==============================
+Constraint violations (mean absolute, averaged over samples):
+Solver              Violation
+LBFGS               4.493e-5 (max: 0.001359)
+exa_gpu             0.2219 (max: 69.38)
+exa_cpu             0.2219 (max: 69.37)
+jump_ipopt          0.2219 (max: 69.37)
+jump_madnlp         0.2219 (max: 69.37)
+
+============================== ns.jl ==============================
+Constraint violations (mean absolute, averaged over samples):
+Solver              IC            Mass          Enstrophy     Combined
+Reference           0.6284        3.492e-10     0.03125       0.6358
+ExaGPU              0.6284        3.363e-9      0.03125       0.6675
+ExaCPU              0.6284        3.363e-9      0.03125       0.6675
+MADNLP              0.125         3.848e-8      0.4375        1.131
+IPOPT               0.125         3.848e-8      0.4375        1.131
+LBFGS               8.195e-8      1.059e-7      0.4687        1.767
+Max violations:
+Reference           0.03125
+ExaGPU              0.03125
+ExaCPU              0.03125
+MADNLP              0.4375
+IPOPT               0.4375
+LBFGS               0.4688
+
+============================== rd.jl ==============================
+ERROR: LoadError: UndefVarError: `samples_lbfgs` not defined in `Main`
+Suggestion: check for spelling errors or missing imports.
+Stacktrace:
+ [1] top-level scope
+   @ /orcd/home/002/txenakis/projects/18337/PCFM.jl/examples/constraintViolations/rd.jl:137
+ [2] include(mod::Module, _path::String)
+   @ Base ./Base.jl:306
+ [3] exec_options(opts::Base.JLOptions)
+   @ Base ./client.jl:317
+ [4] _start()
+   @ Base ./client.jl:550
+in expression starting at /orcd/home/002/txenakis/projects/18337/PCFM.jl/examples/constraintViolations/rd.jl:137
