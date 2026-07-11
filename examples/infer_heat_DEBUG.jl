@@ -100,10 +100,11 @@ function sample_pcfm(ffm::FFM, tstate, n_samples, n_steps, H!;
         nlp = ExaModel(core)                                                                                                                                                                                                                
         
         if backend isa GPU
-            solver = MadNLP.MadNLPSolver(nlp; linear_solver=MadNLPGPU.CUDSSSolver) 
-        else 
-            solver = MadNLP.MadNLPSolver(nlp; print_level=MadNLP.ERROR)
-        end 
+            solver = MadNLP.MadNLPSolver(nlp; linear_solver=MadNLPGPU.CUDSSSolver, print_level=MadNLP.ERROR, tol=1e-8)
+        else
+            solver = MadNLP.MadNLPSolver(nlp; print_level=MadNLP.ERROR, tol = 1e-6)
+        end
+        println("get_tolerance = ", MadNLP.get_tolerance(eltype(nlp.meta.x0), typeof(solver.opt.kkt_system)))
     end 
 
   

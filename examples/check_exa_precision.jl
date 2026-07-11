@@ -37,6 +37,7 @@ function run_test(T, S, label)
 
     nlp    = ExaModel(core)
     solver = MadNLP.MadNLPSolver(nlp; linear_solver=MadNLPGPU.CUDSSSolver, print_level=MadNLP.ERROR)
+    println("get_tolerance = ", MadNLP.get_tolerance(eltype(nlp.meta.x0), typeof(solver.opt.kkt_system)))
     result = MadNLP.solve!(solver)
     sol    = Array(solution(result, u))
 
@@ -58,8 +59,7 @@ run_test(Float64, Float64, "Float64 parameters → Float64 ExaCore")
 run_test(Float32, Float32, "Float32 parameters → Float32 ExaCore")
 run_test(Float64, Float32, "Float64 parameters → Float32 ExaCore")
 
-
-
+println("\n-----------------------")
 
 
 
