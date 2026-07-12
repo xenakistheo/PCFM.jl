@@ -19,7 +19,7 @@ samples_exa_gpu     = data["samples_exa_gpu"]
 samples_exa_cpu     = data["samples_exa_cpu"]
 samples_jump_madnlp = data["samples_jump_madnlp"]
 samples_jump_ipopt = data["samples_jump_ipopt"]
-samples_lbgfs = data2["samples_lbfgs"]
+samples_lbfgs = data2["samples_lbfgs"]
 samples_ipnewton = data2["samples_ipnewton"]
 
 

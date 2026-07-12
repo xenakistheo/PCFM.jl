@@ -19,8 +19,6 @@ SCRIPTS=(
     examples/constraintViolations/heat2.jl
     examples/constraintViolations/ns.jl
     examples/constraintViolations/rd.jl
-    examples/constraintViolations/mmse.jl
-    examples/constraintViolations/smse.jl
 )
 
 > "$OUTPUT"
