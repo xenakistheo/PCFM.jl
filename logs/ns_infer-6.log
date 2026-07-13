@@ -1,0 +1,174 @@
+
+******************************************************************************
+This program contains Ipopt, a library for large-scale nonlinear optimization.
+ Ipopt is released as open source code under the Eclipse Public License (EPL).
+         For more information visit https://github.com/coin-or/Ipopt
+******************************************************************************
+
+[ Info: ExaModels, MadNLP, GPU
+[ Info: ExaModels, MadNLP, CPU
+[ Info: JuMP, MadNLP
+[ Info: JuMP, Ipopt
+ERROR: LoadError: HDF5.API.H5Error: Cannot determine whether u exists
+libhdf5 Stacktrace:
+  [1] H5O__prefix_deserialize: Object header/Wrong version number
+      bad object header version number
+   ⋮
+Stacktrace:
+  [1] macro expansion
+    @ ~/.julia/packages/HDF5/8g5ny/src/api/error.jl:18 [inlined]
+  [2] h5l_exists(loc_id::HDF5.File, pathname::String, lapl_id::HDF5.LinkAccessProperties)
+    @ HDF5.API ~/.julia/packages/HDF5/8g5ny/src/api/functions.jl:2100
+  [3] haskey(parent::HDF5.File, path::String, lapl::HDF5.LinkAccessProperties)
+    @ HDF5 ~/.julia/packages/HDF5/8g5ny/src/groups.jl:132
+  [4] haskey(parent::HDF5.File, path::String)
+    @ HDF5 ~/.julia/packages/HDF5/8g5ny/src/groups.jl:128
+  [5] getindex(parent::HDF5.File, path::String; pv::@Kwargs{})
+    @ HDF5 ~/.julia/packages/HDF5/8g5ny/src/highlevel.jl:75
+  [6] getindex
+    @ ~/.julia/packages/HDF5/8g5ny/src/highlevel.jl:74 [inlined]
+  [7] (::var"#5#6")(f::HDF5.File)
+    @ Main /orcd/home/002/txenakis/projects/18337/PCFM.jl/examples/infer_ns.jl:145
+  [8] (::HDF5.var"#21#22"{HDF5.HDF5Context, @Kwargs{}, var"#5#6", HDF5.File})()
+    @ HDF5 ~/.julia/packages/HDF5/8g5ny/src/file.jl:101
+  [9] task_local_storage(body::HDF5.var"#21#22"{HDF5.HDF5Context, @Kwargs{}, var"#5#6", HDF5.File}, key::Symbol, val::HDF5.HDF5Context)
+    @ Base ./task.jl:298
+ [10] h5open(::var"#5#6", ::String, ::Vararg{String}; context::HDF5.HDF5Context, pv::@Kwargs{})
+    @ HDF5 ~/.julia/packages/HDF5/8g5ny/src/file.jl:94
+ [11] top-level scope
+    @ /orcd/home/002/txenakis/projects/18337/PCFM.jl/examples/infer_ns.jl:143
+ [12] include(mod::Module, _path::String)
+    @ Base ./Base.jl:306
+ [13] exec_options(opts::Base.JLOptions)
+    @ Base ./client.jl:317
+ [14] _start()
+    @ Base ./client.jl:550
+in expression starting at /orcd/home/002/txenakis/projects/18337/PCFM.jl/examples/infer_ns.jl:142
+============================================================
+2D Navier-Stokes — Functional Flow Matching
+============================================================
+
+[1/3] Creating FFM model...
+  Model created successfully
+
+[2/3] Loading checkpoint from: /orcd/home/002/txenakis/projects/18337/PCFM.jl/examples/checkpoints/ffm_ns_s16_checkpoint.jld2
+  Loaded trained parameters and states
+
+[3/3] Generating samples...
+backend = CUDABackend(false, false)
+
+------------------------
+------Sampling PCFM 2D------
+Modelling: exa
+Optimizer: MadNLPMOI.Optimizer
+Backend: CUDABackend(false, false)
+------------------------
+
+PCFM step: 0/100
+PCFM step: 5/100
+PCFM step: 10/100
+PCFM step: 15/100
+PCFM step: 20/100
+PCFM step: 25/100
+PCFM step: 30/100
+PCFM step: 35/100
+PCFM step: 40/100
+PCFM step: 45/100
+PCFM step: 50/100
+PCFM step: 55/100
+PCFM step: 60/100
+PCFM step: 65/100
+PCFM step: 70/100
+PCFM step: 75/100
+PCFM step: 80/100
+PCFM step: 85/100
+PCFM step: 90/100
+PCFM step: 95/100
+426.742478 seconds (2.02 G allocations: 91.040 GiB, 9.44% gc time, 1 lock conflict, 75.73% compilation time: <1% of which was recompilation)
+
+------------------------
+------Sampling PCFM 2D------
+Modelling: exa
+Optimizer: MadNLPMOI.Optimizer
+Backend: CPU(false)
+------------------------
+
+PCFM step: 0/100
+PCFM step: 5/100
+PCFM step: 10/100
+PCFM step: 15/100
+PCFM step: 20/100
+PCFM step: 25/100
+PCFM step: 30/100
+PCFM step: 35/100
+PCFM step: 40/100
+PCFM step: 45/100
+PCFM step: 50/100
+PCFM step: 55/100
+PCFM step: 60/100
+PCFM step: 65/100
+PCFM step: 70/100
+PCFM step: 75/100
+PCFM step: 80/100
+PCFM step: 85/100
+PCFM step: 90/100
+PCFM step: 95/100
+277.959330 seconds (2.02 G allocations: 74.028 GiB, 13.94% gc time, 60.69% compilation time)
+
+------------------------
+------Sampling PCFM 2D------
+Modelling: jump
+Optimizer: MadNLPMOI.Optimizer
+Backend: CPU(false)
+------------------------
+
+PCFM step: 0/100
+PCFM step: 5/100
+PCFM step: 10/100
+PCFM step: 15/100
+PCFM step: 20/100
+PCFM step: 25/100
+PCFM step: 30/100
+PCFM step: 35/100
+PCFM step: 40/100
+PCFM step: 45/100
+PCFM step: 50/100
+PCFM step: 55/100
+PCFM step: 60/100
+PCFM step: 65/100
+PCFM step: 70/100
+PCFM step: 75/100
+PCFM step: 80/100
+PCFM step: 85/100
+PCFM step: 90/100
+PCFM step: 95/100
+ 84.568248 seconds (280.59 M allocations: 18.325 GiB, 7.61% gc time, 13.72% compilation time: 1% of which was recompilation)
+
+------------------------
+------Sampling PCFM 2D------
+Modelling: jump
+Optimizer: IpoptMathOptInterfaceExt.Optimizer
+Backend: CPU(false)
+------------------------
+
+PCFM step: 0/100
+PCFM step: 5/100
+PCFM step: 10/100
+PCFM step: 15/100
+PCFM step: 20/100
+PCFM step: 25/100
+PCFM step: 30/100
+PCFM step: 35/100
+PCFM step: 40/100
+PCFM step: 45/100
+PCFM step: 50/100
+PCFM step: 55/100
+PCFM step: 60/100
+PCFM step: 65/100
+PCFM step: 70/100
+PCFM step: 75/100
+PCFM step: 80/100
+PCFM step: 85/100
+PCFM step: 90/100
+PCFM step: 95/100
+ 55.401141 seconds (253.59 M allocations: 14.640 GiB, 6.67% gc time, 1.58% compilation time)
