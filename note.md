@@ -3,11 +3,13 @@
 
 `ssh orcd-login`
 `cd projects/18337/PCFM.jl`
-``
+
+
+`squeue -u txenakis`
 
 ### To run experiments 
 
-Scripts shoudl take in samples path. 
+Scripts should take in samples path. 
 
 -------------------------------------
 Heat1: (7 min)
@@ -21,7 +23,7 @@ Ran:
 Heat2: (1 hour)
 ExaGPU, ExaCPU
 `sbatch --job-name=pcfm_heat2 final_scripts/run_inference.sh heat2 6`
-Checked: 
+Checked: ok 
 Ran:
 
 
@@ -29,21 +31,21 @@ Ran:
 BurgersBC: (30 min)
 ExaGPU, ExaCPU, JuMP_MadNLP, JuMP_IPopt
 `sbatch --job-name=pcfm_burgers_BC final_scripts/run_inference.sh burgers_BC 6`
-Checked: 
+Checked: ok
 Ran:
 
 -------------------------------------
 ReactionDiffusion: (10 min)
 ExaGPU, ExaCPU, JuMP_MadNLP, JuMP_IPopt
 `sbatch --job-name=pcfm_rd final_scripts/run_inference.sh rd 6`
-Checked: 
+Checked: ok
 Ran:
 
 -------------------------------------
 NavierStokes: (5 min)
 ExaGPU, ExaCPU, JuMP_MadNLP, JuMP_IPopt
 `sbatch --job-name=pcfm_ns final_scripts/run_inference.sh ns 6`
-Checked: 
+Checked: ok
 Ran:
 
 
