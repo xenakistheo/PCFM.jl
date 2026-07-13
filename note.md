@@ -1,38 +1,50 @@
-
-What I am wondering about is how I should format sample_pcfm. 
-I would like to make it so general that it can be used for all the problems. 
-Is it going to take in a constraint function 'H' as an argument?
-If so, how should H look like?
-
-Would be beneficial to look at the different BVPs, and the constrains we want to impose on them.
-
-1. Look at BVPs, and try to define their constraints in a general way.
-2. Look at whats common between them. 
-3. Look at how to define this across the batches so as to leverage the parallelism of the GPU.
+## Notes 
 
 
-Which BVPs do we have?
+`ssh orcd-login`
+`cd projects/18337/PCFM.jl`
+``
 
-Paramters for constraints. u_flat, dx, dy, dt, Nx, Ny, Nt. 
-All except for u_flat can be passed as 'params' to the constraint function.
+### To run experiments 
 
-### Heat eq. 
-1 dimension. Nx = 100, Nt = 100. 
-constraint. 
+Scripts shoudl take in samples path. 
 
-
-
-
-    Other stuff. 
-What was up with using a 'Gaussian process'?
-Need to train models for each BVP. 
+-------------------------------------
+Heat1: (7 min)
+ExaGPU, ExaCPU, JuMP_MadNLP, JuMP_IPopt
+`sbatch --job-name=pcfm_heat final_scripts/run_inference.sh heat 6`
+Checked: ok
+Ran:
 
 
-Todo:
-test current scripts for heatequation.
-Check that constraints are being applied correctly.
-Check that training data is being generated correctly for all BVPs. 
-Find out how to train models for each BVP.
+-------------------------------------
+Heat2: (1 hour)
+ExaGPU, ExaCPU
+`sbatch --job-name=pcfm_heat2 final_scripts/run_inference.sh heat2 6`
+Checked: 
+Ran:
+
+
+-------------------------------------
+BurgersBC: (30 min)
+ExaGPU, ExaCPU, JuMP_MadNLP, JuMP_IPopt
+`sbatch --job-name=pcfm_burgers_BC final_scripts/run_inference.sh burgers_BC 6`
+Checked: 
+Ran:
+
+-------------------------------------
+ReactionDiffusion: (10 min)
+ExaGPU, ExaCPU, JuMP_MadNLP, JuMP_IPopt
+`sbatch --job-name=pcfm_rd final_scripts/run_inference.sh rd 6`
+Checked: 
+Ran:
+
+-------------------------------------
+NavierStokes: (5 min)
+ExaGPU, ExaCPU, JuMP_MadNLP, JuMP_IPopt
+`sbatch --job-name=pcfm_ns final_scripts/run_inference.sh ns 6`
+Checked: 
+Ran:
 
 
 
@@ -52,3 +64,7 @@ instead of
 
 
 CPU benchmarks were run on the mit_normal CPU partition, while GPU benchmarks were run on the mit_normal_gpu partition with one L40S GPU. Both used 4 allocated CPU cores and 64 GB RAM, with CPU threading fixed via OMP_NUM_THREADS, MKL_NUM_THREADS, OPENBLAS_NUM_THREADS, and NUMEXPR_NUM_THREADS.
+
+
+
+
