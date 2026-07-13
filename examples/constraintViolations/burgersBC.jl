@@ -1,7 +1,7 @@
 using JLD2
 using CairoMakie
 using Statistics
-include(joinpath(@__DIR__, "..", "..", "utils", "plotUtils.jl"))
+# include(joinpath(@__DIR__, "..", "..", "utils", "plotUtils.jl"))
 
 # Load samples — trim ghost points, drop singleton dim 3 → (nx, nt, n_samples)
 function load_raw(d, key)
@@ -9,8 +9,8 @@ function load_raw(d, key)
     return dropdims(s, dims=3)             # (nx, nt, n_samples)
 end
 
-data_path  = joinpath(@__DIR__, "..", "..", "final_samples", "samples_burgers_BC.jld2")
-data_path2 = joinpath(@__DIR__, "..", "..", "final_samples", "samples_burgers_BC_alaina.jld2")
+data_path  = joinpath(@__DIR__, "..", "..", "final_samples", "samples_burgers_BC_solvertol_e7.jld2")
+data_path2 = joinpath(@__DIR__, "..", "..", "final_samples_old", "samples_burgers_BC_alaina.jld2")
 data  = JLD2.load(data_path)
 data2 = JLD2.load(data_path2)
 
