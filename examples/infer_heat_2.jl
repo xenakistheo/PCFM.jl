@@ -8,7 +8,6 @@ Note: Script does not use Reactant
 using PCFM
 
 using ExaModels, MadNLP, MadNLPGPU
-# using Plots
 using Lux
 using CUDA
 using cuDNN
@@ -17,7 +16,7 @@ using JLD2, Functors
 using JuMP
 using Ipopt
 using BenchmarkTools
-#using Reactant
+
 
 
 

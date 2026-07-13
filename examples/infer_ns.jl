@@ -89,95 +89,50 @@ const ns_domain = (x_start=0f0, x_end=1f0, y_start=0f0, y_end=1f0, t_start=0f0, 
 
 starting_noise = randn(Float32, s, s, nt, 1, n_samples)
 
-# Benchmarks
-for i in 1:4
-    # @info "ExaModels, MadNLP, GPU"
-    # @time samples_exa_gpu = sample_pcfm_2d(ffm, (parameters=ps, states=st),
-    #                    n_samples, 100, ns_enstrophy_constraints!;
-    #                    domain = ns_domain,
-    #                    IC_func = IC_func_ns,
-    #                    backend = backend,
-    #                    verbose = true,
-    #                    mode = "exa",
-    #                    initial_vals = starting_noise)
 
-    # @info "ExaModels, MadNLP, CPU"
-    # @time samples_exa_cpu = sample_pcfm_2d(ffm, (parameters=ps, states=st),
-    #                    n_samples, 100, ns_enstrophy_constraints!;
-    #                    domain = ns_domain,
-    #                    IC_func = IC_func_ns,
-    #                    backend = CPU(),
-    #                    verbose = true,
-    #                    mode = "exa",
-    #                    initial_vals = starting_noise)
-    
-    @info "JuMP, MadNLP"
-    @time samples_jump_madnlp = sample_pcfm_2d(ffm, (parameters=ps, states=st),
-                       n_samples, 100, ns_enstrophy_constraints!;
-                       domain = ns_domain,
-                       IC_func = IC_func_ns,
-                       backend = CPU(),
-                       verbose = true,
-                       mode = "jump",
-                       optimizer = MadNLP.Optimizer,
-                       initial_vals = starting_noise)
-
-    @info "JuMP, Ipopt"
-    @time samples_jump_ipopt = sample_pcfm_2d(ffm, (parameters=ps, states=st),
-                       n_samples, 100, ns_enstrophy_constraints!;
-                       domain = ns_domain,
-                       IC_func = IC_func_ns,
-                       backend = CPU(),
-                       verbose = true,
-                       mode = "jump",
-                       optimizer = Ipopt.Optimizer,
-                       initial_vals = starting_noise)
-
-end 
 # Samples
-begin
-    @info "ExaModels, MadNLP, GPU"
-    @time samples_exa_gpu = sample_pcfm_2d(ffm, (parameters=ps, states=st),
-                       n_samples, 100, ns_enstrophy_constraints!;
-                       domain = ns_domain,
-                       IC_func = IC_func_ns,
-                       backend = backend,
-                       verbose = true,
-                       mode = "exa",
-                       initial_vals = starting_noise)
 
-    @info "ExaModels, MadNLP, CPU"
-    @time samples_exa_cpu = sample_pcfm_2d(ffm, (parameters=ps, states=st),
-                       n_samples, 100, ns_enstrophy_constraints!;
-                       domain = ns_domain,
-                       IC_func = IC_func_ns,
-                       backend = CPU(),
-                       verbose = true,
-                       mode = "exa",
-                       initial_vals = starting_noise)
+@info "ExaModels, MadNLP, GPU"
+@time samples_exa_gpu = sample_pcfm_2d(ffm, (parameters=ps, states=st),
+                    n_samples, 100, ns_enstrophy_constraints!;
+                    domain = ns_domain,
+                    IC_func = IC_func_ns,
+                    backend = backend,
+                    verbose = true,
+                    mode = "exa",
+                    initial_vals = starting_noise)
 
-    @info "JuMP, MadNLP"
-    @time samples_jump_madnlp = sample_pcfm_2d(ffm, (parameters=ps, states=st),
-                       n_samples, 100, ns_enstrophy_constraints!;
-                       domain = ns_domain,
-                       IC_func = IC_func_ns,
-                       backend = CPU(),
-                       verbose = true,
-                       mode = "jump",
-                       optimizer = MadNLP.Optimizer,
-                       initial_vals = starting_noise)
+@info "ExaModels, MadNLP, CPU"
+@time samples_exa_cpu = sample_pcfm_2d(ffm, (parameters=ps, states=st),
+                    n_samples, 100, ns_enstrophy_constraints!;
+                    domain = ns_domain,
+                    IC_func = IC_func_ns,
+                    backend = CPU(),
+                    verbose = true,
+                    mode = "exa",
+                    initial_vals = starting_noise)
 
-    @info "JuMP, Ipopt"
-    @time samples_jump_ipopt = sample_pcfm_2d(ffm, (parameters=ps, states=st),
-                       n_samples, 100, ns_enstrophy_constraints!;
-                       domain = ns_domain,
-                       IC_func = IC_func_ns,
-                       backend = CPU(),
-                       verbose = true,
-                       mode = "jump",
-                       optimizer = Ipopt.Optimizer,
-                       initial_vals = starting_noise)
-end
+@info "JuMP, MadNLP"
+@time samples_jump_madnlp = sample_pcfm_2d(ffm, (parameters=ps, states=st),
+                    n_samples, 100, ns_enstrophy_constraints!;
+                    domain = ns_domain,
+                    IC_func = IC_func_ns,
+                    backend = CPU(),
+                    verbose = true,
+                    mode = "jump",
+                    optimizer = MadNLP.Optimizer,
+                    initial_vals = starting_noise)
+
+@info "JuMP, Ipopt"
+@time samples_jump_ipopt = sample_pcfm_2d(ffm, (parameters=ps, states=st),
+                    n_samples, 100, ns_enstrophy_constraints!;
+                    domain = ns_domain,
+                    IC_func = IC_func_ns,
+                    backend = CPU(),
+                    verbose = true,
+                    mode = "jump",
+                    optimizer = Ipopt.Optimizer,
+                    initial_vals = starting_noise)
 
 ##################
 # Load reference solutions from test dataset
