@@ -8,8 +8,8 @@ using CUDA, KernelAbstractions
 using LinearAlgebra
 
 # Decide on Backend
-backend = CUDABackend()
-# backend = CPU()
+# backend = CUDABackend()
+backend = CPU()
 
 nx        = 10
 nt        = 5
@@ -40,10 +40,12 @@ function run_test(T, S, label)
 
     nlp    = ExaModel(core)
     # solver = MadNLP.MadNLPSolver(nlp; linear_solver=MadNLPGPU.CUDSSSolver, print_level=MadNLP.ERROR)
-    solver = MadNLP.MadNLPSolver(nlp; linear_solver=MadNLPGPU.CUDSSSolver, print_level=MadNLP.ERROR, tol = 1e-7)
-    # solver = MadNLP.MadNLPSolver(nlp; print_level=MadNLP.ERROR)
-    # solver = MadNLP.MadNLPSolver(nlp; print_level=MadNLP.ERROR, tol = 1e-7)
-    println("get_tolerance = ", MadNLP.get_tolerance(eltype(nlp.meta.x0), typeof(solver.opt.kkt_system)))
+    # solver = MadNLP.MadNLPSolver(nlp; linear_solver=MadNLPGPU.CUDSSSolver, print_level=MadNLP.ERROR, tol = 1e-7)
+    # solver = MadNLP.MadNLPSolver(nlp; print_level=MadNLP.ERROR, tol=1e-7)
+    solver = MadNLP.MadNLPSolver(nlp; print_level=MadNLP.ERROR)
+    
+    # println("get_tolerance = ", MadNLP.get_tolerance(eltype(nlp.meta.x0), typeof(solver.opt.kkt_system)))
+
     result = MadNLP.solve!(solver)
     sol    = Array(solution(result, u))
 
@@ -52,6 +54,7 @@ function run_test(T, S, label)
 
     cons_viol = norm(result.constraints, Inf)
 
+    println("Active MadNLP tol                    : ", solver.opt.tol)
     println("  parameter eltype                   : ", T)
     println("  solution eltype                    : ", eltype(solution(result, u)))
     println("  MadNLP primal_feas (cached)        : ", result.primal_feas)
@@ -74,44 +77,4 @@ println("\n-----------------------")
 
 
 
-
-
-T = Float32
-S = Float32
-label = "Float32 parameters → Float32 ExaCore"
-
-
-
-println("\n=== $label ===")
-x1_param  = KernelAbstractions.adapt(backend, zeros(T, N))
-u0_mat_T  = T.(u0_mat)
-
-core     = ExaCore(S, backend=backend) #This becomes Float64 as default. 
-θ        = parameter(core, x1_param)
-u        = variable(core, 1:N; start = x1_param)
-objective(core, (u[i] - θ[i])^2 for i in 1:N)
-u0_param = parameter(core, u0_mat_T)
-constraint(core,
-    (u[idx(i, 1, s)] - u0_param[i, s] for i in 1:nx, s in 1:n_samples);
-    lcon = KernelAbstractions.adapt(backend, zeros(S, nx * n_samples)),
-    ucon = KernelAbstractions.adapt(backend, zeros(S, nx * n_samples)),
-)
-
-nlp    = ExaModel(core) 
-solver = MadNLP.MadNLPSolver(nlp; linear_solver=MadNLPGPU.CUDSSSolver, print_level=MadNLP.ERROR, 
-        tol = 1e-10)
-result = MadNLP.solve!(solver)
-sol    = Array(solution(result, u))
-solution(result, u)
-sol_mat = reshape(sol, nx, nt, n_samples)
-viol = maximum(abs(sol_mat[i, 1, s] - u0_ic[i]) for i in 1:nx, s in 1:n_samples)
-
-cons_viol = norm(result.constraints, Inf)
-
-println("  parameter eltype                   : ", T)
-println("  solution eltype                    : ", eltype(solution(result, u)))
-println("  MadNLP primal_feas (cached)        : ", result.primal_feas)
-println("  norm(result.constraints, Inf)      : ", cons_viol)
-println("  Externally computed viol           : ", viol)
-println("  constraints vs external match?     : ", abs(cons_viol - viol) < 1e-10)
 

@@ -29,6 +29,11 @@ function run_test(T, S, label)
 
     model = Model(Ipopt.Optimizer)
     set_silent(model)
+
+    set_optimizer_attribute(model, "tol", 1e-7)
+    # set_optimizer_attribute(model, "constr_viol_tol", 1e-4)
+    # set_optimizer_attribute(model, "acceptable_iter", 15)
+
     @variable(model, u[i=1:N],  start = x1_param[i])
     @objective(model, Min, sum((u[i] - x1_param[i])^2 for i in 1:N))
     @constraint(model, con[i=1:nx, s=1:n_samples], u[idx(i, 1, s)] == u0_mat_T[i, s])
@@ -40,6 +45,10 @@ function run_test(T, S, label)
 
     cons_viol = norm(value.(con) .- u0_mat_T, Inf)
 
+    # println("constr_viol_tol           = ", get_optimizer_attribute(model, "constr_viol_tol"))
+    # println("acceptable_iter           = ", get_optimizer_attribute(model, "acceptable_iter"))
+
+    println("  tol                                : ", get_optimizer_attribute(model, "tol"))
     println("  parameter eltype                   : ", T)
     println("  solution eltype                    : ", eltype(sol))
     println("  norm(con violation, Inf)           : ", cons_viol)
@@ -47,9 +56,9 @@ function run_test(T, S, label)
     println("  constraints vs external match?     : ", abs(cons_viol - viol) < 1e-10)
 end
 
-run_test(Float32, Float64, "Float32 parameters → Float64 ExaCore")
-run_test(Float64, Float64, "Float64 parameters → Float64 ExaCore")
-run_test(Float32, Float32, "Float32 parameters → Float32 ExaCore")
-run_test(Float64, Float32, "Float64 parameters → Float32 ExaCore")
+run_test(Float32, Float64, "Float32 parameters → Float64 IPopt")
+run_test(Float64, Float64, "Float64 parameters → Float64 IPopt")
+run_test(Float32, Float32, "Float32 parameters → Float32 IPopt")
+run_test(Float64, Float32, "Float64 parameters → Float32 IPopt")
 
 println("\n-----------------------")

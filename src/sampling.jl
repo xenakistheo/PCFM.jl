@@ -207,6 +207,7 @@ function sample_pcfm(ffm::FFM, tstate, n_samples, n_steps, H!;
         if mode == "jump"
             x_1_cpu = Array(x_1)
             model = Model(optimizer)
+            set_optimizer_attribute(model, "tol", solver_tol)
             set_silent(model)
             @variable(model, u[1:nx, 1:nt, 1:n_samples])
             @objective(model, Min, sum((u[i,j,s] - x_1_cpu[i,j,1,s])^2 for i in 1:nx, j in 1:nt, s in 1:n_samples))
@@ -231,6 +232,7 @@ function sample_pcfm(ffm::FFM, tstate, n_samples, n_steps, H!;
     if mode == "jump"
         x_1_cpu = Array(x)
         model = Model(optimizer)
+        set_optimizer_attribute(model, "tol", solver_tol)
         set_silent(model)
         @variable(model, u[1:nx, 1:nt, 1:n_samples])
         @objective(model, Min, sum((u[i,j,s] - x_1_cpu[i,j,1,s])^2 for i in 1:nx, j in 1:nt, s in 1:n_samples))
@@ -405,6 +407,7 @@ function sample_pcfm_2d(ffm::FFM, tstate, n_samples, n_steps, H!;
         if mode == "jump"
             x_1_cpu  = Array(x_1)
             jmp_model = Model(optimizer)
+            set_optimizer_attribute(jmp_model, "tol", solver_tol)
             set_silent(jmp_model)
             @variable(jmp_model, u_jmp[1:nx, 1:ny, 1:nt, 1:n_samples])
             @objective(jmp_model, Min, sum((u_jmp[i,j,k,s] - x_1_cpu[i,j,k,1,s])^2
@@ -425,6 +428,7 @@ function sample_pcfm_2d(ffm::FFM, tstate, n_samples, n_steps, H!;
     if mode == "jump"
         x_cpu  = Array(x)
         jmp_model = Model(optimizer)
+        set_optimizer_attribute(jmp_model, "tol", solver_tol)
         set_silent(jmp_model)
         @variable(jmp_model, u_jmp[1:nx, 1:ny, 1:nt, 1:n_samples])
         @objective(jmp_model, Min, sum((u_jmp[i,j,k,s] - x_cpu[i,j,k,1,s])^2
