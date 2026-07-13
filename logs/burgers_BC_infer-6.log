@@ -30,7 +30,7 @@ Optimizer: MadNLPMOI.Optimizer
 Backend: CUDABackend(false, false)
 ------------------------
 
-316.500991 seconds (628.40 M allocations: 33.988 GiB, 3.63% gc time, 4 lock conflicts, 39.89% compilation time: <1% of which was recompilation)
+430.765162 seconds (653.92 M allocations: 35.720 GiB, 3.31% gc time, 34.01% compilation time: <1% of which was recompilation)
 
 ------------------------
 ------Sampling PCFM------
@@ -39,7 +39,7 @@ Optimizer: MadNLPMOI.Optimizer
 Backend: CPU(false)
 ------------------------
 
-123.502405 seconds (250.55 M allocations: 19.918 GiB, 6.64% gc time, 28.16% compilation time)
+132.228049 seconds (250.54 M allocations: 19.331 GiB, 6.96% gc time, 30.65% compilation time)
 
 ------------------------
 ------Sampling PCFM------
@@ -48,7 +48,7 @@ Optimizer: MadNLPMOI.Optimizer
 Backend: CPU(false)
 ------------------------
 
-417.374123 seconds (1.75 G allocations: 150.342 GiB, 21.31% gc time, 1.93% compilation time: 1% of which was recompilation)
+466.713624 seconds (1.75 G allocations: 150.344 GiB, 20.38% gc time, 2.03% compilation time: 1% of which was recompilation)
 
 ------------------------
 ------Sampling PCFM------
@@ -57,4 +57,4 @@ Optimizer: IpoptMathOptInterfaceExt.Optimizer
 Backend: CPU(false)
 ------------------------
 
-1077.744321 seconds (1.67 G allocations: 109.396 GiB, 7.63% gc time, 0.08% compilation time)
+1251.717249 seconds (1.67 G allocations: 109.397 GiB, 7.61% gc time, 0.08% compilation time)

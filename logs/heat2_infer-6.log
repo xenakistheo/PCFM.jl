@@ -1,0 +1,72 @@
+[ Info: ExaModels, MadNLP, GPU
+[ Info: ExaModels, MadNLP, CPU
+k = 5
+============================================================
+Heat Equation — Functional Flow Matching
+============================================================
+
+[2/5] Creating FFM model...
+  Model created successfully
+
+[3/5] Loading checkpoint from: /orcd/home/002/txenakis/projects/18337/PCFM.jl/examples/checkpoints/ffm_heat_checkpoint.jld2
+  Loaded trained parameters and states
+
+[5/5] Generating samples...
+
+------------------------
+------Sampling PCFM------
+Modelling: exa
+Optimizer: MadNLPMOI.Optimizer
+Backend: CUDABackend(false, false)
+------------------------
+
+PCFM step: 0/100
+PCFM step: 5/100
+PCFM step: 10/100
+PCFM step: 15/100
+PCFM step: 20/100
+PCFM step: 25/100
+PCFM step: 30/100
+PCFM step: 35/100
+PCFM step: 40/100
+PCFM step: 45/100
+PCFM step: 50/100
+PCFM step: 55/100
+PCFM step: 60/100
+PCFM step: 65/100
+PCFM step: 70/100
+PCFM step: 75/100
+PCFM step: 80/100
+PCFM step: 85/100
+PCFM step: 90/100
+PCFM step: 95/100
+380.011613 seconds (1.32 G allocations: 69.386 GiB, 7.63% gc time, 2 lock conflicts, 54.29% compilation time: <1% of which was recompilation)
+
+------------------------
+------Sampling PCFM------
+Modelling: exa
+Optimizer: MadNLPMOI.Optimizer
+Backend: CPU(false)
+------------------------
+
+PCFM step: 0/100
+PCFM step: 5/100
+PCFM step: 10/100
+PCFM step: 15/100
+PCFM step: 20/100
+PCFM step: 25/100
+PCFM step: 30/100
+PCFM step: 35/100
+PCFM step: 40/100
+PCFM step: 45/100
+PCFM step: 50/100
+PCFM step: 55/100
+PCFM step: 60/100
+PCFM step: 65/100
+PCFM step: 70/100
+PCFM step: 75/100
+PCFM step: 80/100
+PCFM step: 85/100
+PCFM step: 90/100
+PCFM step: 95/100
+3626.213531 seconds (1.08 G allocations: 83.009 GiB, 0.79% gc time, 3.32% compilation time)
