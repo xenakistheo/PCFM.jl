@@ -6,7 +6,10 @@ between MadNLP's reported constraint violation and the externally computed one.
 using ExaModels, MadNLP, MadNLPGPU
 using CUDA, KernelAbstractions
 using LinearAlgebra
+
+# Decide on Backend
 backend = CUDABackend()
+# backend = CPU()
 
 nx        = 10
 nt        = 5
@@ -38,6 +41,8 @@ function run_test(T, S, label)
     nlp    = ExaModel(core)
     # solver = MadNLP.MadNLPSolver(nlp; linear_solver=MadNLPGPU.CUDSSSolver, print_level=MadNLP.ERROR)
     solver = MadNLP.MadNLPSolver(nlp; linear_solver=MadNLPGPU.CUDSSSolver, print_level=MadNLP.ERROR, tol = 1e-7)
+    # solver = MadNLP.MadNLPSolver(nlp; print_level=MadNLP.ERROR)
+    # solver = MadNLP.MadNLPSolver(nlp; print_level=MadNLP.ERROR, tol = 1e-7)
     println("get_tolerance = ", MadNLP.get_tolerance(eltype(nlp.meta.x0), typeof(solver.opt.kkt_system)))
     result = MadNLP.solve!(solver)
     sol    = Array(solution(result, u))
