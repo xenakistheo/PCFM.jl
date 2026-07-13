@@ -103,7 +103,8 @@ function sample_pcfm(ffm::FFM, tstate, n_samples, n_steps, H!;
         use_compiled = true,
         compiled_funcs = nothing,
         verbose = true,
-        initial_vals=nothing)
+        initial_vals=nothing, 
+        solver_tol=1e-7)
 
     nx = ffm.config[:nx]
     nt = ffm.config[:nt]
@@ -173,9 +174,9 @@ function sample_pcfm(ffm::FFM, tstate, n_samples, n_steps, H!;
         nlp = ExaModel(core)                                                                                                                                                                                                                
         
         if backend isa GPU
-            solver = MadNLP.MadNLPSolver(nlp; linear_solver=MadNLPGPU.CUDSSSolver) 
+            solver = MadNLP.MadNLPSolver(nlp; linear_solver=MadNLPGPU.CUDSSSolver, tol=solver_tol, print_level=MadNLP.ERROR) 
         else 
-            solver = MadNLP.MadNLPSolver(nlp; print_level=MadNLP.ERROR)
+            solver = MadNLP.MadNLPSolver(nlp; print_level=MadNLP.ERROR, tol=solver_tol)
         end 
     end 
 
@@ -313,7 +314,8 @@ function sample_pcfm_2d(ffm::FFM, tstate, n_samples, n_steps, H!;
         use_compiled = true,
         compiled_funcs = nothing,
         verbose = true,
-        initial_vals = nothing)
+        initial_vals = nothing,
+        solver_tol=1e-7)
 
     spatial_size = ffm.config[:spatial_size]
     nx, ny       = spatial_size
@@ -380,9 +382,9 @@ function sample_pcfm_2d(ffm::FFM, tstate, n_samples, n_steps, H!;
         nlp = ExaModel(core)
 
         if backend isa GPU
-            solver = MadNLP.MadNLPSolver(nlp; linear_solver=MadNLPGPU.CUDSSSolver, print_level=MadNLP.ERROR)
+            solver = MadNLP.MadNLPSolver(nlp; linear_solver=MadNLPGPU.CUDSSSolver, print_level=MadNLP.ERROR, tol=solver_tol)
         else
-            solver = MadNLP.MadNLPSolver(nlp; print_level=MadNLP.ERROR)
+            solver = MadNLP.MadNLPSolver(nlp; print_level=MadNLP.ERROR, tol=solver_tol)
         end
     end
 
