@@ -1,0 +1,13 @@
+Job ID:      17813253
+Node:        node4103
+GPUs:        0
+Start:       Mon Jul 13 07:17:35 EDT 2026
+Project dir: /home/txenakis/projects/18337/PCFM.jl
+Problem:     burgers_BC
+Samples out: samples_burgers_BC_run6.jld2
+--------------------------------------
+Running burgers_BC inference...
+Inference: done
+--------------------------------------
+Done: Mon Jul 13 07:50:17 EDT 2026
+Logs: logs/burgers_BC_infer-6.log

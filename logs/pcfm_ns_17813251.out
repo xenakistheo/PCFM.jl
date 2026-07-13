@@ -1,0 +1,13 @@
+Job ID:      17813251
+Node:        node4103
+GPUs:        0
+Start:       Mon Jul 13 07:17:05 EDT 2026
+Project dir: /home/txenakis/projects/18337/PCFM.jl
+Problem:     ns
+Samples out: samples_ns_run6.jld2
+--------------------------------------
+Running ns inference...
+Inference: done
+--------------------------------------
+Done: Mon Jul 13 07:31:20 EDT 2026
+Logs: logs/ns_infer-6.log
