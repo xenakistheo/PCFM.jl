@@ -7,7 +7,7 @@ using Statistics
 ###
 # Load samples
 data_path  = joinpath(@__DIR__, "..", "..", "final_samples", "samples_rd.jld2")
-data_path2 = joinpath(@__DIR__, "..", "..", "final_samples", "samples_rd_alaina_run3.jld2")
+data_path2 = joinpath(@__DIR__, "..", "..", "final_samples_old", "samples_rd_alaina_run3.jld2")
 
 data = JLD2.load(data_path)
 data2 = JLD2.load(data_path2)
