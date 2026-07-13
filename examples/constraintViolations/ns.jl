@@ -3,7 +3,7 @@ using JLD2
 using Statistics
 
 # Load samples — shape (nx, ny, nt, 1, n_samples); keep all dims for time-resolved violation checks
-data_path  = joinpath(@__DIR__, "..", "..", "final_samples", "samples_ns_run6.jld2")
+data_path  = joinpath(@__DIR__, "..", "..", "final_samples", "samples_ns_solvertol_e5.jld2")
 data_path2 = joinpath(@__DIR__, "..", "..", "final_samples_old", "samples_ns_alaina.jld2")
 data  = JLD2.load(data_path)
 data2 = JLD2.load(data_path2)
