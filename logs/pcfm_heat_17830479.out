@@ -1,0 +1,13 @@
+Job ID:      17830479
+Node:        node3202
+GPUs:        0
+Start:       Mon Jul 13 12:55:09 EDT 2026
+Project dir: /home/txenakis/projects/18337/PCFM.jl
+Problem:     heat
+Samples out: samples_heat_run8.jld2
+--------------------------------------
+Running heat inference...
+Inference: done
+--------------------------------------
+Done: Mon Jul 13 13:05:22 EDT 2026
+Logs: logs/heat_infer-8.log
