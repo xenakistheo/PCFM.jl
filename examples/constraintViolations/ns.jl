@@ -13,7 +13,7 @@ samples_exa_cpu     = data["samples_exa_cpu"]
 samples_jump_madnlp = data["samples_jump_madnlp"]
 samples_jump_ipopt  = data["samples_jump_ipopt"]
 samples_lbfgs       = data2["samples_lbfgs"]
-reference           = data["ref_samples"]
+# reference           = data["ref_samples"]
 
 s  = 16
 nt = 50
@@ -61,8 +61,8 @@ function ns_enstrophy_constraint_violations(samples, u0, nt, dx, dy)
     return ic_viol, mass_viol, enstrophy_viol, max_viol
 end
 
-solver_names = ["Reference", "ExaGPU", "ExaCPU", "MADNLP", "IPOPT", "LBFGS"]
-all_samples  = [reference, samples_exa_gpu, samples_exa_cpu, samples_jump_madnlp, samples_jump_ipopt, samples_lbfgs]
+solver_names = ["ExaGPU", "ExaCPU", "MADNLP", "IPOPT", "LBFGS"]
+all_samples  = [samples_exa_gpu, samples_exa_cpu, samples_jump_madnlp, samples_jump_ipopt, samples_lbfgs]
 
 viols     = [ns_enstrophy_constraint_violations(s, u0, nt, dx, dy) for s in all_samples]
 ic_vals   = [v[1] for v in viols]

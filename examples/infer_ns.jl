@@ -135,31 +135,31 @@ starting_noise = randn(Float32, s, s, nt, 1, n_samples)
                     initial_vals = starting_noise)
 
 ##################
-# Load reference solutions from test dataset
-test_data_file = joinpath(@__DIR__, "..", "datasets", "data", "ns_nw30_nf30_s16_t50_mu0.001.h5")
-ref_samples = zeros(Float32, s, s, nt, 1, n_samples)
+# # Load reference solutions from test dataset
+# test_data_file = joinpath(@__DIR__, "..", "datasets", "data", "ns_nw30_nf30_s16_t50_mu0.001.h5")
+# ref_samples = zeros(Float32, s, s, nt, 1, n_samples)
 
-if isfile(test_data_file)
-    h5open(test_data_file, "r") do f
-        # HDF5 layout (Julia): u is (steps, s, s, nf, nw)
-        u_all = read(f["u"])                            # (nt, s, s, nf, nw)
-        n_load = min(n_samples, size(u_all, 4) * size(u_all, 5))
-        idx = 1
-        for iw in 1:size(u_all, 5), if_ in 1:size(u_all, 4)
-            idx > n_load && break
-            ref_samples[:, :, :, 1, idx] = permutedims(u_all[:, :, :, if_, iw], (2, 3, 1))  # (s, s, nt)
-            idx += 1
-        end
-    end
-    @info "Reference solutions loaded from $test_data_file"
-else
-    @warn "Test data not found at $test_data_file — saving samples without reference"
-end
+# if isfile(test_data_file)
+#     h5open(test_data_file, "r") do f
+#         # HDF5 layout (Julia): u is (steps, s, s, nf, nw)
+#         u_all = read(f["u"])                            # (nt, s, s, nf, nw)
+#         n_load = min(n_samples, size(u_all, 4) * size(u_all, 5))
+#         idx = 1
+#         for iw in 1:size(u_all, 5), if_ in 1:size(u_all, 4)
+#             idx > n_load && break
+#             ref_samples[:, :, :, 1, idx] = permutedims(u_all[:, :, :, if_, iw], (2, 3, 1))  # (s, s, nt)
+#             idx += 1
+#         end
+#     end
+#     @info "Reference solutions loaded from $test_data_file"
+# else
+#     @warn "Test data not found at $test_data_file — saving samples without reference"
+# end
 
 ##################
 # Save samples
 JLD2.save(SAMPLES_PATH,
-    "ref_samples",     ref_samples,
+    # "ref_samples",     ref_samples,
     "samples_exa_gpu", samples_exa_gpu,
     "samples_exa_cpu", samples_exa_cpu,
     "samples_jump_madnlp", samples_jump_madnlp,
