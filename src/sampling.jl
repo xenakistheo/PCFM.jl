@@ -104,7 +104,7 @@ function sample_pcfm(ffm::FFM, tstate, n_samples, n_steps, H!;
         compiled_funcs = nothing,
         verbose = true,
         initial_vals=nothing, 
-        solver_tol=1e-7)
+        solver_tol=1e-5)
 
     nx = ffm.config[:nx]
     nt = ffm.config[:nt]
@@ -315,7 +315,7 @@ function sample_pcfm_2d(ffm::FFM, tstate, n_samples, n_steps, H!;
         compiled_funcs = nothing,
         verbose = true,
         initial_vals = nothing,
-        solver_tol=1e-7)
+        solver_tol=1e-5)
 
     spatial_size = ffm.config[:spatial_size]
     nx, ny       = spatial_size
