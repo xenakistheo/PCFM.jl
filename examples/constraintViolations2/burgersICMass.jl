@@ -5,7 +5,7 @@ using LinearAlgebra
 # Load samples — keep the FULL grid (constraints were imposed on all 101×101 points)
 load_raw(d, key) = dropdims(d[key], dims=3)   # (nx, nt, n_samples)
 
-data_path = joinpath(@__DIR__, "..", "..", "final_samples_old", "samples_burgers_IC_Mass.jld2")
+data_path = joinpath(@__DIR__, "..", "..", "final_samples", "samples_burgers_IC_IC_Mass_soltol_e5.jld2")
 data = JLD2.load(data_path)
 
 analytic        = load_raw(data, "ref_samples")
@@ -66,3 +66,4 @@ for (name, ic, m) in zip(solver_names, ic_vals, mass_vals)
             rpad(round(ic; sigdigits=4), 14),
             round(m; sigdigits=4))
 end
+3.
