@@ -1,0 +1,64 @@
+
+******************************************************************************
+This program contains Ipopt, a library for large-scale nonlinear optimization.
+ Ipopt is released as open source code under the Eclipse Public License (EPL).
+         For more information visit https://github.com/coin-or/Ipopt
+******************************************************************************
+
+Precompiling packages...
+    PCFM Being precompiled by another machine (hostname: node3008, pid: 2579392, pidfile: /home/txenakis/.julia/compiled/v1.12/PCFM/zZAhp_iKL7m.ji.pidfile)
+  26109.3 ms  ✓ PCFM
+  1 dependency successfully precompiled in 50 seconds. 625 already precompiled.
+[ Info: ExaModels, MadNLP, GPU
+[ Info: ExaModels, MadNLP, CPU
+[ Info: JuMP, MadNLP
+[ Info: JuMP, Ipopt
+[ Info: Reference IC: p_loc = 0.4822 (index 16 / 30)
+============================================================
+Burgers Equation — Functional Flow Matching
+============================================================
+
+[1/3] Creating FFM model...
+  Model created successfully
+
+[2/3] Loading checkpoint from: /orcd/home/002/txenakis/projects/18337/PCFM.jl/examples/checkpoints/ffm_burgers_checkpoint.jld2
+  Loaded trained parameters and states
+
+[3/3] Generating samples...
+backend = CUDABackend(false, false)
+
+------------------------
+------Sampling PCFM------
+Modelling: exa
+Optimizer: MadNLPMOI.Optimizer
+Backend: CUDABackend(false, false)
+------------------------
+
+315.785803 seconds (627.04 M allocations: 33.907 GiB, 3.73% gc time, 3 lock conflicts, 40.28% compilation time: <1% of which was recompilation)
+
+------------------------
+------Sampling PCFM------
+Modelling: exa
+Optimizer: MadNLPMOI.Optimizer
+Backend: CPU(false)
+------------------------
+
+123.367071 seconds (250.55 M allocations: 19.918 GiB, 7.19% gc time, 28.06% compilation time)
+
+------------------------
+------Sampling PCFM------
+Modelling: jump
+Optimizer: MadNLPMOI.Optimizer
+Backend: CPU(false)
+------------------------
+
+418.500748 seconds (1.75 G allocations: 149.920 GiB, 20.52% gc time, 1.95% compilation time: 1% of which was recompilation)
+
+------------------------
+------Sampling PCFM------
+Modelling: jump
+Optimizer: IpoptMathOptInterfaceExt.Optimizer
+Backend: CPU(false)
+------------------------
+
+1145.086139 seconds (1.67 G allocations: 109.395 GiB, 7.71% gc time, 0.08% compilation time)
