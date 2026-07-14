@@ -173,12 +173,11 @@ function sample_pcfm(ffm::FFM, tstate, n_samples, n_steps, H!;
         H!(core, u, u_0_ic_mat, nt, n_samples, grid_points, grid_spacing, dt, constraint_parameters; backend=backend)                                                                                                                   
         nlp = ExaModel(core)                                                                                                                                                                                                                
         
-        if backend isa GPU
-            solver = MadNLP.MadNLPSolver(nlp; linear_solver=MadNLPGPU.CUDSSSolver, tol=solver_tol, print_level=MadNLP.ERROR) 
-        else 
-            solver = MadNLP.MadNLPSolver(nlp; print_level=MadNLP.ERROR, tol=solver_tol)
-        end 
-    end 
+        build_solver() = backend isa GPU ?
+            MadNLP.MadNLPSolver(nlp; linear_solver=MadNLPGPU.CUDSSSolver, tol=solver_tol, print_level=MadNLP.ERROR) :
+            MadNLP.MadNLPSolver(nlp; print_level=MadNLP.ERROR, tol=solver_tol)
+        solver = build_solver()
+    end
 
 
 
@@ -220,8 +219,18 @@ function sample_pcfm(ffm::FFM, tstate, n_samples, n_steps, H!;
             copyto!(nlp.meta.x0, reshape(x_1, N))       # warm-start initial guess
             MadNLP.set_status!(solver, MadNLP.INITIAL)  # workaround: reinitialize! has Float32/Float64 bug
             result = MadNLP.solve!(solver)
+            if result.status != MadNLP.SOLVE_SUCCEEDED && result.status != MadNLP.SOLVED_TO_ACCEPTABLE_LEVEL
+                # Reused solvers carry state (slacks, multipliers, filter) across
+                # solves; retry once from a clean solver before accepting the iterate.
+                @warn "PCFM projection failed at step $step; retrying with a fresh solver" status=result.status
+                solver = build_solver()
+                result = MadNLP.solve!(solver)
+                if result.status != MadNLP.SOLVE_SUCCEEDED && result.status != MadNLP.SOLVED_TO_ACCEPTABLE_LEVEL
+                    @warn "PCFM projection still failing at step $step after fresh solve" status=result.status
+                end
+            end
             x_1 = reshape(Float32.(solution(result, u)), nx, nt, 1, n_samples) |> device
-        end 
+        end
         ##############
 
         # Step 3: Interpolate between x_0 and x_1 (corrected) at time t+dt
@@ -244,6 +253,14 @@ function sample_pcfm(ffm::FFM, tstate, n_samples, n_steps, H!;
         copyto!(nlp.meta.x0, reshape(x, N))
         MadNLP.set_status!(solver, MadNLP.INITIAL)
         result = MadNLP.solve!(solver)
+        if result.status != MadNLP.SOLVE_SUCCEEDED && result.status != MadNLP.SOLVED_TO_ACCEPTABLE_LEVEL
+            @warn "PCFM final projection failed; retrying with a fresh solver" status=result.status
+            solver = build_solver()
+            result = MadNLP.solve!(solver)
+            if result.status != MadNLP.SOLVE_SUCCEEDED && result.status != MadNLP.SOLVED_TO_ACCEPTABLE_LEVEL
+                @warn "PCFM final projection still failing after fresh solve" status=result.status
+            end
+        end
         x = reshape(Float32.(solution(result, u)), nx, nt, 1, n_samples) |> device
     end
 

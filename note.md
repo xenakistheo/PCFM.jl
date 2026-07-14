@@ -81,7 +81,7 @@ ExaGPU
 # Compute
 In the original submission, the experiments performed by Theo 
 were all done on a compute node requested with 
-`salloc -p mit_normal_gpu --gres=gpu:1 --cpus-per-task=4 --mem=64G --time=03:00:00`
+`salloc --partition=mit_normal_gpu --gres=gpu:l40s:1 --cpus-per-task=4 --mem=64G --time=05:00:00`
 
 Alaina's experiments were performed on a compute node requested with
 `XXX`

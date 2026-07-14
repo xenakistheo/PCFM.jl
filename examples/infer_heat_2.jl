@@ -156,23 +156,17 @@ function heat_constraints_IC_Mass_PDE_Energy!(
     )
 
     # --------------------------------------------------
-    # 4. Energy dissipation (one-sided bounds):
-    #    The explicit-Euler update in (3) dissipates slightly less than the
-    #    continuum law dE/dt = -2κ||u_x||² (the gap is a positive O(dt²)
-    #    term plus boundary terms), so imposing the continuum law as an
-    #    equality is infeasible together with (1)-(3). Bracket the decay:
-    #      (a) ||u^{t+1}||² - ||u^t||² + 2κdt ||u_x^t||² ≥ 0
-    #      (b) ||u^{t+1}||² - ||u^t||² ≤ 0
+    # 4. Energy decay: E[t+1] ≤ E[t] over the whole trajectory.
+    #    The continuum law dE/dt = -2κ||u_x||² cannot be imposed as an
+    #    equality (or a lower bound) together with (1)-(3): those leave a
+    #    single free boundary DOF per constrained step, and the reachable
+    #    energy minimum sits O(dt²) above the continuum value, so an
+    #    equality is infeasible and a rate bound is active exactly where
+    #    its gradient degenerates (LICQ failure -> spurious MadNLP
+    #    infeasibility exits). Monotone decay is feasible, non-degenerate,
+    #    and automatically strict on the k_eff steps where (3) holds.
     # --------------------------------------------------
-    @NLconstraint(model, [t in 1:k_eff, s in 1:n_samples],
-        sum(u[i, t+1, s]^2 for i in 1:nx) * dx
-        - sum(u[i, t, s]^2 for i in 1:nx) * dx
-        + 2 * κ * dt *
-          sum(((u[i+1, t, s] - u[i, t, s]) / dx)^2 for i in 1:nx-1) * dx
-        >= 0.0
-    )
-
-    @NLconstraint(model, [t in 1:k_eff, s in 1:n_samples],
+    @NLconstraint(model, [t in 1:nt-1, s in 1:n_samples],
         sum(u[i, t+1, s]^2 for i in 1:nx) * dx
         - sum(u[i, t, s]^2 for i in 1:nx) * dx
         <= 0.0
@@ -247,30 +241,17 @@ function heat_constraints_IC_Mass_PDE_Energy!(
     )
 
     # --------------------------------------------------
-    # 4. Energy dissipation (one-sided bounds):
-    #    The explicit-Euler update in (3) dissipates slightly less than the
-    #    continuum law dE/dt = -2κ||u_x||² (the gap is a positive O(dt²)
-    #    term plus boundary terms), so imposing the continuum law as an
-    #    equality is infeasible together with (1)-(3). Bracket the decay:
-    #      (a) ||u^{t+1}||² - ||u^t||² + 2κdt ||u_x^t||² ≥ 0
-    #      (b) ||u^{t+1}||² - ||u^t||² ≤ 0
+    # 4. Energy decay: E[t+1] ≤ E[t] over the whole trajectory.
+    #    The continuum law dE/dt = -2κ||u_x||² cannot be imposed as an
+    #    equality (or a lower bound) together with (1)-(3): those leave a
+    #    single free boundary DOF per constrained step, and the reachable
+    #    energy minimum sits O(dt²) above the continuum value, so an
+    #    equality is infeasible and a rate bound is active exactly where
+    #    its gradient degenerates (LICQ failure -> spurious MadNLP
+    #    infeasibility exits). Monotone decay is feasible, non-degenerate,
+    #    and automatically strict on the k_eff steps where (3) holds.
     # --------------------------------------------------
-    ts_pairs_energy = [(t, s) for t in 1:k_eff for s in 1:n_samples]
-
-    constraint(core,
-        (
-            sum(u_flat[idx(i, d[1]+1, d[2])]^2 for i in 1:nx) * dx
-            - sum(u_flat[idx(i, d[1], d[2])]^2 for i in 1:nx) * dx
-            + 2 * κ * dt *
-              sum(
-                  ((u_flat[idx(i+1, d[1], d[2])] - u_flat[idx(i, d[1], d[2])]) / dx)^2
-                  for i in 1:nx-1
-              ) * dx
-            for d in ts_pairs_energy
-        );
-        lcon = KernelAbstractions.adapt(backend, zeros(k_eff * n_samples)),
-        ucon = KernelAbstractions.adapt(backend, fill(Inf, k_eff * n_samples))
-    )
+    ts_pairs_energy = [(t, s) for t in 1:nt-1 for s in 1:n_samples]
 
     constraint(core,
         (
@@ -278,8 +259,8 @@ function heat_constraints_IC_Mass_PDE_Energy!(
             - sum(u_flat[idx(i, d[1], d[2])]^2 for i in 1:nx) * dx
             for d in ts_pairs_energy
         );
-        lcon = KernelAbstractions.adapt(backend, fill(-Inf, k_eff * n_samples)),
-        ucon = KernelAbstractions.adapt(backend, zeros(k_eff * n_samples))
+        lcon = KernelAbstractions.adapt(backend, fill(-Inf, (nt-1) * n_samples)),
+        ucon = KernelAbstractions.adapt(backend, zeros((nt-1) * n_samples))
     )
 
     return nothing

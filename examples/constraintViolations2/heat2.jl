@@ -5,8 +5,8 @@ using LinearAlgebra
 # Load samples — keep the sample dimension: (nx, nt, 1, n_samples) → (nx, nt, n_samples)
 load_samples(d, key) = dropdims(d[key], dims=3)
 
-data_path = joinpath(@__DIR__, "..", "..", "final_samples", "samples_heat_2_soltol_e5.jld2")
-data_path = joinpath(@__DIR__, "..", "..", "final_samples_old", "samples_heat_2.jld2")
+data_path = joinpath(@__DIR__, "..", "..", "final_samples", "samples_heat_2_new.jld2")
+# data_path = joinpath(@__DIR__, "..", "..", "final_samples_old", "samples_heat_2.jld2")
 data_path2 = joinpath(@__DIR__, "..", "..", "final_samples_old", "samples_heat2_alaina_run1.jld2")
 data = JLD2.load(data_path)
 data2 = JLD2.load(data_path2)
@@ -36,12 +36,9 @@ k_eff = 5  # infer_heat_2.jl ran with constraint_params k = 5
 #                    (t=1 no longer imposed: redundant with the IC rows)
 #   PDE:    R[t,i] = (u[i,t+1,s]-u[i,t,s])/dt
 #                    - κ*(u[i+1,t,s]-2u[i,t,s]+u[i-1,t,s])/dx²        for t in 1:k_eff, i in 2:nx-1
-#   Energy: imposed as two INEQUALITIES bracketing the decay,
-#             (a) E[t+1] - E[t] + 2κdt||u_x^t||² ≥ 0   (no faster than continuum rate)
-#             (b) E[t+1] - E[t] ≤ 0                     (energy non-increasing)
-#           so the residual is the hinge violation of each side,
-#             R[2t-1] = max(0, -(E[t+1]-E[t]+2κdt||u_x^t||²)),
-#             R[2t]   = max(0,   E[t+1]-E[t])            for t in 1:k_eff
+#   Energy: imposed as the INEQUALITY E[t+1] - E[t] ≤ 0 for t in 1:nt-1
+#           (monotone decay over the whole trajectory), so the residual is
+#           the hinge violation R[t] = max(0, E[t+1]-E[t])
 function heat2_constraint_errors(samples, u0_ic, nx, nt, dx, dt, κ, k_eff)
     u = ndims(samples) == 4 ? dropdims(samples, dims=3) : samples  # (nx, nt, n_samples)
     n_samples = size(u, 3)
@@ -60,12 +57,10 @@ function heat2_constraint_errors(samples, u0_ic, nx, nt, dx, dt, κ, k_eff)
         r_pde  = [((us[i, t+1] - us[i, t]) / dt -
                    κ * (us[i+1, t] - 2*us[i, t] + us[i-1, t]) / dx^2)
                   for t in 1:k_eff for i in 2:nx-1]
-        r_energy = zeros(2 * k_eff)
-        for t in 1:k_eff
-            dE   = sum(us[:, t+1].^2) * dx - sum(us[:, t].^2) * dx
-            diss = 2 * κ * dt * sum(((us[i+1, t] - us[i, t]) / dx)^2 for i in 1:nx-1) * dx
-            r_energy[2t-1] = max(0.0, -(dE + diss))  # dissipated faster than continuum rate
-            r_energy[2t]   = max(0.0, dE)            # energy increased
+        r_energy = zeros(nt - 1)
+        for t in 1:nt-1
+            dE = sum(us[:, t+1].^2) * dx - sum(us[:, t].^2) * dx
+            r_energy[t] = max(0.0, dE)  # energy increased
         end
 
         ic_ce     += norm(r_ic)
