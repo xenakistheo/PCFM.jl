@@ -3,7 +3,7 @@ using Statistics
 using LinearAlgebra
 
 # Load samples
-data_path  = joinpath(@__DIR__, "..", "..", "final_samples", "samples_rd_solvertol_e5_x.jld2")
+data_path  = joinpath(@__DIR__, "..", "..", "final_samples", "samples_rd_soltol_e5.jld2")
 data_path2 = joinpath(@__DIR__, "..", "..", "final_samples_old", "samples_rd_alaina_run3.jld2")
 
 data = JLD2.load(data_path)
