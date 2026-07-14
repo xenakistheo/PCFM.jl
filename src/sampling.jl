@@ -1,8 +1,28 @@
-# MadNLP 0.9.x exposes solver.status as a plain field; 0.10+ replaced it with set_status!.
-@static if isdefined(MadNLP, :set_status!)
-    _set_initial_status!(solver) = MadNLP.set_status!(solver, MadNLP.INITIAL)
-else
-    _set_initial_status!(solver) = (solver.status = MadNLP.INITIAL)
+# Reset a MadNLPSolver so a re-solve behaves like a freshly built solver.
+# initialize! (taken when status == INITIAL) resets the iterate and duals, but
+# it only push!es onto the line-search filter without emptying it, and never
+# zeroes the cumulative iteration counter cnt.k that max_iter is checked
+# against — so a reused solver accumulates stale filter entries (spurious
+# RESTORATION_FAILED) and eventually exhausts max_iter across projections.
+function _reset_solver!(solver)
+    empty!(solver.filter)
+    solver.cnt.k = 0
+    # MadNLP 0.9.x exposes solver.status as a plain field; 0.10+ replaced it with set_status!.
+    @static if isdefined(MadNLP, :set_status!)
+        MadNLP.set_status!(solver, MadNLP.INITIAL)
+    else
+        solver.status = MadNLP.INITIAL
+    end
+    return solver
+end
+
+# Dispose a failed solver before building its replacement: drain in-flight GPU
+# work, then run finalizers, so CUDSS buffers of the dead solver are not freed
+# while the device may still reference them (illegal-memory-access crashes).
+function _dispose_solver!(solver, backend)
+    KernelAbstractions.synchronize(backend)
+    GC.gc()
+    return nothing
 end
 
 """
@@ -224,12 +244,13 @@ function sample_pcfm(ffm::FFM, tstate, n_samples, n_steps, H!;
         else 
             copyto!(nlp.θ, reshape(x_1, N))
             copyto!(nlp.meta.x0, reshape(x_1, N))       # warm-start initial guess
-            _set_initial_status!(solver)  # workaround: reinitialize! has Float32/Float64 bug
+            _reset_solver!(solver)  # clear stale filter/iteration state from previous solves
             result = MadNLP.solve!(solver)
             if result.status != MadNLP.SOLVE_SUCCEEDED && result.status != MadNLP.SOLVED_TO_ACCEPTABLE_LEVEL
                 # Reused solvers carry state (slacks, multipliers, filter) across
                 # solves; retry once from a clean solver before accepting the iterate.
                 @warn "PCFM projection failed at step $step; retrying with a fresh solver" status=result.status
+                _dispose_solver!(solver, backend)
                 solver = build_solver()
                 result = MadNLP.solve!(solver)
                 if result.status != MadNLP.SOLVE_SUCCEEDED && result.status != MadNLP.SOLVED_TO_ACCEPTABLE_LEVEL
@@ -258,10 +279,11 @@ function sample_pcfm(ffm::FFM, tstate, n_samples, n_steps, H!;
     else
         copyto!(nlp.θ, reshape(x, N))
         copyto!(nlp.meta.x0, reshape(x, N))
-        _set_initial_status!(solver)
+        _reset_solver!(solver)
         result = MadNLP.solve!(solver)
         if result.status != MadNLP.SOLVE_SUCCEEDED && result.status != MadNLP.SOLVED_TO_ACCEPTABLE_LEVEL
             @warn "PCFM final projection failed; retrying with a fresh solver" status=result.status
+            _dispose_solver!(solver, backend)
             solver = build_solver()
             result = MadNLP.solve!(solver)
             if result.status != MadNLP.SOLVE_SUCCEEDED && result.status != MadNLP.SOLVED_TO_ACCEPTABLE_LEVEL
@@ -441,12 +463,13 @@ function sample_pcfm_2d(ffm::FFM, tstate, n_samples, n_steps, H!;
         else
             copyto!(nlp.θ, reshape(x_1, N))
             copyto!(nlp.meta.x0, reshape(x_1, N))       # warm-start initial guess
-            _set_initial_status!(solver)  # workaround: reinitialize! has Float32/Float64 bug
+            _reset_solver!(solver)  # clear stale filter/iteration state from previous solves
             result = MadNLP.solve!(solver)
             if result.status != MadNLP.SOLVE_SUCCEEDED && result.status != MadNLP.SOLVED_TO_ACCEPTABLE_LEVEL
                 # Reused solvers carry state (slacks, multipliers, filter) across
                 # solves; retry once from a clean solver before accepting the iterate.
                 @warn "PCFM projection failed at step $step; retrying with a fresh solver" status=result.status
+                _dispose_solver!(solver, backend)
                 solver = build_solver()
                 result = MadNLP.solve!(solver)
                 if result.status != MadNLP.SOLVE_SUCCEEDED && result.status != MadNLP.SOLVED_TO_ACCEPTABLE_LEVEL
@@ -474,10 +497,11 @@ function sample_pcfm_2d(ffm::FFM, tstate, n_samples, n_steps, H!;
     else
         copyto!(nlp.θ, reshape(x, N))
         copyto!(nlp.meta.x0, reshape(x, N))
-        _set_initial_status!(solver)
+        _reset_solver!(solver)
         result = MadNLP.solve!(solver)
         if result.status != MadNLP.SOLVE_SUCCEEDED && result.status != MadNLP.SOLVED_TO_ACCEPTABLE_LEVEL
             @warn "PCFM final projection failed; retrying with a fresh solver" status=result.status
+            _dispose_solver!(solver, backend)
             solver = build_solver()
             result = MadNLP.solve!(solver)
             if result.status != MadNLP.SOLVE_SUCCEEDED && result.status != MadNLP.SOLVED_TO_ACCEPTABLE_LEVEL
