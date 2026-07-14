@@ -1,6 +1,9 @@
 ## Notes 
 
 
+Heat 2 is perhaps completely infeasible. 
+MadNLP GPU performs very bad on RD and NS (while the others perform well)
+
 `ssh orcd-login`
 `cd projects/18337/PCFM.jl`
 
@@ -9,44 +12,69 @@
 
 ### To run experiments 
 
-Scripts should take in samples path. 
 
 -------------------------------------
 Heat1: (7 min)
 ExaGPU, ExaCPU, JuMP_MadNLP, JuMP_IPopt
 `sbatch --job-name=pcfm_heat final_scripts/run_inference.sh heat 6`
-Checked: ok
-Ran:
+
 
 
 -------------------------------------
 Heat2: (1 hour)
 ExaGPU, ExaCPU
 `sbatch --job-name=pcfm_heat2 final_scripts/run_inference.sh heat2 6`
-Checked: ok 
-Ran:
 
 
 -------------------------------------
 BurgersBC: (30 min)
 ExaGPU, ExaCPU, JuMP_MadNLP, JuMP_IPopt
 `sbatch --job-name=pcfm_burgers_BC final_scripts/run_inference.sh burgers_BC 6`
-Checked: ok
-Ran:
+
 
 -------------------------------------
 ReactionDiffusion: (10 min)
 ExaGPU, ExaCPU, JuMP_MadNLP, JuMP_IPopt
 `sbatch --job-name=pcfm_rd final_scripts/run_inference.sh rd 6`
-Checked: ok
-Ran:
+
 
 -------------------------------------
 NavierStokes: (5 min)
 ExaGPU, ExaCPU, JuMP_MadNLP, JuMP_IPopt
 `sbatch --job-name=pcfm_ns final_scripts/run_inference.sh ns 6`
-Checked: ok
-Ran:
+
+
+
+-------------------------------------
+Burgers (pure) IC: 
+ExaGPU, ExaCPU, JuMP_MadNLP, JuMP_IPopt
+`sbatch final_scripts/run_constraintscale.sh --constraint IC --k 5 --run 6`
+
+-------------------------------------
+Burgers IC + Mass: 
+ExaGPU, ExaCPU, JuMP_MadNLP
+`sbatch final_scripts/run_constraintscale.sh --constraint IC_Mass --k 5 --run 6`
+
+
+-------------------------------------
+Burgers IC + Mass + Flux(1): 
+ExaGPU, ExaCPU
+`sbatch final_scripts/run_constraintscale.sh --constraint IC_Mass_Flux --k 1 --run 6`
+
+
+-------------------------------------
+Burgers IC + Mass + Flux(5): 
+ExaGPU, ExaCPU
+`sbatch final_scripts/run_constraintscale.sh --constraint IC_Mass_Flux --k 5 --run 6`
+
+
+-------------------------------------
+Burgers IC + Mass + Flux(10): 
+ExaGPU
+`sbatch final_scripts/run_constraintscale.sh --constraint IC_Mass_Flux --k 10 --run 6`
+
+
+
 
 
 

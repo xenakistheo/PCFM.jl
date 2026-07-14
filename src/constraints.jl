@@ -632,8 +632,10 @@ function heat_constraints_IC_Mass_PDE_Energy!(
     # --------------------------------------------------
     # 2. Constant mass:
     #    ∫ u(x,t) dx = ∫ u(x,0) dx
+    #    t = 1 is excluded: that row equals dx * (sum of the IC rows), and the
+    #    linearly dependent Jacobian stalls MadNLP's dual convergence.
     # --------------------------------------------------
-    @constraint(model, [t in 1:nt, s in 1:n_samples],
+    @constraint(model, [t in 2:nt, s in 1:n_samples],
         sum(u[i, t, s] for i in 1:nx) * dx ==
         sum(u0[i, 1, 1, s] for i in 1:nx) * dx
     )
@@ -649,15 +651,26 @@ function heat_constraints_IC_Mass_PDE_Energy!(
     )
 
     # --------------------------------------------------
-    # 4. Energy dissipation:
-    #    ||u^{t+1}||² - ||u^t||² + 2κdt ||u_x^t||² = 0
+    # 4. Energy dissipation (one-sided bounds):
+    #    The explicit-Euler update in (3) dissipates slightly less than the
+    #    continuum law dE/dt = -2κ||u_x||² (the gap is a positive O(dt²)
+    #    term plus boundary terms), so imposing the continuum law as an
+    #    equality is infeasible together with (1)-(3). Bracket the decay:
+    #      (a) ||u^{t+1}||² - ||u^t||² + 2κdt ||u_x^t||² ≥ 0
+    #      (b) ||u^{t+1}||² - ||u^t||² ≤ 0
     # --------------------------------------------------
     @NLconstraint(model, [t in 1:k_eff, s in 1:n_samples],
         sum(u[i, t+1, s]^2 for i in 1:nx) * dx
         - sum(u[i, t, s]^2 for i in 1:nx) * dx
         + 2 * κ * dt *
           sum(((u[i+1, t, s] - u[i, t, s]) / dx)^2 for i in 1:nx-1) * dx
-        == 0.0
+        >= 0.0
+    )
+
+    @NLconstraint(model, [t in 1:k_eff, s in 1:n_samples],
+        sum(u[i, t+1, s]^2 for i in 1:nx) * dx
+        - sum(u[i, t, s]^2 for i in 1:nx) * dx
+        <= 0.0
     )
 
     return nothing
@@ -693,8 +706,10 @@ function heat_constraints_IC_Mass_PDE_Energy!(
     # --------------------------------------------------
     # 2. Constant mass:
     #    ∑ u[i,t,s] dx = ∑ u0[i,s] dx
+    #    t = 1 is excluded: that row equals dx * (sum of the IC rows), and the
+    #    linearly dependent Jacobian stalls MadNLP's dual convergence.
     # --------------------------------------------------
-    ts_pairs = [(t, s) for t in 1:nt for s in 1:n_samples]
+    ts_pairs = [(t, s) for t in 2:nt for s in 1:n_samples]
 
     constraint(core,
         (
@@ -702,8 +717,8 @@ function heat_constraints_IC_Mass_PDE_Energy!(
             - sum(u0_param[i, d[2]] for i in 1:nx) * dx
             for d in ts_pairs
         );
-        lcon = KernelAbstractions.adapt(backend, zeros(nt * n_samples)),
-        ucon = KernelAbstractions.adapt(backend, zeros(nt * n_samples))
+        lcon = KernelAbstractions.adapt(backend, zeros((nt-1) * n_samples)),
+        ucon = KernelAbstractions.adapt(backend, zeros((nt-1) * n_samples))
     )
 
     # --------------------------------------------------
@@ -727,8 +742,13 @@ function heat_constraints_IC_Mass_PDE_Energy!(
     )
 
     # --------------------------------------------------
-    # 4. Energy dissipation:
-    #    ||u^{t+1}||² - ||u^t||² + 2κdt ||u_x^t||² = 0
+    # 4. Energy dissipation (one-sided bounds):
+    #    The explicit-Euler update in (3) dissipates slightly less than the
+    #    continuum law dE/dt = -2κ||u_x||² (the gap is a positive O(dt²)
+    #    term plus boundary terms), so imposing the continuum law as an
+    #    equality is infeasible together with (1)-(3). Bracket the decay:
+    #      (a) ||u^{t+1}||² - ||u^t||² + 2κdt ||u_x^t||² ≥ 0
+    #      (b) ||u^{t+1}||² - ||u^t||² ≤ 0
     # --------------------------------------------------
     ts_pairs_energy = [(t, s) for t in 1:k_eff for s in 1:n_samples]
 
@@ -744,6 +764,16 @@ function heat_constraints_IC_Mass_PDE_Energy!(
             for d in ts_pairs_energy
         );
         lcon = KernelAbstractions.adapt(backend, zeros(k_eff * n_samples)),
+        ucon = KernelAbstractions.adapt(backend, fill(Inf, k_eff * n_samples))
+    )
+
+    constraint(core,
+        (
+            sum(u_flat[idx(i, d[1]+1, d[2])]^2 for i in 1:nx) * dx
+            - sum(u_flat[idx(i, d[1], d[2])]^2 for i in 1:nx) * dx
+            for d in ts_pairs_energy
+        );
+        lcon = KernelAbstractions.adapt(backend, fill(-Inf, k_eff * n_samples)),
         ucon = KernelAbstractions.adapt(backend, zeros(k_eff * n_samples))
     )
 

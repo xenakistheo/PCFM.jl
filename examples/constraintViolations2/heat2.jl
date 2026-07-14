@@ -32,10 +32,16 @@ k_eff = 5  # infer_heat_2.jl ran with constraint_params k = 5
 #   CE(τ) = (1/N) Σₙ ‖R_τ(û⁽ⁿ⁾)‖₂
 # with residuals mirroring heat_constraints_IC_Mass_PDE_Energy! in src/constraints.jl:
 #   IC:     R[i]   = u[i,1,s] - u0_ic[i]                              for i in 1:nx
-#   Mass:   R[t]   = ∑u[:,t,s]*dx - ∑u0_ic*dx                        for t in 1:nt
+#   Mass:   R[t-1] = ∑u[:,t,s]*dx - ∑u0_ic*dx                        for t in 2:nt
+#                    (t=1 no longer imposed: redundant with the IC rows)
 #   PDE:    R[t,i] = (u[i,t+1,s]-u[i,t,s])/dt
 #                    - κ*(u[i+1,t,s]-2u[i,t,s]+u[i-1,t,s])/dx²        for t in 1:k_eff, i in 2:nx-1
-#   Energy: R[t]   = ||u^{t+1}||²dx - ||u^t||²dx + 2κdt||u_x^t||²dx  for t in 1:k_eff
+#   Energy: imposed as two INEQUALITIES bracketing the decay,
+#             (a) E[t+1] - E[t] + 2κdt||u_x^t||² ≥ 0   (no faster than continuum rate)
+#             (b) E[t+1] - E[t] ≤ 0                     (energy non-increasing)
+#           so the residual is the hinge violation of each side,
+#             R[2t-1] = max(0, -(E[t+1]-E[t]+2κdt||u_x^t||²)),
+#             R[2t]   = max(0,   E[t+1]-E[t])            for t in 1:k_eff
 function heat2_constraint_errors(samples, u0_ic, nx, nt, dx, dt, κ, k_eff)
     u = ndims(samples) == 4 ? dropdims(samples, dims=3) : samples  # (nx, nt, n_samples)
     n_samples = size(u, 3)
@@ -50,14 +56,17 @@ function heat2_constraint_errors(samples, u0_ic, nx, nt, dx, dt, κ, k_eff)
         us = u[:, :, s]
 
         r_ic   = us[:, 1] .- u0_ic
-        r_mass = [sum(us[:, t]) * dx - M0 for t in 1:nt]
+        r_mass = [sum(us[:, t]) * dx - M0 for t in 2:nt]
         r_pde  = [((us[i, t+1] - us[i, t]) / dt -
                    κ * (us[i+1, t] - 2*us[i, t] + us[i-1, t]) / dx^2)
                   for t in 1:k_eff for i in 2:nx-1]
-        r_energy = [(sum(us[:, t+1].^2) * dx
-                     - sum(us[:, t].^2) * dx
-                     + 2 * κ * dt * sum(((us[i+1, t] - us[i, t]) / dx)^2 for i in 1:nx-1) * dx)
-                    for t in 1:k_eff]
+        r_energy = zeros(2 * k_eff)
+        for t in 1:k_eff
+            dE   = sum(us[:, t+1].^2) * dx - sum(us[:, t].^2) * dx
+            diss = 2 * κ * dt * sum(((us[i+1, t] - us[i, t]) / dx)^2 for i in 1:nx-1) * dx
+            r_energy[2t-1] = max(0.0, -(dE + diss))  # dissipated faster than continuum rate
+            r_energy[2t]   = max(0.0, dE)            # energy increased
+        end
 
         ic_ce     += norm(r_ic)
         mass_ce   += norm(r_mass)
