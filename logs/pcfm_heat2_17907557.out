@@ -1,0 +1,13 @@
+Job ID:      17907557
+Node:        node3008
+GPUs:        0
+Start:       Tue Jul 14 14:21:12 EDT 2026
+Project dir: /home/txenakis/projects/18337/PCFM.jl
+Problem:     heat2
+Samples out: samples_heat2_run43.jld2
+--------------------------------------
+Running heat2 inference...
+Inference: done
+--------------------------------------
+Done: Tue Jul 14 14:42:23 EDT 2026
+Logs: logs/heat2_infer-43.log
