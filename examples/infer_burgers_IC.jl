@@ -97,7 +97,6 @@ tstate_inf = (parameters = ps, states = st)
 left_bc_vals = rand(Float32, n_samples)
 
 constraint_name = length(ARGS) >= 1 ? ARGS[1] : "IC_Mass_Flux"
-constraint_name = "IC_Mass_Flux"
 
 CONSTRAINT_FUNC = if constraint_name == "IC"
     burgers_constraints_IC!
@@ -107,7 +106,22 @@ else
     burgers_constraints_IC_Mass_Flux!
 end
 godunov_flux_k = length(ARGS) >= 2 ? parse(Int, ARGS[2]) : 5
-godunov_flux_k = 10
+
+# Which solver backends to run, depending on constraint difficulty:
+#   IC                  -> exa_gpu, exa_cpu, jump_madnlp, jump_ipopt
+#   IC_Mass             -> exa_gpu, exa_cpu, jump_madnlp
+#   IC_Mass_Flux k<=5   -> exa_gpu, exa_cpu
+#   IC_Mass_Flux k>5    -> exa_gpu
+solvers_to_run = if constraint_name == "IC"
+    ["exa_gpu", "exa_cpu", "jump_madnlp", "jump_ipopt"]
+elseif constraint_name == "IC_Mass"
+    ["exa_gpu", "exa_cpu", "jump_madnlp"]
+elseif godunov_flux_k <= 5
+    ["exa_gpu", "exa_cpu"]
+else
+    ["exa_gpu"]
+end
+@info "Solvers to run: $(join(solvers_to_run, ", "))"
 
 const burgers_domain = (x_start=0f0, x_end=1f0, t_start=0f0, t_end=1f0)
 const burgers_params = (left_bc=left_bc_vals,)
@@ -128,62 +142,67 @@ starting_noise = randn(Float32, nx, nt, 1, n_samples)
 # end
 
 # Samples
-SAMPLES_PATH = "samples_burgers_IC_Flux_10.jld2"
+computed_samples = Dict{String,Any}()
+
+if "exa_gpu" in solvers_to_run
+    @info "ExaModels, MadNLP, GPU"
+    @time samples_exa_gpu = sample_pcfm(ffm, (parameters=ps, states=st),
+                        n_samples, 100, CONSTRAINT_FUNC;
+                        domain = burgers_domain,
+                        IC_func = IC_func_burgers,
+                        constraint_parameters = burgers_ic_flux_params,
+                        backend = backend,
+                        verbose = true,
+                        mode = "exa",
+                        initial_vals = starting_noise);
+    computed_samples["samples_exa_gpu"] = samples_exa_gpu
+end
+
+if "exa_cpu" in solvers_to_run
+    @info "ExaModels, MadNLP, CPU"
+    @time samples_exa_cpu = sample_pcfm(ffm, (parameters=ps, states=st),
+                       n_samples, 100, CONSTRAINT_FUNC;
+                       domain = burgers_domain,
+                       IC_func = IC_func_burgers,
+                       constraint_parameters = burgers_ic_flux_params,
+                       backend = CPU(),
+                       verbose = true,
+                       mode = "exa",
+                       initial_vals = starting_noise);
+    computed_samples["samples_exa_cpu"] = samples_exa_cpu
+end
+
+if "jump_madnlp" in solvers_to_run
+    @info "JuMP, MadNLP"
+    @time samples_jump_madnlp = sample_pcfm(ffm, (parameters=ps, states=st),
+                       n_samples, 100, CONSTRAINT_FUNC;
+                       domain = burgers_domain,
+                       IC_func = IC_func_burgers,
+                       constraint_parameters = burgers_ic_flux_params,
+                       backend = CPU(),
+                       verbose = true,
+                       mode = "jump",
+                       optimizer = MadNLP.Optimizer,
+                       initial_vals = starting_noise);
+    computed_samples["samples_jump_madnlp"] = samples_jump_madnlp
+end
+
+if "jump_ipopt" in solvers_to_run
+    @info "JuMP, Ipopt"
+    @time samples_jump_ipopt = sample_pcfm(ffm, (parameters=ps, states=st),
+                       n_samples, 100, CONSTRAINT_FUNC;
+                       domain = burgers_domain,
+                       IC_func = IC_func_burgers,
+                       constraint_parameters = burgers_ic_flux_params,
+                       backend = CPU(),
+                       verbose = true,
+                       mode = "jump",
+                       optimizer = Ipopt.Optimizer,
+                       initial_vals = starting_noise);
+    computed_samples["samples_jump_ipopt"] = samples_jump_ipopt
+end
 
 
-
-@info "ExaModels, MadNLP, GPU"
-@time samples_exa_gpu = sample_pcfm(ffm, (parameters=ps, states=st),
-                    n_samples, 100, CONSTRAINT_FUNC;
-                    domain = burgers_domain,
-                    IC_func = IC_func_burgers,
-                    constraint_parameters = burgers_ic_flux_params,
-                    backend = backend,
-                    verbose = true,
-                    mode = "exa",
-                    initial_vals = starting_noise);
-
-# @info "ExaModels, MadNLP, CPU"
-# @time samples_exa_cpu = sample_pcfm(ffm, (parameters=ps, states=st),
-#                    n_samples, 100, CONSTRAINT_FUNC;
-#                    domain = burgers_domain,
-#                    IC_func = IC_func_burgers,
-#                    constraint_parameters = burgers_ic_flux_params,
-#                    backend = CPU(),
-#                    verbose = true,
-#                    mode = "exa",
-#                    initial_vals = starting_noise);
-
-# @info "JuMP, MadNLP"
-# @time samples_jump_madnlp = sample_pcfm(ffm, (parameters=ps, states=st),
-#                    n_samples, 100, CONSTRAINT_FUNC;
-#                    domain = burgers_domain,
-#                    IC_func = IC_func_burgers,
-#                    constraint_parameters = burgers_ic_flux_params,
-#                    backend = CPU(),
-#                    verbose = true,
-#                    mode = "jump",
-#                    optimizer = MadNLP.Optimizer,
-#                    initial_vals = starting_noise);
-
-# @info "JuMP, Ipopt"
-# @time samples_jump_ipopt = sample_pcfm(ffm, (parameters=ps, states=st),
-#                    n_samples, 100, CONSTRAINT_FUNC;
-#                    domain = burgers_domain,
-#                    IC_func = IC_func_burgers,
-#                    constraint_parameters = burgers_ic_flux_params,
-#                    backend = CPU(),
-#                    verbose = true,
-#                    mode = "jump",
-#                    optimizer = Ipopt.Optimizer,
-#                    initial_vals = starting_noise);
-
-# @info "FFM"
-# @time samples_ffm = sample_ffm(ffm, (parameters=ps, states=st), n_samples, 100;
-#     verbose = false,
-#     initial_vals = starting_noise)
-
-# samples_ffm = Array(samples_ffm)
 
 ##################
 # Load reference solutions from the test dataset (ground truth)
@@ -230,16 +249,12 @@ end
 #     constraint_params=(nx, nt, dx, dt))
 # save("burgers_constraint_violation.png", fig_constraint)
 
-# Save samples
-JLD2.save(SAMPLES_PATH,
-    "left_bc_vals", left_bc_vals,
-    "ref_samples",         ref_samples,
-    "samples_exa_gpu",     samples_exa_gpu,
-    # "samples_exa_cpu",     samples_exa_cpu,
-    # "samples_jump_madnlp", samples_jump_madnlp,
-    # "samples_jump_ipopt", samples_jump_ipopt
-    # "samples_ffm",         samples_ffm)
-)
+# Save samples (only the solvers that were run)
+save_dict = merge(
+    Dict("left_bc_vals" => left_bc_vals, "ref_samples" => ref_samples),
+    computed_samples)
+JLD2.save(SAMPLES_PATH, save_dict)
+@info "Saved $(join(sort(collect(keys(save_dict))), ", ")) to $SAMPLES_PATH"
 # Load samples
 # data = JLD2.load("samples_burgers_IC.jld2")
 # ref_samples         = data["ref_samples"]
