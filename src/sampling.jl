@@ -1,3 +1,10 @@
+# MadNLP 0.9.x exposes solver.status as a plain field; 0.10+ replaced it with set_status!.
+@static if isdefined(MadNLP, :set_status!)
+    _set_initial_status!(solver) = MadNLP.set_status!(solver, MadNLP.INITIAL)
+else
+    _set_initial_status!(solver) = (solver.status = MadNLP.INITIAL)
+end
+
 """
     sample_ffm(ffm::FFM, tstate, n_samples, n_steps;
                use_compiled=false, compiled_funcs=nothing, verbose=true)
@@ -217,7 +224,7 @@ function sample_pcfm(ffm::FFM, tstate, n_samples, n_steps, H!;
         else 
             copyto!(nlp.θ, reshape(x_1, N))
             copyto!(nlp.meta.x0, reshape(x_1, N))       # warm-start initial guess
-            MadNLP.set_status!(solver, MadNLP.INITIAL)  # workaround: reinitialize! has Float32/Float64 bug
+            _set_initial_status!(solver)  # workaround: reinitialize! has Float32/Float64 bug
             result = MadNLP.solve!(solver)
             if result.status != MadNLP.SOLVE_SUCCEEDED && result.status != MadNLP.SOLVED_TO_ACCEPTABLE_LEVEL
                 # Reused solvers carry state (slacks, multipliers, filter) across
@@ -251,7 +258,7 @@ function sample_pcfm(ffm::FFM, tstate, n_samples, n_steps, H!;
     else
         copyto!(nlp.θ, reshape(x, N))
         copyto!(nlp.meta.x0, reshape(x, N))
-        MadNLP.set_status!(solver, MadNLP.INITIAL)
+        _set_initial_status!(solver)
         result = MadNLP.solve!(solver)
         if result.status != MadNLP.SOLVE_SUCCEEDED && result.status != MadNLP.SOLVED_TO_ACCEPTABLE_LEVEL
             @warn "PCFM final projection failed; retrying with a fresh solver" status=result.status
@@ -400,11 +407,10 @@ function sample_pcfm_2d(ffm::FFM, tstate, n_samples, n_steps, H!;
         H!(core, u, u_0_ic_mat, nt, n_samples, grid_points, grid_spacing, dt, constraint_parameters; backend=backend)
         nlp = ExaModel(core)
 
-        if backend isa GPU
-            solver = MadNLP.MadNLPSolver(nlp; linear_solver=MadNLPGPU.CUDSSSolver, print_level=MadNLP.ERROR, tol=solver_tol)
-        else
-            solver = MadNLP.MadNLPSolver(nlp; print_level=MadNLP.ERROR, tol=solver_tol)
-        end
+        build_solver() = backend isa GPU ?
+            MadNLP.MadNLPSolver(nlp; linear_solver=MadNLPGPU.CUDSSSolver, print_level=MadNLP.ERROR, tol=solver_tol) :
+            MadNLP.MadNLPSolver(nlp; print_level=MadNLP.ERROR, tol=solver_tol)
+        solver = build_solver()
     end
 
     for step in 0:(n_steps - 1)
@@ -434,8 +440,20 @@ function sample_pcfm_2d(ffm::FFM, tstate, n_samples, n_steps, H!;
             x_1 = reshape(Float32.(value.(u_jmp)), nx, ny, nt, 1, n_samples) |> device
         else
             copyto!(nlp.θ, reshape(x_1, N))
+            copyto!(nlp.meta.x0, reshape(x_1, N))       # warm-start initial guess
+            _set_initial_status!(solver)  # workaround: reinitialize! has Float32/Float64 bug
             result = MadNLP.solve!(solver)
-            x_1    = reshape(Float32.(solution(result, u)), nx, ny, nt, 1, n_samples) |> device
+            if result.status != MadNLP.SOLVE_SUCCEEDED && result.status != MadNLP.SOLVED_TO_ACCEPTABLE_LEVEL
+                # Reused solvers carry state (slacks, multipliers, filter) across
+                # solves; retry once from a clean solver before accepting the iterate.
+                @warn "PCFM projection failed at step $step; retrying with a fresh solver" status=result.status
+                solver = build_solver()
+                result = MadNLP.solve!(solver)
+                if result.status != MadNLP.SOLVE_SUCCEEDED && result.status != MadNLP.SOLVED_TO_ACCEPTABLE_LEVEL
+                    @warn "PCFM projection still failing at step $step after fresh solve" status=result.status
+                end
+            end
+            x_1 = reshape(Float32.(solution(result, u)), nx, ny, nt, 1, n_samples) |> device
         end
 
         @. x = x_0 + (x_1 - x_0) * τ_next
@@ -455,7 +473,17 @@ function sample_pcfm_2d(ffm::FFM, tstate, n_samples, n_steps, H!;
         x = reshape(Float32.(value.(u_jmp)), nx, ny, nt, 1, n_samples) |> device
     else
         copyto!(nlp.θ, reshape(x, N))
+        copyto!(nlp.meta.x0, reshape(x, N))
+        _set_initial_status!(solver)
         result = MadNLP.solve!(solver)
+        if result.status != MadNLP.SOLVE_SUCCEEDED && result.status != MadNLP.SOLVED_TO_ACCEPTABLE_LEVEL
+            @warn "PCFM final projection failed; retrying with a fresh solver" status=result.status
+            solver = build_solver()
+            result = MadNLP.solve!(solver)
+            if result.status != MadNLP.SOLVE_SUCCEEDED && result.status != MadNLP.SOLVED_TO_ACCEPTABLE_LEVEL
+                @warn "PCFM final projection still failing after fresh solve" status=result.status
+            end
+        end
         x = reshape(Float32.(solution(result, u)), nx, ny, nt, 1, n_samples) |> device
     end
 
