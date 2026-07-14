@@ -1,0 +1,15 @@
+Job ID:      17893608
+Node:        node3006
+GPUs:        0
+Start:       Tue Jul 14 09:54:32 EDT 2026
+Project dir: /home/txenakis/projects/18337/PCFM.jl
+Constraint:  IC_Mass
+K:           5
+Run:         6
+Samples out: samples_burgers_IC_IC_Mass_k5_run6.jld2
+--------------------------------------
+Running Burgers IC inference...
+Inference: done
+--------------------------------------
+Done: Tue Jul 14 10:02:00 EDT 2026
+Logs: logs/scale_burgers_IC_IC_Mass_k5_run6.log
