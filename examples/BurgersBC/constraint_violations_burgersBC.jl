@@ -6,16 +6,14 @@ using LinearAlgebra
 load_raw(d, key) = dropdims(d[key], dims=3)   # (nx, nt, n_samples)
 
 data_path  = joinpath(@__DIR__, "..", "..", "final_samples", "samples_burgers_BC_solvertol_e7_x.jld2")
-data_path2 = joinpath(@__DIR__, "..", "..", "final_samples_old", "samples_burgers_BC_alaina.jld2")
 data  = JLD2.load(data_path)
-data2 = JLD2.load(data_path2)
 
 analytic        = load_raw(data,  "ref_samples")
 samples_exa_gpu = load_raw(data,  "samples_exa_gpu")
 samples_exa_cpu = load_raw(data,  "samples_exa_cpu")
 samples_madnlp  = load_raw(data,  "samples_jump_madnlp")
 samples_ipopt   = load_raw(data,  "samples_jump_ipopt")
-samples_lbfgs   = load_raw(data2, "samples_lbfgs")
+samples_lbfgs   = load_raw(data, "samples_lbfgs")
 
 nx = 101
 nt = 101
