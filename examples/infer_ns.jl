@@ -21,6 +21,7 @@ using HDF5
 backend = CUDABackend()
 dev_gpu = cu
 dev_cpu = cpu_device
+
 device  = dev_gpu
 
 Random.seed!(42)
@@ -35,6 +36,9 @@ emb_channels = 32
 # Output path
 SAMPLES_PATH = length(ARGS) >= 1 ? ARGS[1] : "samples_ns.jld2"
 
+# Number of samples to generate 
+n_samples    = length(ARGS) >= 1 ? parse(Int, ARGS[1]) : 2
+
 # Checkpoint path
 weight_file = joinpath(@__DIR__, "checkpoints", "ffm_ns_s16_checkpoint.jld2")
 
@@ -42,11 +46,11 @@ weight_file = joinpath(@__DIR__, "checkpoints", "ffm_ns_s16_checkpoint.jld2")
 x_grid = range(0.0f0, 1.0f0; length=s+1)[1:end-1]
 y_grid = range(0.0f0, 1.0f0; length=s+1)[1:end-1]
 dx     = Float32(x_grid[2] - x_grid[1])
-dy     = Float32(y_grid[2] - y_grid[1])
-dt     = 49.0f0 / (nt - 1)   # T=49 over nt snapshots
+
 
 # Initial condition: simple sinusoidal vorticity (Kolmogorov-like)
 IC_func_ns = (x, y) -> sin(2f0 * Float32(π) * Float32(y))
+u_0_ic_2d  = Float32.(IC_func_ns.(x_grid, y_grid'))   # (s, s)
 
 # ---------------------------------------------------------------------------
 println("=" ^ 60)
@@ -70,17 +74,19 @@ println("  Model created successfully")
 # Load checkpoint
 println("\n[2/3] Loading checkpoint from: $weight_file")
 saved = JLD2.load(weight_file)
-device = cu
-ps = saved["parameters"] |> device
-st = saved["states"]     |> device
-println("  Loaded trained parameters and states")
 
+ps = saved["parameters"] |> device
 _, st = Lux.setup(Random.default_rng(), ffm.model)
-ps = ps |> device
 st = st |> device
 
-println("\n[3/3] Generating samples...")
-n_samples = 2 # Hard Code number of samples for benchmarking. 
+println("  Loaded trained parameters and states")
+
+
+println("\n[3/3] Generating samples...") 
+
+# Constraint data needed for LBFGS and IPNewton solvers (not needed for ExaModels or JuMP)
+constraint_data = make_constraint_data(u_0_ic_2d, (s, s), nt, n_samples; dx=dx)
+
 tstate_inf = (parameters = ps, states = st)
 
 const ns_domain = (x_start=0f0, x_end=1f0, y_start=0f0, y_end=1f0, t_start=0f0, t_end=1f0)
@@ -90,8 +96,9 @@ const ns_domain = (x_start=0f0, x_end=1f0, y_start=0f0, y_end=1f0, t_start=0f0, 
 starting_noise = randn(Float32, s, s, nt, 1, n_samples)
 
 
+# ---------------------------------------------------------------------------
 # Samples
-
+# ---------------------------------------------------------------------------
 @info "ExaModels, MadNLP, GPU"
 @time samples_exa_gpu = sample_pcfm_2d(ffm, (parameters=ps, states=st),
                     n_samples, 100, ns_enstrophy_constraints!;
@@ -134,6 +141,21 @@ starting_noise = randn(Float32, s, s, nt, 1, n_samples)
                     optimizer = Ipopt.Optimizer,
                     initial_vals = starting_noise)
 
+@info "NS Enstrophy LBFGS"
+@time samples_lbfgs = sample_pcfm(ffm, (parameters=ps, states=st),
+                    n_samples, 100,
+                    NSEnstrophyLBFGSSolver(),
+                    constraint_data;
+                    verbose=true)
+
+# Does not converge in alloted time (6 hours)
+# @info "NS Enstrophy IPNewton"
+# @time samples_ipnewton = sample_pcfm(ffm, (parameters=ps, states=st),
+#                     n_samples, 100,
+#                     NSEnstrophyIPNewtonSolver(),
+#                     constraint_data;
+#                     verbose=true)
+
 ##################
 # # Load reference solutions from test dataset
 # test_data_file = joinpath(@__DIR__, "..", "datasets", "data", "ns_nw30_nf30_s16_t50_mu0.001.h5")
@@ -163,6 +185,9 @@ JLD2.save(SAMPLES_PATH,
     "samples_exa_gpu", samples_exa_gpu,
     "samples_exa_cpu", samples_exa_cpu,
     "samples_jump_madnlp", samples_jump_madnlp,
-    "samples_jump_ipopt", samples_jump_ipopt)
+    "samples_jump_ipopt", samples_jump_ipopt, 
+    "samples_lbfgs", samples_lbfgs
+    # "samples_ipnewton", samples_ipnewton
+)
 
 @info "Samples saved to $SAMPLES_PATH"
