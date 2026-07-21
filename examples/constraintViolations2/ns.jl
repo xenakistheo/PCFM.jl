@@ -5,15 +5,13 @@ using LinearAlgebra
 
 # Load samples — shape (nx, ny, nt, 1, n_samples); keep all dims for per-sample residuals
 data_path  = joinpath(@__DIR__, "..", "..", "final_samples", "samples_ns_soltol_e5.jld2")
-data_path2 = joinpath(@__DIR__, "..", "..", "final_samples_old", "samples_ns_alaina.jld2")
 data  = JLD2.load(data_path)
-data2 = JLD2.load(data_path2)
 
 samples_exa_gpu     = data["samples_exa_gpu"]
 samples_exa_cpu     = data["samples_exa_cpu"]
 samples_jump_madnlp = data["samples_jump_madnlp"]
 samples_jump_ipopt  = data["samples_jump_ipopt"]
-samples_lbfgs       = data2["samples_lbfgs"]
+samples_lbfgs       = data["samples_lbfgs"]
 
 # Grid as used inside sample_pcfm_2d: range(domain.x_start, domain.x_end, length=nx)
 # with domain (0,1) — i.e. INCLUDING the endpoint, spacing 1/(s-1) (not the periodic 1/s grid).
