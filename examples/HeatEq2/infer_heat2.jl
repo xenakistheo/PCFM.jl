@@ -1,6 +1,7 @@
 """
 Example script for sampling from a Functional Flow Matching model
-on the 1D heat (diffusion) equation.
+on the 1D heat (diffusion) equation using the constraints defined 
+as "Heat 2" 
 
 Note: Script does not use Reactant
 """
@@ -16,21 +17,18 @@ using JLD2, Functors
 using JuMP
 using Ipopt
 using BenchmarkTools
+using Random
 
-
-
+Random.seed!(1234)
 
 backend = CUDABackend()
-backend isa GPU
 
 dev_gpu = cu
 dev_cpu = cpu_device
 
 device = dev_gpu
 
-# Set random seed
-using Random
-Random.seed!(1234)
+
 
 # ---------------------------------------------------------------------------
 # Configuration
@@ -39,8 +37,7 @@ batch_size   = 32
 nx           = 100          # Spatial resolution
 nt           = 100          # Temporal resolution
 emb_channels = 32
-n_epochs     = 1000
-force_retrain = false
+n_samples    = length(ARGS) >= 1 ? parse(Int, ARGS[1]) : 32
 
 # Output path 
 SAMPLES_PATH = length(ARGS) >= 2 ? ARGS[2] : "samples_heat_2.jld2"
@@ -49,22 +46,19 @@ SAMPLES_PATH = length(ARGS) >= 2 ? ARGS[2] : "samples_heat_2.jld2"
 weight_file = joinpath(@__DIR__, "checkpoints", "ffm_heat_checkpoint.jld2")
 
 # Data generation parameters
-visc_range = (1.0f0, 5.0f0)
-phi_range  = (0.0f0, Float32(π))
 t_range    = (0.0f0, 1.0f0)
 
 # Grid
 x_grid = range(0.0f0, 2.0f0*Float32(π); length = nx)
 dx     = Float32(x_grid[2] - x_grid[1])
 dt     = 1.0f0 / (nt - 1)
+dt_physics = 1.0f0 / (nt - 1)
+const kappa = 0.01f0   # heat diffusivity 
+k = nt-1 #5, 20
 
+constraint_params = (; kappa = kappa, k = k)
 
-k = 5
-@show k 
-# Constraint params (passed through to heat_constraints!)
-constraint_params = (; kappa = 0.01, k = k)
-# params = (; kappa = 0.01, k = 20)
-# params = (; kappa = 0.01, k = nt - 1)
+u_0_ic = Float32.(sin.(x_grid .+ Float32(π)/4))   # (nx,)
 
 # ---------------------------------------------------------------------------
 println("=" ^ 60)
@@ -83,7 +77,7 @@ ffm = FFM(
     proj_channels = 256,
     n_layers = 4,
     modes = (32, 32),
-    device = dev_gpu
+    device = device
 )
 println("  Model created successfully")
 
@@ -91,32 +85,28 @@ println("  Model created successfully")
 
 println("\n[3/5] Loading checkpoint from: $weight_file")
 saved = JLD2.load(weight_file)
-# device = ffm.config[:device]
-device = cu
-ps = saved["parameters"] |> device
-st = saved["states"] |> device
-losses = Float32[]
-# compiled_funcs = PCFM.compile_functions(ffm, batch_size)
-println("  Loaded trained parameters and states")
 
 
 # Re-init Lux states for inference and move ps/st to device
-# device = ffm.config[:device]
+ps = saved["parameters"] |> device
 _, st = Lux.setup(Random.default_rng(), ffm.model)
-ps = ps |> device
 st = st |> device
+println("  Loaded trained parameters and states")
+
 
 # ---------------------------------------------------------------------------
-# 5. Generate samples
+# Constraint data for LBFGS and IPNewton solvers (not needed for ExaModels or JuMP)
 # ---------------------------------------------------------------------------
-println("\n[5/5] Generating samples...")
-n_samples = 32
-# sample_compiled_funcs = (n_samples == batch_size) ? compiled_funcs : PCFM.compile_functions(ffm, n_samples)
+constraint_data = make_constraint_data(u_0_ic, nx, nt, n_samples;
+                                        dx=dx, dt_physics=dt_physics)
+
+
+# ---------------------------------------------------------------------------
+# Define constraint function for ExaModels and JuMP
+# ---------------------------------------------------------------------------
 tstate_inf = (parameters = ps, states = st)
 
-########################################################################################################################################################
-########################################################################################################################################################
-########################################################################################################################################################
+
 function heat_constraints_IC_Mass_PDE_Energy!(
     model::Model, u, u0, nt, n_samples, grid_points, grid_spacing, dt, params=(;)
 )
@@ -267,16 +257,14 @@ function heat_constraints_IC_Mass_PDE_Energy!(
 end
 
 
-########################################################################################################################################################
-########################################################################################################################################################
-########################################################################################################################################################
-
-
+# ---------------------------------------------------------------------------
+# 5. Generate samples
+# ---------------------------------------------------------------------------
+println("\n[5/5] Generating samples...")
 starting_noise = randn(Float32, nx, nt, 1, n_samples);
 
 
-# begin 
-    # ExaModels, MadNLP, GPU
+
 @info "ExaModels, MadNLP, GPU"
 @time samples_exa_gpu = sample_pcfm(ffm, (parameters = ps, states = st),
                 n_samples, 100, heat_constraints_IC_Mass_PDE_Energy!;
@@ -288,8 +276,6 @@ starting_noise = randn(Float32, nx, nt, 1, n_samples);
 
 
 
-
-# # ExaModels, MadNLP, CPU
 @info "ExaModels, MadNLP, CPU"
 @time samples_exa_cpu = sample_pcfm(ffm, (parameters = ps, states = st),
                 n_samples, 100, heat_constraints_IC_Mass_PDE_Energy!;
@@ -300,34 +286,48 @@ starting_noise = randn(Float32, nx, nt, 1, n_samples);
                 initial_vals=starting_noise);
 
 
+@info "Heat PDE+Energy LBFGS (kappa=$kappa)"
+@time samples_lbfgs = sample_pcfm(ffm, (parameters=ps, states=st),
+                    n_samples, 100,
+                    HeatICPDEEnergySolver(kappa=kappa),
+                    constraint_data;
+                    verbose=true)
 
-    # # #JuMP, MadNLP
-    # @info "JuMP, MadNLP"
-    # @time samples_jump_madnlp = sample_pcfm(ffm, (parameters = ps, states = st),
-    #                 n_samples, 100, heat_constraints_IC_Mass_PDE_Energy!;
-    #                 backend=CPU(),
-    #                 verbose = true,
-    #                 mode="jump",
-    #                 optimizer=MadNLP.Optimizer, 
-    #                 constraint_parameters = constraint_params,
-    #                 initial_vals=starting_noise);
+# @info "Heat PDE+Energy IPNewton (kappa=$kappa)"
+# @time samples_ipnewton = sample_pcfm(ffm, (parameters=ps, states=st),
+#                     n_samples, 100,
+#                     HeatICPDEEnergyIPSolver(kappa=kappa),
+#                     constraint_data;
+#                     verbose=true)
 
-    # @info "JuMP, Ipopt"
-    # @time samples_jump_ipopt = sample_pcfm(ffm, (parameters = ps, states = st),
-    #                 n_samples, 100, heat_constraints_IC_Mass_PDE_Energy!;
-    #                 backend=CPU(),
-    #                 verbose = true,
-    #                 mode="jump",
-    #                 optimizer=Ipopt.Optimizer, 
-    #                 constraint_parameters = constraint_params,
-    #                 initial_vals=starting_noise);
 
-    # FFM
-    # @info "FFM"
-    # @time samples_ffm = sample_ffm(ffm, (parameters = ps, states = st), n_samples, 100; 
-    #     verbose = false,
-    #     initial_vals=starting_noise);
-# end 
+# # #JuMP, MadNLP
+# @info "JuMP, MadNLP"
+# @time samples_jump_madnlp = sample_pcfm(ffm, (parameters = ps, states = st),
+#                 n_samples, 100, heat_constraints_IC_Mass_PDE_Energy!;
+#                 backend=CPU(),
+#                 verbose = true,
+#                 mode="jump",
+#                 optimizer=MadNLP.Optimizer, 
+#                 constraint_parameters = constraint_params,
+#                 initial_vals=starting_noise);
+
+# @info "JuMP, Ipopt"
+# @time samples_jump_ipopt = sample_pcfm(ffm, (parameters = ps, states = st),
+#                 n_samples, 100, heat_constraints_IC_Mass_PDE_Energy!;
+#                 backend=CPU(),
+#                 verbose = true,
+#                 mode="jump",
+#                 optimizer=Ipopt.Optimizer, 
+#                 constraint_parameters = constraint_params,
+#                 initial_vals=starting_noise);
+
+# FFM
+# @info "FFM"
+# @time samples_ffm = sample_ffm(ffm, (parameters = ps, states = st), n_samples, 100; 
+#     verbose = false,
+#     initial_vals=starting_noise);
+
 # samples_ffm = Array(samples_ffm)
 
 
@@ -347,17 +347,13 @@ u_analytic
 # Save samples
 JLD2.save(SAMPLES_PATH,
     "samples_exa_gpu",    samples_exa_gpu,
-    "samples_exa_cpu",    samples_exa_cpu)
-#     # "samples_jump_madnlp", samples_jump_madnlp,
-#     # "samples_jump_ipopt", samples_jump_ipopt,
-#     # "samples_ffm",        samples_ffm,
-#     # "u_analytic",         u_analytic)
+    "samples_exa_cpu",    samples_exa_cpu, 
+    "samples_lbfgs",    samples_lbfgs,
+    # "samples_ipnewton", samples_ipnewton,
+    # "samples_jump_madnlp", samples_jump_madnlp,
+    # "samples_jump_ipopt", samples_jump_ipopt,
+    # "samples_ffm",        samples_ffm,
+    "u_analytic",         u_analytic)
 
-# Load samples
-# data = JLD2.load("samples_heat_2.jld2")
-# samples_exa_gpu     = data["samples_exa_gpu"]
-# samples_exa_cpu     = data["samples_exa_cpu"]
-# samples_jump_madnlp = data["samples_jump_madnlp"]
-# samples_ffm         = data["samples_ffm"]
-# u_analytic          = data["u_analytic"]
+@info "Samples saved to $SAMPLES_PATH"
 
