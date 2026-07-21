@@ -19,23 +19,28 @@ using Ipopt
 using BenchmarkTools
 using Random
 
-# include(joinpath(@__DIR__, "..", "optimisation", "plotUtils.jl"))
+Random.seed!(42)
+
 
 backend = CUDABackend()
 dev_gpu = cu
 dev_cpu = cpu_device
 device  = dev_gpu
 
-Random.seed!(42)
+
 
 # ---------------------------------------------------------------------------
 # Configuration
 # ---------------------------------------------------------------------------
-batch_size   = 32
+
 nx           = 64
 nt           = 100
 emb_channels = 32
+n_samples    = length(ARGS) >= 1 ? parse(Int, ARGS[1]) : 32
 
+
+
+SAMPLES_PATH = length(ARGS) >= 2 ? ARGS[2] : "samples_rd.jld2"
 weight_file = joinpath(@__DIR__, "checkpoints", "ffm_rd_checkpoint_nx64.jld2")
 
 t_range = (0.0f0, 1.0f0)
@@ -43,7 +48,9 @@ t_range = (0.0f0, 1.0f0)
 # Grid
 x_grid = range(0.0f0, 1.0f0; length=nx)
 dx     = Float32(x_grid[2] - x_grid[1])
-dt     = 1.0f0 / (nt - 1)
+dt_physics = 1.0f0 / (nt - 1)
+
+const rd_rho = 0.01f0   # logistic reaction rate 
 
 # Initial condition: random spectral IC (fixed seed for reproducibility)
 function generate_ic(xc; k_tot=3, num_choice_k=2)
@@ -68,9 +75,9 @@ function generate_ic(xc; k_tot=3, num_choice_k=2)
     return u
 end
 
-Random.seed!(0)
+
 u0_fixed = Float32.(generate_ic(collect(x_grid)))
-Random.seed!(42)
+
 
 IC_func_rd = x -> u0_fixed[clamp(round(Int, (x - x_grid[1]) / dx) + 1, 1, nx)]
 
@@ -92,88 +99,38 @@ ffm = FFM(
     proj_channels = 256,
     n_layers = 4,
     modes = (32, 32),
-    device = dev_gpu
+    device = device
 )
 println("  Model created successfully")
 
 # Load checkpoint
 println("\n[2/3] Loading checkpoint from: $weight_file")
 saved = JLD2.load(weight_file)
-device = cu
+
+
+
+
 ps = saved["parameters"] |> device
-st = saved["states"]     |> device
+_, st = Lux.setup(Random.default_rng(), ffm.model)
+st = st |> device
 println("  Loaded trained parameters and states")
 
-_, st = Lux.setup(Random.default_rng(), ffm.model)
-ps = ps |> device
-st = st |> device
+
+# ---------------------------------------------------------------------------
+# Constraint data (needed for LBFGS and IPNewton solvers, not needed for ExaModels or JuMP)
+# ---------------------------------------------------------------------------
+constraint_data = make_constraint_data(u0_fixed, nx, nt, n_samples;
+                                        dx=dx, dt_physics=dt_physics)
+
+
 
 println("\n[3/3] Generating samples...")
-n_samples = 32
 tstate_inf = (parameters = ps, states = st)
 
 @show backend
 
 starting_noise = randn(Float32, nx, nt, 1, n_samples)
 
-
-# begin
-#     @info "ExaModels, MadNLP, GPU"
-#     display(@benchmark sample_pcfm($ffm, (parameters=$ps, states=$st),
-#                        $n_samples, 100, rd_constraints_2!;
-#                        domain = rd_domain,
-#                        IC_func = IC_func_rd,
-#                        constraint_parameters = rd_params,
-#                        backend = backend,
-#                        verbose = false,
-#                        mode = "exa",
-#                        initial_vals = $starting_noise));
-#     flush(stdout)
-
-#     @info "ExaModels, MadNLP, CPU"
-#     display(@benchmark sample_pcfm($ffm, (parameters=$ps, states=$st),
-#                        $n_samples, 100, rd_constraints_2!;
-#                        domain = rd_domain,
-#                        IC_func = IC_func_rd,
-#                        constraint_parameters = rd_params,
-#                        backend = CPU(),
-#                        verbose = false,
-#                        mode = "exa",
-#                        initial_vals = $starting_noise));
-#     flush(stdout)
-
-#     @info "JuMP, MadNLP"
-#     display(@benchmark sample_pcfm($ffm, (parameters=$ps, states=$st),
-#                        $n_samples, 100, rd_constraints_2!;
-#                        domain = rd_domain,
-#                        IC_func = IC_func_rd,
-#                        constraint_parameters = rd_params,
-#                        backend = CPU(),
-#                        verbose = false,
-#                        mode = "jump",
-#                        optimizer = MadNLP.Optimizer,
-#                        initial_vals = $starting_noise));
-#     flush(stdout)
-
-#     @info "JuMP, Ipopt"
-#     display(@benchmark sample_pcfm($ffm, (parameters=$ps, states=$st),
-#                        $n_samples, 100, rd_constraints_2!;
-#                        domain = rd_domain,
-#                        IC_func = IC_func_rd,
-#                        constraint_parameters = rd_params,
-#                        backend = CPU(),
-#                        verbose = false,
-#                        mode = "jump",
-#                        optimizer = Ipopt.Optimizer,
-#                        initial_vals = $starting_noise));
-#     flush(stdout)
-
-#     # @info "FFM"
-#     # @btime sample_ffm($ffm, (parameters=$ps, states=$st), $n_samples, 100;
-#     #     verbose = false,
-#     #     initial_vals = $starting_noise)
-#     # flush(stdout)
-# end
 
 # Samples
 @info "ExaModels, MadNLP, GPU"
@@ -222,6 +179,19 @@ starting_noise = randn(Float32, nx, nt, 1, n_samples)
                     optimizer = Ipopt.Optimizer,
                     initial_vals = starting_noise)
 
+@info "LBFGS"
+@time samples_lbfgs = sample_pcfm(ffm, (parameters=ps, states=st),
+                    n_samples, 100,
+                    RDSolver(rho=rd_rho),
+                    constraint_data;
+                    verbose=true)
+
+@info "IPNewton"
+@time samples_ipnewton = sample_pcfm(ffm, (parameters=ps, states=st),
+                    n_samples, 100,
+                    RDIPNewtonSolver(rho=rd_rho),
+                    constraint_data;
+                    verbose=true)
 # @info "FFM"
 # @time samples_ffm = sample_ffm(ffm, (parameters=ps, states=st), n_samples, 100;
 #     verbose = false,
@@ -230,42 +200,17 @@ starting_noise = randn(Float32, nx, nt, 1, n_samples)
 # samples_ffm = Array(samples_ffm)
 
 ##################
-# Plot solutions
-
-# X = x_grid
-# T = range(t_range[1], t_range[2]; length=nt)
-# K = 1
-
-# fig_samples = plot_sample(K,
-#     [samples_exa_cpu, samples_jump_madnlp, samples_ffm],
-#     ["ExaCPU", "JuMP", "FFM"])
-# save("rd_samples.png", fig_samples)
-
-# function ic_violation(u, params)
-#     nx, nt = params[1], params[2]
-#     return [sum(abs(u[i, j] - u[i, 1]) for i in 1:nx) for j in 1:nt]
-# end
-
-# fig_constraint = plot_constraint_violation(K,
-#     [samples_exa_cpu, samples_jump_madnlp, samples_ffm],
-#     ic_violation,
-#     ["ExaCPU", "JuMP", "FFM"];
-#     constraint_params=(nx, nt, dx, dt))
-# save("rd_constraint_violation.png", fig_constraint)
 
 # Save samples
-JLD2.save("samples_rd.jld2",
+JLD2.save(SAMPLES_PATH,
     "samples_exa_gpu",     samples_exa_gpu,
     "samples_exa_cpu",     samples_exa_cpu,
     "samples_jump_madnlp", samples_jump_madnlp,
+    "samples_lbfgs",       samples_lbfgs,
+    "samples_ipnewton",    samples_ipnewton,
     "samples_jump_ipopt", samples_jump_ipopt,
     # "samples_ffm",         samples_ffm,
     "u0_fixed",            u0_fixed,
     "rd_params",           rd_params)
 
-# Load samples
-# data = JLD2.load("samples_rd.jld2")
-# samples_exa_gpu     = data["samples_exa_gpu"]
-# samples_exa_cpu     = data["samples_exa_cpu"]
-# samples_jump_madnlp = data["samples_jump_madnlp"]
-# samples_ffm         = data["samples_ffm"]
+@info "Samples saved to $SAMPLES_PATH"

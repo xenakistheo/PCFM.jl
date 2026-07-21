@@ -4,10 +4,7 @@ using LinearAlgebra
 
 # Load samples
 data_path  = joinpath(@__DIR__, "..", "..", "final_samples", "samples_rd_soltol_e5.jld2")
-data_path2 = joinpath(@__DIR__, "..", "..", "final_samples_old", "samples_rd_alaina_run3.jld2")
-
 data = JLD2.load(data_path)
-data2 = JLD2.load(data_path2)
 
 u0_fixed  = data["u0_fixed"]
 rd_params = data["rd_params"]
@@ -16,8 +13,8 @@ samples_exa_gpu     = data["samples_exa_gpu"]
 samples_exa_cpu     = data["samples_exa_cpu"]
 samples_jump_madnlp = data["samples_jump_madnlp"]
 samples_jump_ipopt  = data["samples_jump_ipopt"]
-samples_lbfgs       = data2["samples_lbfgs"]
-samples_ipnewton    = data2["samples_ipnewton"]
+samples_lbfgs       = data["samples_lbfgs"]
+samples_ipnewton    = data["samples_ipnewton"]
 
 nt = 100          # Temporal resolution
 dt = 0.01f0       # = 1/n_steps: sample_pcfm passes dt = 1/n_steps (100 steps) to the constraints
