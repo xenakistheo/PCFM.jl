@@ -33,3 +33,5 @@ examples/checkpoints/*
 
 # Datasets
 datasets/data/*.h5
+
+archive/*
