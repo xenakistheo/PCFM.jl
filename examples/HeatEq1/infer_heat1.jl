@@ -8,7 +8,6 @@ Note: Script does not use Reactant
 using PCFM
 
 using ExaModels, MadNLP, MadNLPGPU
-# using Plots
 using Lux
 using CUDA
 using cuDNN
@@ -17,7 +16,6 @@ using JLD2, Functors
 using JuMP
 using Ipopt
 using BenchmarkTools
-#using Reactant
 
 
 backend = CUDABackend()
@@ -35,28 +33,24 @@ Random.seed!(1234)
 # ---------------------------------------------------------------------------
 # Configuration
 # ---------------------------------------------------------------------------
-# batch_size   = 32
 nx           = 100          # Spatial resolution
 nt           = 100          # Temporal resolution
 emb_channels = 32
-n_epochs     = 1000
 force_retrain = false
 
 # Output path 
-SAMPLES_PATH = length(ARGS) >= 2 ? ARGS[2] : "samples_heat.jld2"
+SAMPLES_PATH = length(ARGS) >= 2 ? ARGS[2] : "samples_heat_1.jld2"
+n_samples    = length(ARGS) >= 1 ? parse(Int, ARGS[1]) : 32
 
 # Checkpoint path
-weight_file = joinpath(@__DIR__, "checkpoints", "ffm_heat_checkpoint.jld2")
+weight_file = joinpath(@__DIR__, "checkpoints", "ffm_heat_1_checkpoint.jld2")
 
 # Data generation parameters
-visc_range = (1.0f0, 5.0f0)
-phi_range  = (0.0f0, Float32(π))
 t_range    = (0.0f0, 1.0f0)
 
 # Grid
 x_grid = range(0.0f0, 2.0f0*Float32(π); length = nx)
 dx     = Float32(x_grid[2] - x_grid[1])
-dt     = 1.0f0 / (nt - 1)
 
 
 # Constraint params (passed through to heat_constraints!)
@@ -78,48 +72,40 @@ ffm = FFM(
     proj_channels = 256,
     n_layers = 4,
     modes = (32, 32),
-    device = dev_gpu
+    device = device
 )
 println("  Model created successfully")
 
 # 3. Load checkpoint
-
 println("\n[3/5] Loading checkpoint from: $weight_file")
 saved = JLD2.load(weight_file)
-# device = ffm.config[:device]
-device = cu
-ps = saved["parameters"] |> device
-st = saved["states"] |> device
-losses = Float32[]
-# compiled_funcs = PCFM.compile_functions(ffm, batch_size)
-println("  Loaded trained parameters and states")
 
 
 # Re-init Lux states for inference and move ps/st to device
-# device = ffm.config[:device]
+ps = saved["parameters"] |> device
 _, st = Lux.setup(Random.default_rng(), ffm.model)
-ps = ps |> device
 st = st |> device
+println("  Loaded trained parameters and states")
+
+# ---------------------------------------------------------------------------
+# Build constraint data  (IC = sin(x + π/4), same as infer_heat.jl)
+# ---------------------------------------------------------------------------
+u_0_ic = Float32.(sin.(x_grid .+ Float32(π)/4))   # (nx,)
+constraint_data = make_constraint_data(u_0_ic, nx, nt, n_samples; dx=dx)
+
 
 # ---------------------------------------------------------------------------
 # 5. Generate samples
 # ---------------------------------------------------------------------------
 println("\n[5/5] Generating samples...")
 
-
-
-########################################################################################################################################################
-########################################################################################################################################################
-########################################################################################################################################################
-
-
 n_samples = length(ARGS) >= 1 ? parse(Int, ARGS[1]) : 32
 
 starting_noise = randn(Float32, nx, nt, 1, n_samples);
 
 
-# begin 
-    # ExaModels, MadNLP, GPU
+
+
 @info "ExaModels, MadNLP, GPU"
 @time samples_exa_gpu = sample_pcfm(ffm, (parameters = ps, states = st),
                 n_samples, 100, heat_constraints!;
@@ -130,8 +116,6 @@ starting_noise = randn(Float32, nx, nt, 1, n_samples);
 
 
 
-
-# # ExaModels, MadNLP, CPU
 @info "ExaModels, MadNLP, CPU"
 @time samples_exa_cpu = sample_pcfm(ffm, (parameters = ps, states = st),
                 n_samples, 100, heat_constraints!;
@@ -142,7 +126,6 @@ starting_noise = randn(Float32, nx, nt, 1, n_samples);
 
 
 
-# #JuMP, MadNLP
 @info "JuMP, MadNLP"
 @time samples_jump_madnlp = sample_pcfm(ffm, (parameters = ps, states = st),
                 n_samples, 100, heat_constraints!;
@@ -152,7 +135,7 @@ starting_noise = randn(Float32, nx, nt, 1, n_samples);
                 optimizer=MadNLP.Optimizer, 
                 initial_vals=starting_noise);
 
-    # #JuMP, Ipopt
+
 @info "JuMP, Ipopt"
 @time samples_jump_ipopt = sample_pcfm(ffm, (parameters = ps, states = st),
                 n_samples, 100, heat_constraints!;
@@ -162,14 +145,29 @@ starting_noise = randn(Float32, nx, nt, 1, n_samples);
                 optimizer=Ipopt.Optimizer,
                 initial_vals=starting_noise);
 
-    # # FFM
-    # @info "FFM"
-    # samples_ffm = sample_ffm(ffm, (parameters = ps, states = st), n_samples, 100; 
-    #     verbose = false,
-    #     initial_vals=starting_noise);
+@info "LBFGS"
+@time samples_lbfgs = sample_pcfm(ffm, (parameters=ps, states=st),
+                    n_samples, 100,
+                    PenaltyLBFGSMassProjectionSolver(),
+                    constraint_data;
+                    verbose=true);
+
+@info "IPNewton"
+@time samples_ipnewton = sample_pcfm(ffm, (parameters=ps, states=st),
+                    n_samples, 100,
+                    IPMassProjectionSolver(),
+                    constraint_data;
+                    verbose=true);
+
+# @info "FFM"
+# samples_ffm = sample_ffm(ffm, (parameters = ps, states = st), n_samples, 100; 
+#     verbose = false,
+#     initial_vals=starting_noise);
 
 # samples_ffm = Array(samples_ffm)
-# end 
+
+
+
 
 ##################
 
@@ -190,15 +188,17 @@ JLD2.save(SAMPLES_PATH,
     "samples_exa_cpu",    samples_exa_cpu,
     "samples_jump_madnlp", samples_jump_madnlp,
     "samples_jump_ipopt", samples_jump_ipopt,
-    # "samples_ffm",        samples_ffm,
+    "samples_lbfgs",    samples_lbfgs,
+    "samples_ipnewton", samples_ipnewton,
     "u_analytic",         u_analytic)
 
 # Load samples
-# data = JLD2.load("samples_heat.jld2")
+# data = JLD2.load("samples_heat_1.jld2")
 # samples_exa_gpu     = data["samples_exa_gpu"]
 # samples_exa_cpu     = data["samples_exa_cpu"]
 # samples_jump_madnlp = data["samples_jump_madnlp"]
 # samples_jump_ipopt = data["samples_jump_ipopt"]
-# samples_ffm         = data["samples_ffm"]
+# samples_lbfgs       = data["samples_lbfgs"]
+# samples_ipnewton    = data["samples_ipnewton"]
 # u_analytic          = data["u_analytic"]
 

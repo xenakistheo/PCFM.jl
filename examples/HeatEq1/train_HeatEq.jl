@@ -1,5 +1,5 @@
 """
-Example script for training Functional Flow Matching on 1D diffusion equation.
+Example script for training Functional Flow Matching on 1D Heat equation.
 
 This script demonstrates:
 1. Creating an FFM (Functional Flow Matching) model
@@ -26,7 +26,7 @@ emb_channels  = 32
 n_epochs      = 1000
 force_retrain = false
 
-weight_file = joinpath(@__DIR__, "..", "checkpoints", "ffm_diffusion_checkpoint.jld2")
+weight_file = joinpath(@__DIR__, "..", "checkpoints", "ffm_heat_1_checkpoint.jld2")
 
 # Data generation parameters
 visc_range = (1.0f0, 5.0f0)
