@@ -68,6 +68,7 @@ export NSEnstrophyIPNewtonSolver
 export RDIPNewtonSolver
 export BurgersBCMassSolver, BurgersBCMassIPSolver
 export BurgersICSolver, BurgersICIPSolver
+export BurgersICMassSolver, BurgersICMassIPSolver
 export BurgersICFluxSolver, BurgersICFluxIPSolver
 export HeatICPDEEnergySolver, HeatICPDEEnergyIPSolver
 

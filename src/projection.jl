@@ -681,6 +681,83 @@ function solve_projection(::BurgersICIPSolver, Z_hat, cdata)
     return Z_proj
 end
 
+# ════════════════════════════════════════════════════════════
+#  Burgers IC + Mass (no flux) — mirrors burgers_constraints_IC_Mass!:
+#    (a) u(x,0) = u_IC(x)
+#    (b) ∫u(x,t)dx = M₀ = ∫u_IC dx   for every t
+# ════════════════════════════════════════════════════════════
+
+struct BurgersICMassSolver{T} <: AbstractProjectionSolver
+    penalty::T
+end
+BurgersICMassSolver(; penalty=1.0f4) = BurgersICMassSolver(penalty)
+
+function solve_projection(solver::BurgersICMassSolver, Z_hat, cdata)
+    nx, nt, nc, nb = size(Z_hat)
+    dx = Float64(cdata.dx)
+    M0 = Float64(cdata.M0)
+    λ  = Float64(solver.penalty)
+    Z_proj = copy(Z_hat)
+
+    function penalised_loss(u_k, p)
+        u_hat_k = p[1]
+        obj = sum(abs2, u_k .- u_hat_k)
+        mass_viol = sum(u_k) * dx - M0
+        return obj + λ * mass_viol^2
+    end
+
+    opt_func = OptimizationFunction(penalised_loss, AutoForwardDiff())
+
+    for b in 1:nb, c in 1:nc
+        Z_proj[:, 1, c, b] .= cdata.u_0_ic_vec
+        for k in 2:nt
+            u_hat_k = Float64.(Z_proj[:, k, c, b])
+            u0 = copy(u_hat_k)
+            prob = OptimizationProblem(opt_func, u0, (u_hat_k,))
+            sol = solve(prob, OptimizationOptimJL.LBFGS())
+            Z_proj[:, k, c, b] .= Float32.(sol.u)
+        end
+    end
+    return Z_proj
+end
+
+struct BurgersICMassIPSolver <: AbstractProjectionSolver end
+
+function _burgers_ic_mass_loss(u_k, p)
+    u_hat_k = p[1]
+    return sum(abs2, u_k .- u_hat_k)
+end
+
+function _burgers_ic_mass_cons!(res, u_k, p)
+    dx = p[2]
+    M0 = p[3]
+    res[1] = sum(u_k) * dx - M0
+    return nothing
+end
+
+function solve_projection(::BurgersICMassIPSolver, Z_hat, cdata)
+    nx, nt, nc, nb = size(Z_hat)
+    dx = Float64(cdata.dx)
+    M0 = Float64(cdata.M0)
+    Z_proj = copy(Z_hat)
+
+    ad_type = DifferentiationInterface.SecondOrder(AutoForwardDiff(), AutoForwardDiff())
+    opt_func = OptimizationFunction(_burgers_ic_mass_loss, ad_type; cons = _burgers_ic_mass_cons!)
+
+    for b in 1:nb, c in 1:nc
+        Z_proj[:, 1, c, b] .= cdata.u_0_ic_vec
+        for k in 2:nt
+            u_hat_k = Float64.(Z_proj[:, k, c, b])
+            u0 = copy(u_hat_k)
+            p = (u_hat_k, dx, M0)
+            prob = OptimizationProblem(opt_func, u0, p; lcons = [0.0], ucons = [0.0])
+            sol = solve(prob, OptimizationOptimJL.IPNewton())
+            Z_proj[:, k, c, b] .= Float32.(sol.u)
+        end
+    end
+    return Z_proj
+end
+
 struct BurgersICFluxSolver{T} <: AbstractProjectionSolver
     penalty::T
 end

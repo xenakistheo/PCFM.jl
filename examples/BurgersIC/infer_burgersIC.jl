@@ -23,24 +23,26 @@ using BenchmarkTools
 using Random
 using HDF5
 
+Random.seed!(42)
+
 
 backend = CUDABackend()
 dev_gpu = cu
 dev_cpu = cpu_device
 device  = dev_gpu
 
-Random.seed!(42)
 
 # ---------------------------------------------------------------------------
 # Configuration
 # ---------------------------------------------------------------------------
-batch_size   = 32
 nx           = 101
 nt           = 101
 emb_channels = 32
+n_samples    = length(ARGS) >= 4 ? parse(Int, ARGS[1]) : 32
+
 
 # Output path
-SAMPLES_PATH = length(ARGS) >= 3 ? ARGS[3] : "samples_burgers_IC.jld2"
+SAMPLES_PATH = length(ARGS) >= 3 ? ARGS[3] : "samples_burgersIC.jld2"
 
 # Checkpoint path
 weight_file = joinpath(@__DIR__, "checkpoints", "ffm_burgers_checkpoint.jld2")
@@ -50,13 +52,13 @@ t_range = (0.0f0, 1.0f0)
 # Grid
 x_grid = range(0.0f0, 1.0f0; length=nx)
 dx     = Float32(x_grid[2] - x_grid[1])
-dt     = 1.0f0 / (nt - 1)
+dt_physics = 1.0f0 / (nt - 1)
 
-# Initial condition: viscous Burgers sigmoid - NOT USED 
+# Initial condition: viscous Burgers sigmoid 
 const p_loc  = 0.5f0
 const eps_ic = 0.02f0
 IC_func_burgers = x -> 1.0f0 / (1.0f0 + exp((x - p_loc) / eps_ic))
-u0_ic = Float32.(IC_func_burgers.(x_grid)) # Not Used!!!!!
+u0_ic = Float32.(IC_func_burgers.(x_grid))
 
 # ---------------------------------------------------------------------------
 println("=" ^ 60)
@@ -73,24 +75,28 @@ ffm = FFM(
     proj_channels = 256,
     n_layers = 4,
     modes = (32, 32),
-    device = dev_gpu
+    device = device
 )
 println("  Model created successfully")
 
 # Load checkpoint
 println("\n[2/3] Loading checkpoint from: $weight_file")
 saved = JLD2.load(weight_file)
-device = cu
+
 ps = saved["parameters"] |> device
-st = saved["states"]     |> device
+_, st = Lux.setup(Random.default_rng(), ffm.model)
+st = st |> device
 println("  Loaded trained parameters and states")
 
-_, st = Lux.setup(Random.default_rng(), ffm.model)
-ps = ps |> device
-st = st |> device
+# ---------------------------------------------------------------------------
+# Constraint data (used for LBFGS and IPNewton solvers, not needed for ExaModels or JuMP)
+# ---------------------------------------------------------------------------
+constraint_data = make_constraint_data(u0_ic, nx, nt, n_samples;
+                                        dx=dx, dt_physics=dt_physics)
+
+                                        
 
 println("\n[3/3] Generating samples...")
-n_samples = 32
 tstate_inf = (parameters = ps, states = st)
 
 # Per-sample left BC drawn from training distribution U[0,1]
@@ -112,8 +118,10 @@ godunov_flux_k = length(ARGS) >= 2 ? parse(Int, ARGS[2]) : 5
 #   IC_Mass             -> exa_gpu, exa_cpu, jump_madnlp
 #   IC_Mass_Flux k<=5   -> exa_gpu, exa_cpu
 #   IC_Mass_Flux k>5    -> exa_gpu
+# The projection solvers (lbfgs_ic, ipnewton_ic, lbfgs_ic_mass, ipnewton_ic_mass)
+# ignore CONSTRAINT_FUNC and always run — they use constraint_data instead.
 solvers_to_run = if constraint_name == "IC"
-    ["exa_gpu", "exa_cpu", "jump_madnlp", "jump_ipopt"]
+    ["exa_gpu", "exa_cpu", "jump_madnlp", "jump_ipopt", "lbfgs_ic", "ipnewton_ic"]
 elseif constraint_name == "IC_Mass"
     ["exa_gpu", "exa_cpu", "jump_madnlp"]
 elseif godunov_flux_k <= 5
@@ -202,6 +210,46 @@ if "jump_ipopt" in solvers_to_run
     computed_samples["samples_jump_ipopt"] = samples_jump_ipopt
 end
 
+if "lbfgs_ic" in solvers_to_run
+    @info "BurgersIC only LBFGS"
+    @time samples_ic_only = sample_pcfm(ffm, (parameters=ps, states=st),
+                        n_samples, 100,
+                        BurgersICSolver(),
+                        constraint_data;
+                        verbose=true);
+    computed_samples["samples_ic_only"] = samples_ic_only
+end
+
+if "ipnewton_ic" in solvers_to_run
+    @info "BurgersIC only IPNewton"
+    @time samples_ic_only_ip = sample_pcfm(ffm, (parameters=ps, states=st),
+                        n_samples, 100,
+                        BurgersICIPSolver(),
+                        constraint_data;
+                        verbose=true);
+    computed_samples["samples_ic_only_ip"] = samples_ic_only_ip
+end
+
+if "lbfgs_ic_mass" in solvers_to_run
+    @info "BurgersIC+Mass LBFGS"
+    @time samples_ic_mass = sample_pcfm(ffm, (parameters=ps, states=st),
+                        n_samples, 100,
+                        BurgersICMassSolver(),
+                        constraint_data;
+                        verbose=true);
+    computed_samples["samples_ic_mass"] = samples_ic_mass
+end
+
+if "ipnewton_ic_mass" in solvers_to_run
+    @info "BurgersIC+Mass IPNewton"
+    @time samples_ic_mass_ip = sample_pcfm(ffm, (parameters=ps, states=st),
+                        n_samples, 100,
+                        BurgersICMassIPSolver(),
+                        constraint_data;
+                        verbose=true);
+    computed_samples["samples_ic_mass_ip"] = samples_ic_mass_ip
+end
+
 
 
 ##################
@@ -226,28 +274,6 @@ h5open(test_data_file, "r") do f
 end
 
 ##################
-# Plot solutions
-
-# X = x_grid
-# T = range(t_range[1], t_range[2]; length=nt)
-# K = 1
-
-# fig_samples = plot_sample(K,
-#     [ref_samples, samples_exa_gpu, samples_exa_cpu, samples_jump_madnlp, samples_ffm],
-#     ["Reference", "ExaGPU", "ExaCPU", "JuMP", "FFM"])
-# save("burgers_samples.png", fig_samples)
-
-# function ic_violation(u, params)
-#     nx, nt = params[1], params[2]
-#     return [sum(abs(u[i, j] - u[i, 1]) for i in 1:nx) for j in 1:nt]
-# end
-
-# fig_constraint = plot_constraint_violation(K,
-#     [samples_exa_gpu, samples_exa_cpu, samples_jump_madnlp, samples_ffm],
-#     ic_violation,
-#     ["ExaGPU", "ExaCPU", "JuMP", "FFM"];
-#     constraint_params=(nx, nt, dx, dt))
-# save("burgers_constraint_violation.png", fig_constraint)
 
 # Save samples (only the solvers that were run)
 save_dict = merge(
@@ -255,12 +281,6 @@ save_dict = merge(
     computed_samples)
 JLD2.save(SAMPLES_PATH, save_dict)
 @info "Saved $(join(sort(collect(keys(save_dict))), ", ")) to $SAMPLES_PATH"
-# Load samples
-# data = JLD2.load("samples_burgers_IC.jld2")
-# ref_samples         = data["ref_samples"]
-# samples_exa_gpu     = data["samples_exa_gpu"]
-# samples_exa_cpu     = data["samples_exa_cpu"]
-# samples_jump_madnlp = data["samples_jump_madnlp"]
-# samples_ffm         = data["samples_ffm"]
+
 
 
