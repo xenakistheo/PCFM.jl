@@ -54,7 +54,7 @@ dx     = Float32(x_grid[2] - x_grid[1])
 dt     = 1.0f0 / (nt - 1)
 dt_physics = 1.0f0 / (nt - 1)
 const kappa = 0.01f0   # heat diffusivity 
-k = nt-1 #5, 20
+k = 5
 
 constraint_params = (; kappa = kappa, k = k)
 

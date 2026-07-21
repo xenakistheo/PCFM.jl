@@ -6,14 +6,11 @@ using LinearAlgebra
 load_samples(d, key) = dropdims(d[key], dims=3)
 
 data_path = joinpath(@__DIR__, "..", "..", "final_samples", "samples_heat_2_new.jld2")
-data_path = joinpath(@__DIR__, "..", "..", "final_samples", "samples_heat_2.jld2")
-data_path2 = joinpath(@__DIR__, "..", "..", "final_samples_old", "samples_heat2_alaina_run1.jld2")
 data = JLD2.load(data_path)
-data2 = JLD2.load(data_path2)
 
 samples_exa_gpu = load_samples(data,  "samples_exa_gpu")
 samples_exa_cpu = load_samples(data,  "samples_exa_cpu")
-samples_lbfgs   = load_samples(data2, "samples_lbfgs")
+samples_lbfgs   = load_samples(data, "samples_lbfgs")
 
 nx = 100          # Spatial resolution
 nt = 100          # Temporal resolution
