@@ -39,7 +39,7 @@ export train_ffm!, sample_ffm, sample_pcfm, sample_pcfm_2d
 
 # Data
 export generate_diffusion_data
-export load_burgers_batch, load_rd_batch, load_ns_batch
+export load_burgers_batch, load_rd_batch, load_ns_batch, load_heat_batch
 
 # Constraints
 export heat_constraints!, rd_constraints!, rd_constraints_2!, burgers_constraints_BC_Mass!, burgers_constraints_IC_Mass_Flux!, ns_constraints!, ns_enstrophy_constraints!

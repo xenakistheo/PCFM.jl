@@ -180,12 +180,29 @@ function run_parallel(root; N_ic=80, N_bc=80, seed=42, filename="RD_neumann_trai
 end
 
 # ── Main script ───────────────────────────────────────────────────────────────
+#
+# Generate 1D Reaction-Diffusion equation training and test datasets and save to HDF5.
+#
+# Grid: Nx=128 (cell-centred), nt=100 snapshots, domain [0,1].
+# Parameters: rho=0.01, nu=0.005. IC is a random sum of sinusoids normalised to [0,1].
+# BC: random Neumann fluxes gL ∈ [0, 0.05], gR ∈ [-0.05, 0].
+#
+# Output files (written to datasets/data/):
+#   - RD_neumann_train_nIC80_nBC80.h5   (train: 6400 samples)
+#   - RD_neumann_test_nIC30_nBC30.h5    (test:   900 samples)
+#
+# run_parallel can also produce a fixed-IC/many-BC "sampling" variant (e.g.
+# N_ic=20, N_bc=512) for generalisation evaluation; not generated here since
+# nothing in the pipeline currently consumes it.
 
 if abspath(PROGRAM_FILE) == @__FILE__
-    # Training data: vary IC and BC
-    run_parallel("datasets/data/"; N_ic=80, N_bc=80, seed=42, filename="RD_neumann_train")
-    run_parallel("datasets/data/"; N_ic=30, N_bc=30, seed=0,  filename="RD_neumann_test")
+    data_dir = joinpath(@__DIR__, "..", "..", "datasets", "data")
 
-    # Sampling data: fixed ICs, many BCs
-    run_parallel("datasets/data/"; N_ic=20, N_bc=512, seed=42, filename="RD_sampling_diffICs")
+    println("Generating RD training set (80 ICs × 80 BCs = 6400 samples)...")
+    run_parallel(data_dir; N_ic=80, N_bc=80, seed=42, filename="RD_neumann_train")
+
+    println("Generating RD test set (30 ICs × 30 BCs = 900 samples)...")
+    run_parallel(data_dir; N_ic=30, N_bc=30, seed=0, filename="RD_neumann_test")
+
+    println("Done.")
 end

@@ -4,6 +4,7 @@ using HDF5
 include("../datasets/burgers1d.jl")
 include("../datasets/rd1d.jl")
 include("../datasets/ns.jl")
+include("../datasets/diffusion1d.jl")
 
 """
     generate_diffusion_data(n_samples, nx, nt, visc_range, phi_range, t_range)
@@ -110,6 +111,27 @@ function load_ns_batch(data_file::String, batch_size::Int)
     indices = rand(1:length(ds), batch_size)
     for (b, idx) in enumerate(indices)
         u_data[:, :, :, 1, b] = ds[idx]
+    end
+    close(ds)
+    return u_data
+end
+
+"""
+    load_heat_batch(data_file, batch_size)
+
+Load a random batch of 1D heat (diffusion) equation solutions from an HDF5 file.
+
+# Returns
+  - Array of shape (Nx, Nt, 1, batch_size)
+"""
+function load_heat_batch(data_file::String, batch_size::Int)
+    ds = HeatDataset(dirname(data_file), "train", basename(data_file))
+    sample1 = ds[1]
+    nx, nt = size(sample1)
+    u_data = zeros(Float32, nx, nt, 1, batch_size)
+    indices = rand(1:length(ds), batch_size)
+    for (b, idx) in enumerate(indices)
+        u_data[:, :, 1, b] = ds[idx]
     end
     close(ds)
     return u_data
