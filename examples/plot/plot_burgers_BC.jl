@@ -1,7 +1,7 @@
 
 using JLD2
 using CairoMakie
-include(joinpath(@__DIR__, "..", "..", "utils", "plotUtils.jl"))
+include(joinpath(@__DIR__, "..", "..", "utils", "plot_utilities.jl"))
 
 
 # Load samples
