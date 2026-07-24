@@ -1,7 +1,7 @@
 """
 Train an FFM model on the 1D Reaction-Diffusion equation and save a checkpoint.
 
-Assumes the training dataset already exists. Run generate_RD1d_data.jl first if needed.
+Assumes the training dataset already exists. Run generate_data_rd.jl first if needed.
 
 Saves checkpoint to: examples/checkpoints/ffm_rd_checkpoint.jld2
   Keys: "parameters", "states", "losses", "config"
@@ -39,7 +39,7 @@ println("=" ^ 60)
 
 # 1. Load training batch
 if !isfile(train_file)
-    error("Training data not found at $train_file.\nRun examples/ReactionDiffusion/generate_RD1d_data.jl first.")
+    error("Training data not found at $train_file.\nRun examples/ReactionDiffusion/generate_data_rd.jl first.")
 end
 println("\n[1/4] Loading training batch from $train_file ...")
 u_data = load_rd_batch(train_file, batch_size)

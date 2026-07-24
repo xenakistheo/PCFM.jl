@@ -40,7 +40,7 @@ println("=" ^ 60)
 
 # 1. Check dataset
 if !isfile(train_file)
-    error("Training data not found at $train_file.\nRun examples/NavierStokes/generate_ns_2d.jl first.")
+    error("Training data not found at $train_file.\nRun examples/NavierStokes/generate_data_ns.jl first.")
 end
 println("\n[1/5] Dataset found: $train_file")
 
